@@ -237,3 +237,64 @@ export async function deleteProgram(programId: string) {
   revalidatePath("/");
   return { error: null };
 }
+
+/**
+ * Send the speaker an SMS invite with a self-confirm link. Requires the
+ * speaker to have a phone number on file and Twilio env vars to be set.
+ * Moves the assignment to awaiting_confirmation on success.
+ */
+export async function sendAssignmentInvite(assignmentId: string) {
+  const supabase = await createClient();
+
+  const { data: a, error } = await supabase
+    .from("speaking_assignments")
+    .select(
+      `id, slot, length_minutes, confirm_token, program_id,
+       speaker:speakers(full_name, phone),
+       topic:topics(title),
+       custom_topic_text,
+       program:programs(meeting_date)`,
+    )
+    .eq("id", assignmentId)
+    .single();
+  if (error || !a) return { error: error?.message ?? "Assignment not found." };
+
+  const speaker = Array.isArray(a.speaker) ? a.speaker[0] : a.speaker;
+  const topic = Array.isArray(a.topic) ? a.topic[0] : a.topic;
+  const program = Array.isArray(a.program) ? a.program[0] : a.program;
+  if (!speaker?.phone) return { error: "Speaker has no phone number on file." };
+
+  const slotLabel: Record<string, string> = {
+    first: "first speaker (5 min)",
+    second: "second speaker (10–15 min)",
+    concluding: "concluding speaker (15 min)",
+  };
+  const meetingDate = new Date(program!.meeting_date + "T00:00:00").toLocaleDateString(
+    "en-US",
+    { weekday: "long", month: "long", day: "numeric", year: "numeric" },
+  );
+  const topicText = topic?.title ?? a.custom_topic_text ?? "(no topic yet)";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sacrament-program-app.vercel.app";
+  const link = `${siteUrl}/c/${a.confirm_token}`;
+
+  const body = [
+    `Hi ${speaker.full_name},`,
+    `Would you be willing to be a speaker in sacrament meeting on ${meetingDate} as ${slotLabel[a.slot] ?? a.slot}?`,
+    `Topic: ${topicText}`,
+    `Please tap to respond: ${link}`,
+  ].join("\n\n");
+
+  const { sendSms } = await import("@/lib/sms");
+  const result = await sendSms(speaker.phone, body);
+  if (!result.ok) return { error: result.error };
+
+  const { error: ue } = await supabase
+    .from("speaking_assignments")
+    .update({ status: "awaiting_confirmation", invited_at: new Date().toISOString() })
+    .eq("id", assignmentId);
+  if (ue) return { error: ue.message };
+
+  revalidatePath(`/programs/${a.program_id}`);
+  revalidatePath("/");
+  return { error: null };
+}

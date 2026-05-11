@@ -388,6 +388,7 @@ function SpeakerDialog({
 }) {
   const [pending, start] = useTransition();
   const [fullName, setFullName] = useState(speaker?.full_name ?? "");
+  const [phone, setPhone] = useState(speaker?.phone ?? "");
   const [notes, setNotes] = useState(speaker?.notes ?? "");
   const [isActive, setIsActive] = useState(speaker?.is_active ?? true);
   const [cats, setCats] = useState<SpeakerCategory[]>(speaker?.categories ?? []);
@@ -435,7 +436,7 @@ function SpeakerDialog({
     start(async () => {
       const payload = {
         full_name: fullName.trim(),
-        phone: null,
+        phone: phone.trim() || null,
         email: null,
         notes: notes.trim() || null,
         is_active: isActive,
@@ -467,6 +468,19 @@ function SpeakerDialog({
           <div className="space-y-1.5">
             <Label htmlFor="name">Full name</Label>
             <Input id="name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="phone">Mobile phone (for text invites)</Label>
+            <Input
+              id="phone"
+              type="tel"
+              placeholder="(205) 555-1234"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Optional. Leave blank if you don&apos;t want this speaker to receive SMS invites.
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label>Categories</Label>

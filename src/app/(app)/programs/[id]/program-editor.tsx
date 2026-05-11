@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   XCircle,
   Send,
+  MessageSquare,
   UserPlus,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -76,6 +77,7 @@ import {
   ensureProgramSlots,
   regenerateShareToken,
   resetAssignmentSlot,
+  sendAssignmentInvite,
   setProgramStatus,
   updateAssignmentSpeakerTopic,
   updateAssignmentStatus,
@@ -1012,14 +1014,35 @@ function AssignmentCard({
       {!isPast && (
         <div className="flex flex-wrap gap-2">
           {assignment.status === "not_yet_asked" && assignment.speaker_id && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => changeStatus("awaiting_confirmation")}
-              disabled={pending}
-            >
-              <Send className="w-4 h-4" /> Mark as asked
-            </Button>
+            <>
+              {(() => {
+                const sp = speakers.find((s) => s.id === assignment.speaker_id);
+                if (!sp?.phone) return null;
+                return (
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      start(async () => {
+                        const r = await sendAssignmentInvite(assignment.id);
+                        if (r.error) toast.error(r.error);
+                        else toast.success(`Text sent to ${sp.full_name}.`);
+                      })
+                    }
+                    disabled={pending}
+                  >
+                    <MessageSquare className="w-4 h-4" /> Send text invite
+                  </Button>
+                );
+              })()}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => changeStatus("awaiting_confirmation")}
+                disabled={pending}
+              >
+                <Send className="w-4 h-4" /> Mark as asked
+              </Button>
+            </>
           )}
           {assignment.status === "awaiting_confirmation" && (
             <>
