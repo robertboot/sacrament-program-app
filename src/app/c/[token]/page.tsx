@@ -80,11 +80,54 @@ export default async function PublicConfirmPage({
           <ConfirmForm token={token} />
         )}
 
+        <AddToCalendar token={token} meetingDate={a.meeting_date} />
+
         <p className="text-[11px] text-muted-foreground text-center">
           If something is unclear, please reach out to the bishopric directly.
         </p>
       </div>
     </main>
+  );
+}
+
+function AddToCalendar({
+  token,
+  meetingDate,
+}: {
+  token: string;
+  meetingDate: string;
+}) {
+  const [yy, mm, dd] = meetingDate.split("-");
+  // Floating local times so the 9 AM lands at 9 AM wherever the recipient is.
+  const start = `${yy}${mm}${dd}T090000`;
+  const end = `${yy}${mm}${dd}T100000`;
+  const gcal = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent("Sacrament meeting — speaking assignment")}&dates=${start}/${end}`;
+  return (
+    <div className="border-t pt-4">
+      <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-2 text-center">
+        Add to calendar
+      </div>
+      <div className="flex flex-wrap justify-center gap-2 text-sm">
+        <a
+          href={`/c/${token}/event.ics`}
+          download
+          className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+        >
+          Apple / Outlook (.ics)
+        </a>
+        <a
+          href={gcal}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+        >
+          Google Calendar
+        </a>
+      </div>
+      <p className="text-[11px] text-muted-foreground text-center mt-2">
+        Default start time is 9:00 AM. Adjust in your calendar app if your meeting is at a different time.
+      </p>
+    </div>
   );
 }
 
