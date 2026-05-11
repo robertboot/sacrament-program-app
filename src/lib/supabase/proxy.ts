@@ -33,6 +33,7 @@ export async function updateSession(request: NextRequest) {
     path.startsWith("/p/") ||
     path.startsWith("/c/") ||
     path.startsWith("/api/sms/") ||
+    path.startsWith("/api/cron/") ||
     path === "/favicon.ico";
 
   if (!user && !isAuthRoute && !isPublic) {
