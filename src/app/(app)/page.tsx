@@ -17,6 +17,10 @@ type DashboardRow = {
   meeting_type: "regular" | "fast_sunday" | "no_services";
   meeting_type_label: string | null;
   conducting: { full_name: string } | null;
+  opening_hymn_id: string | null;
+  sacrament_hymn_id: string | null;
+  intermediate_hymn_id: string | null;
+  closing_hymn_id: string | null;
   opening_hymn: Hymn;
   sacrament_hymn: Hymn;
   intermediate_hymn: Hymn;
@@ -51,6 +55,7 @@ export default async function DashboardPage() {
     .from("programs")
     .select(
       `id, meeting_date, status, meeting_type, meeting_type_label, intermediate_hymn_text,
+       opening_hymn_id, sacrament_hymn_id, intermediate_hymn_id, closing_hymn_id,
        conducting:profiles!programs_conducting_id_fkey(full_name),
        opening_hymn:hymns!programs_opening_hymn_id_fkey(number, title),
        sacrament_hymn:hymns!programs_sacrament_hymn_id_fkey(number, title),
@@ -116,11 +121,12 @@ export default async function DashboardPage() {
       ) : (
         <>
           {programs && programs[0] && (
-            <section>
+            <section className="space-y-3">
               <div className="text-sm uppercase tracking-widest font-bold text-foreground mb-3">
                 Upcoming Sacrament Meeting
               </div>
               <DashboardRowCard row={programs[0]} canEdit={isBishopric} featured />
+              <FeaturedAlerts row={programs[0]} />
             </section>
           )}
           {programs && programs.length > 1 && (
@@ -290,6 +296,47 @@ function DashboardRowCard({
         </CardContent>
       </Card>
     </Link>
+  );
+}
+
+function FeaturedAlerts({ row }: { row: DashboardRow }) {
+  const issues: string[] = [];
+
+  if (row.meeting_type !== "no_services") {
+    // Same hymn used in multiple slots.
+    const slots: { label: string; id: string | null }[] = [
+      { label: "Opening", id: row.opening_hymn_id },
+      { label: "Sacrament", id: row.sacrament_hymn_id },
+      { label: "Intermediate", id: row.intermediate_hymn_id },
+      { label: "Closing", id: row.closing_hymn_id },
+    ].filter((s) => s.id) as { label: string; id: string }[];
+    const byId = new Map<string, string[]>();
+    for (const s of slots) {
+      if (!byId.has(s.id!)) byId.set(s.id!, []);
+      byId.get(s.id!)!.push(s.label);
+    }
+    for (const [, labels] of byId) {
+      if (labels.length > 1) {
+        issues.push(`Same hymn is set for ${labels.join(" and ")}.`);
+      }
+    }
+  }
+
+  if (issues.length === 0) return null;
+  return (
+    <Card className="border-red-300 bg-red-50 dark:border-red-900 dark:bg-red-950">
+      <CardContent className="p-4 space-y-1">
+        <div className="text-[10px] uppercase tracking-wider font-bold text-red-700 dark:text-red-300 flex items-center gap-1">
+          <AlertTriangle className="w-3.5 h-3.5" />
+          Alerts
+        </div>
+        <ul className="text-sm text-red-800 dark:text-red-200 list-disc pl-5 space-y-0.5">
+          {issues.map((i) => (
+            <li key={i}>{i}</li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
   );
 }
 
