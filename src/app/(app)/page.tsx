@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { addDays, format, parseISO, differenceInDays } from "date-fns";
+import { addDays, addMonths, format, parseISO, differenceInDays } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { DashboardStatusPill } from "@/components/dashboard-status-pill";
@@ -70,6 +70,21 @@ export default async function DashboardPage() {
     .order("meeting_date", { ascending: true })
     .returns<DashboardRow[]>();
 
+  // Absolute latest program date (any future date) so we can lock the Generate
+  // button until we're within 3 months of running out of scheduled meetings.
+  const { data: lastProgram } = await supabase
+    .from("programs")
+    .select("meeting_date")
+    .order("meeting_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const latestMeetingDate = lastProgram?.meeting_date ?? null;
+  const generateUnlockThreshold = format(addMonths(new Date(), 3), "yyyy-MM-dd");
+  const generateUnlockDate =
+    latestMeetingDate && latestMeetingDate > generateUnlockThreshold
+      ? format(addMonths(parseISO(latestMeetingDate), -3), "yyyy-MM-dd")
+      : null;
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-3">
@@ -79,7 +94,12 @@ export default async function DashboardPage() {
             {programs?.length ?? 0} program{programs?.length === 1 ? "" : "s"} in the next 13 weeks.
           </p>
         </div>
-        {isBishopric && <GenerateButton />}
+        {isBishopric && (
+          <GenerateButton
+            unlockDate={generateUnlockDate}
+            latestMeetingDate={latestMeetingDate}
+          />
+        )}
       </div>
 
       <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:gap-x-4 sm:gap-y-1 text-xs text-muted-foreground border rounded-md px-3 py-2 bg-muted/30">

@@ -2,12 +2,35 @@
 
 import { useTransition } from "react";
 import { toast } from "sonner";
+import { format, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, Lock } from "lucide-react";
 import { ensureNextMonthPrograms } from "./actions";
 
-export function GenerateButton() {
+export function GenerateButton({
+  unlockDate,
+  latestMeetingDate,
+}: {
+  unlockDate: string | null;
+  latestMeetingDate: string | null;
+}) {
   const [pending, start] = useTransition();
+  const locked = unlockDate !== null;
+
+  if (locked) {
+    return (
+      <div className="text-right">
+        <Button variant="outline" disabled title={`Unlocks ${format(parseISO(unlockDate!), "MMM d, yyyy")}`}>
+          <Lock className="w-4 h-4" />
+          Generate next month
+        </Button>
+        <p className="text-[11px] text-muted-foreground mt-1 max-w-[16rem]">
+          Already scheduled through {format(parseISO(latestMeetingDate!), "MMM d, yyyy")}. Unlocks {format(parseISO(unlockDate!), "MMM d, yyyy")} (3 months before the last meeting).
+        </p>
+      </div>
+    );
+  }
+
   return (
     <Button
       variant="outline"
