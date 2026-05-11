@@ -158,7 +158,9 @@ function DashboardRowCard({ row, canEdit }: { row: DashboardRow; canEdit: boolea
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-baseline gap-2 flex-wrap">
-                <div className="font-medium">{format(date, "EEE, MMM d")}</div>
+                <div className="text-lg font-semibold tracking-tight">
+                  {format(date, "EEE, MMM d")}
+                </div>
                 <div className="text-xs text-muted-foreground">
                   {daysOut === 0 ? "Today" : `${daysOut} day${daysOut === 1 ? "" : "s"}`}
                 </div>
