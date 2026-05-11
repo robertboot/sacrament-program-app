@@ -20,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { weeksSinceLabel } from "@/lib/dates";
 import type { SpeakerCategory, Topic } from "@/lib/supabase/types";
-import { createTopic, updateTopic, deactivateTopic, bulkImportTopics } from "./actions";
+import { createTopic, updateTopic, deleteTopic, bulkImportTopics } from "./actions";
 
 type CategoryFilter = "all" | "first" | "long";
 
@@ -307,19 +307,26 @@ function TopicDialog({
           {topic && (
             <Button
               variant="outline"
-              onClick={() =>
+              className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950 mr-auto"
+              onClick={() => {
+                if (
+                  !confirm(
+                    `Delete "${topic.title}" permanently? Past programs that used this topic will show "—" in its place. To pause it without losing history, uncheck Active instead.`,
+                  )
+                )
+                  return;
                 start(async () => {
-                  const r = await deactivateTopic(topic.id);
+                  const r = await deleteTopic(topic.id);
                   if (r.error) toast.error(r.error);
                   else {
-                    toast.success("Topic deactivated.");
+                    toast.success("Topic deleted.");
                     onClose();
                   }
-                })
-              }
+                });
+              }}
               disabled={pending}
             >
-              Deactivate
+              Delete topic
             </Button>
           )}
           <Button onClick={onSubmit} disabled={pending || !title.trim() || !group}>

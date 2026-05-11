@@ -56,11 +56,18 @@ export async function updateTopic(id: string, input: TopicInput) {
   return { error: null };
 }
 
-export async function deactivateTopic(id: string) {
+/**
+ * Hard-delete a topic. The topic_id on past speaking_assignments cascades to
+ * NULL (per the FK), so historical programs that used this topic will show "—"
+ * in its place. To temporarily pause a topic from rotation without losing
+ * history, uncheck the Active checkbox instead.
+ */
+export async function deleteTopic(id: string) {
   const supabase = await createClient();
-  const { error } = await supabase.from("topics").update({ is_active: false }).eq("id", id);
+  const { error } = await supabase.from("topics").delete().eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/topics");
+  revalidatePath("/");
   return { error: null };
 }
 
