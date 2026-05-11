@@ -66,8 +66,8 @@ export default async function DashboardPage() {
         {isBishopric && <GenerateButton />}
       </div>
 
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground border rounded-md px-3 py-2 bg-muted/30">
-        <span className="font-medium uppercase tracking-wider mr-1">Legend:</span>
+      <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:gap-x-4 sm:gap-y-1 text-xs text-muted-foreground border rounded-md px-3 py-2 bg-muted/30">
+        <span className="font-medium uppercase tracking-wider sm:mr-1">Legend:</span>
         <span className="inline-flex items-center gap-1.5">
           <span className="inline-block w-3 h-3 rounded-full border border-zinc-300 dark:border-zinc-700 bg-zinc-900 dark:bg-zinc-100" />
           Not yet asked
@@ -103,7 +103,19 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       ) : (
-        <DashboardGroupedByMonth programs={programs ?? []} canEdit={isBishopric} />
+        <>
+          {programs && programs[0] && (
+            <section>
+              <div className="text-sm uppercase tracking-widest font-bold text-foreground mb-3">
+                Upcoming Sacrament Meeting
+              </div>
+              <DashboardRowCard row={programs[0]} canEdit={isBishopric} />
+            </section>
+          )}
+          {programs && programs.length > 1 && (
+            <DashboardGroupedByMonth programs={programs.slice(1)} canEdit={isBishopric} />
+          )}
+        </>
       )}
     </div>
   );
