@@ -128,7 +128,7 @@ function DashboardRowCard({ row, canEdit }: { row: DashboardRow; canEdit: boolea
 
   return (
     <Link href={`/programs/${row.id}/view`} className="block">
-      <Card className="hover:bg-accent/30 transition-colors py-0 border-l-4 border-l-zinc-300 dark:border-l-zinc-700 shadow-sm">
+      <Card className="py-0 border-l-4 border-l-zinc-300 dark:border-l-zinc-700 shadow-sm transition-all hover:bg-accent hover:border-l-blue-600 dark:hover:border-l-blue-400 hover:shadow-md hover:-translate-y-px">
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
