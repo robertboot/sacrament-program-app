@@ -128,27 +128,34 @@ export function ProgramRender({ data }: { data: ProgramRenderData }) {
         </tbody>
       </table>
 
-      {(data.briefReminders || data.briefReminderEvents.length > 0) && (
+      {data.briefReminders && (
         <section className="mb-4">
           <h2 className="font-semibold text-sm uppercase tracking-wide border-b pb-1 mb-1">
             Brief Reminders
           </h2>
           <div className="text-sm space-y-1 mt-1">
-            {/* Free-text reminders — one bullet per non-empty line. */}
-            {data.briefReminders &&
-              data.briefReminders
-                .split("\n")
-                .map((line) => line.trim())
-                .filter(Boolean)
-                .map((line, i) => (
-                  <div key={`txt-${i}`} className="flex gap-2">
-                    <span className="text-gray-500 select-none" aria-hidden="true">
-                      •
-                    </span>
-                    <div className="flex-1">{line}</div>
-                  </div>
-                ))}
-            {/* Event-flagged reminders */}
+            {data.briefReminders
+              .split("\n")
+              .map((line) => line.trim())
+              .filter(Boolean)
+              .map((line, i) => (
+                <div key={`txt-${i}`} className="flex gap-2">
+                  <span className="text-gray-500 select-none" aria-hidden="true">
+                    •
+                  </span>
+                  <div className="flex-1">{line}</div>
+                </div>
+              ))}
+          </div>
+        </section>
+      )}
+
+      {data.briefReminderEvents.length > 0 && (
+        <section className="mb-4">
+          <h2 className="font-semibold text-sm uppercase tracking-wide border-b pb-1 mb-1">
+            Upcoming Events
+          </h2>
+          <div className="text-sm space-y-1 mt-1">
             {data.briefReminderEvents.map((e, i) => (
               <div key={`ev-${i}`} className="flex gap-2">
                 <span className="text-gray-500 select-none" aria-hidden="true">
@@ -244,33 +251,6 @@ export function ProgramRender({ data }: { data: ProgramRenderData }) {
         Chorister: {data.chorister ?? "—"} &nbsp;·&nbsp; Organist: {data.organist ?? "—"}
       </section>
 
-      {data.events.length > 0 && (
-        <section className="mt-8 border-t pt-4">
-          <h2 className="font-semibold text-sm uppercase tracking-wide mb-2">
-            Upcoming Events
-          </h2>
-          <div className="text-sm space-y-1">
-            {data.events.map((e, i) => (
-              <div key={i} className="flex gap-2">
-                <span className="text-gray-500 select-none" aria-hidden="true">
-                  •
-                </span>
-                <div className="flex-1">
-                  <span className="font-medium">{e.title}</span>
-                  {e.event_date && (
-                    <span className="text-gray-600 ml-2">
-                      — {formatMeetingDate(e.event_date)}
-                    </span>
-                  )}
-                  {e.description && (
-                    <div className="text-gray-700 text-xs">{e.description}</div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
     </article>
     </>
