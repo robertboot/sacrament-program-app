@@ -78,12 +78,45 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-2">
-          {programs?.map((p) => (
-            <DashboardRowCard key={p.id} row={p} canEdit={isBishopric} />
-          ))}
-        </div>
+        <DashboardGroupedByMonth programs={programs ?? []} canEdit={isBishopric} />
       )}
+    </div>
+  );
+}
+
+function DashboardGroupedByMonth({
+  programs,
+  canEdit,
+}: {
+  programs: DashboardRow[];
+  canEdit: boolean;
+}) {
+  // Group by month so the weeks visually break apart instead of running together.
+  const groups: { label: string; rows: DashboardRow[] }[] = [];
+  for (const p of programs) {
+    const d = parseISO(p.meeting_date);
+    const label = format(d, "MMMM yyyy");
+    let g = groups[groups.length - 1];
+    if (!g || g.label !== label) {
+      g = { label, rows: [] };
+      groups.push(g);
+    }
+    g.rows.push(p);
+  }
+  return (
+    <div className="space-y-6">
+      {groups.map((g) => (
+        <section key={g.label}>
+          <div className="sticky top-14 z-10 -mx-4 px-4 py-2 bg-background/95 backdrop-blur border-b text-xs uppercase tracking-widest font-semibold text-muted-foreground">
+            {g.label}
+          </div>
+          <div className="mt-3 space-y-3">
+            {g.rows.map((p) => (
+              <DashboardRowCard key={p.id} row={p} canEdit={canEdit} />
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }
@@ -94,8 +127,8 @@ function DashboardRowCard({ row, canEdit }: { row: DashboardRow; canEdit: boolea
   const alerts = buildAlerts(row);
 
   return (
-    <Link href={`/programs/${row.id}/view`}>
-      <Card className="hover:bg-accent/30 transition-colors py-0">
+    <Link href={`/programs/${row.id}/view`} className="block">
+      <Card className="hover:bg-accent/30 transition-colors py-0 border-l-4 border-l-zinc-300 dark:border-l-zinc-700 shadow-sm">
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
