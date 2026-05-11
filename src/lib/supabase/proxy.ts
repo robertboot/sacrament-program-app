@@ -34,6 +34,8 @@ export async function updateSession(request: NextRequest) {
     path.startsWith("/c/") ||
     path.startsWith("/api/sms/") ||
     path.startsWith("/api/cron/") ||
+    path === "/privacy" ||
+    path === "/terms" ||
     path === "/favicon.ico";
 
   if (!user && !isAuthRoute && !isPublic) {
