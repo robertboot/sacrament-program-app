@@ -66,6 +66,31 @@ export default async function DashboardPage() {
         {isBishopric && <GenerateButton />}
       </div>
 
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground border rounded-md px-3 py-2 bg-muted/30">
+        <span className="font-medium uppercase tracking-wider mr-1">Legend:</span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block w-3 h-3 rounded-full border border-zinc-300 dark:border-zinc-700 bg-zinc-900 dark:bg-zinc-100" />
+          Not yet asked
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block w-3 h-3 rounded-full border border-zinc-300 dark:border-zinc-700 bg-yellow-500" />
+          Awaiting confirmation
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block w-3 h-3 rounded-full border border-zinc-300 dark:border-zinc-700 bg-emerald-500" />
+          Confirmed
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block w-3 h-3 rounded-full border border-zinc-300 dark:border-zinc-700 bg-red-500" />
+          Declined
+        </span>
+        {isBishopric && (
+          <span className="text-[10px] italic ml-auto">
+            tap a dot to advance the status
+          </span>
+        )}
+      </div>
+
       {programs && programs.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
@@ -182,8 +207,16 @@ function DashboardRowCard({ row, canEdit }: { row: DashboardRow; canEdit: boolea
                   return (
                     <div
                       key={slot}
-                      className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm"
+                      className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm"
                     >
+                      <DashboardStatusPill
+                        assignmentId={a.id}
+                        status={a.status}
+                        past={daysOut < 0}
+                        hasSpeaker={!!a.speaker_id || !!a.custom_speaker_name}
+                        canEdit={canEdit}
+                        dotOnly
+                      />
                       <span className="text-muted-foreground w-24 shrink-0">
                         {SLOT_LABELS[slot]}
                       </span>
@@ -198,15 +231,6 @@ function DashboardRowCard({ row, canEdit }: { row: DashboardRow; canEdit: boolea
                           — {topicTitle}
                         </span>
                       )}
-                      <div className="ml-auto">
-                        <DashboardStatusPill
-                          assignmentId={a.id}
-                          status={a.status}
-                          past={daysOut < 0}
-                          hasSpeaker={!!a.speaker_id || !!a.custom_speaker_name}
-                          canEdit={canEdit}
-                        />
-                      </div>
                     </div>
                   );
                 })}

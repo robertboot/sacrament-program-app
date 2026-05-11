@@ -28,12 +28,17 @@ export function DashboardStatusPill({
   past,
   hasSpeaker,
   canEdit,
+  dotOnly,
+  className,
 }: {
   assignmentId: string;
   status: AssignmentStatus;
   past?: boolean;
   hasSpeaker: boolean;
   canEdit: boolean;
+  /** Hide the status text — just render the colored dot. Used on mobile. */
+  dotOnly?: boolean;
+  className?: string;
 }) {
   const [pending, start] = useTransition();
 
@@ -41,12 +46,20 @@ export function DashboardStatusPill({
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs",
-          "bg-zinc-50 text-zinc-500 border-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-800",
+          "inline-flex items-center gap-1.5 rounded-full border",
+          dotOnly
+            ? "w-3 h-3 border-zinc-300 bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-700"
+            : "px-2 py-0.5 text-xs bg-zinc-50 text-zinc-500 border-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-800",
+          className,
         )}
+        title={dotOnly ? "Past" : undefined}
       >
-        <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
-        Past
+        {dotOnly ? null : (
+          <>
+            <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+            Past
+          </>
+        )}
       </span>
     );
   }
@@ -54,11 +67,44 @@ export function DashboardStatusPill({
   const tone = STATUS_TONE[status];
   const nextStatus = NEXT_STATUS[status];
   const canAdvance = canEdit && hasSpeaker && nextStatus !== null;
+  const label = STATUS_LABELS[status];
 
+  // Dot-only mode: render a small colored circle (clickable if canAdvance).
+  if (dotOnly) {
+    const dotClasses = cn(
+      "inline-block w-3 h-3 rounded-full border border-zinc-300 dark:border-zinc-700 shrink-0",
+      STATUS_DOT_CLASS[tone],
+      canAdvance && "cursor-pointer hover:scale-110 transition-transform",
+      pending && "opacity-50",
+      className,
+    );
+    if (!canAdvance) {
+      return <span className={dotClasses} title={label} />;
+    }
+    return (
+      <button
+        type="button"
+        disabled={pending}
+        title={`${label} · tap to mark ${STATUS_LABELS[nextStatus]}`}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          start(async () => {
+            const r = await updateAssignmentStatus(assignmentId, nextStatus);
+            if (r.error) toast.error(r.error);
+            else toast.success(`Marked "${STATUS_LABELS[nextStatus]}".`);
+          });
+        }}
+        className={dotClasses}
+      />
+    );
+  }
+
+  // Full pill mode (desktop).
   const pillContent = (
     <>
       <span className={cn("w-1.5 h-1.5 rounded-full", STATUS_DOT_CLASS[tone])} />
-      {STATUS_LABELS[status]}
+      {label}
     </>
   );
 
@@ -68,6 +114,7 @@ export function DashboardStatusPill({
         className={cn(
           "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs",
           STATUS_PILL_CLASS[tone],
+          className,
         )}
       >
         {pillContent}
@@ -81,7 +128,6 @@ export function DashboardStatusPill({
       disabled={pending}
       title={`Click to mark ${STATUS_LABELS[nextStatus]}`}
       onClick={(e) => {
-        // Don't follow the parent <Link>; we're handling the click here.
         e.preventDefault();
         e.stopPropagation();
         start(async () => {
@@ -94,6 +140,7 @@ export function DashboardStatusPill({
         "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs cursor-pointer transition-opacity hover:opacity-80",
         STATUS_PILL_CLASS[tone],
         pending && "opacity-50",
+        className,
       )}
     >
       {pillContent}
