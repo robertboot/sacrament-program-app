@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/recompute",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/ensure-programs",
+      "schedule": "0 8 1 * *"
+    }
+  ]
+}

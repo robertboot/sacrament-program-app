@@ -1,0 +1,135 @@
+import { notFound } from "next/navigation";
+import { createServiceClient } from "@/lib/supabase/server";
+import { ProgramRender, type ProgramRenderData } from "@/components/program-render";
+import { PrintStyles } from "@/components/print-styles";
+import { PrintTrigger } from "@/components/print-trigger";
+
+type PayloadAssignment = {
+  slot: ProgramRenderData["assignments"][number]["slot"];
+  length_minutes: number;
+  speaker_name: string | null;
+  is_stake_speaker: boolean | null;
+  topic_title: string | null;
+  topic_description: string | null;
+};
+
+type Payload = {
+  meeting_date: string;
+  presiding: string | null;
+  welcome_text: string | null;
+  brief_reminders: string | null;
+  invocation: string | null;
+  benediction: string | null;
+  chorister: string | null;
+  organist: string | null;
+  releases: string | null;
+  sustainings: string | null;
+  move_in_welcomes: string | null;
+  aaronic_sustainings: string | null;
+  baptism_confirmation: string | null;
+  baby_blessing: string | null;
+  stake_business: string | null;
+  ward_business_releases: boolean | null;
+  ward_business_sustainings: boolean | null;
+  ward_business_move_in_welcomes: boolean | null;
+  ward_business_aaronic_sustainings: boolean | null;
+  ward_business_baptism_confirmation: boolean | null;
+  ward_business_baby_blessing: boolean | null;
+  intermediate_hymn_text: string | null;
+  meeting_type: "regular" | "fast_sunday" | "no_services" | null;
+  meeting_type_label: string | null;
+  conducting: { full_name: string; bishopric_position: string | null } | null;
+  opening_hymn: { number: number; title: string } | null;
+  sacrament_hymn: { number: number; title: string } | null;
+  intermediate_hymn: { number: number; title: string } | null;
+  closing_hymn: { number: number; title: string } | null;
+  assignments: PayloadAssignment[] | null;
+  events: { title: string; description: string | null; event_date: string | null }[];
+  brief_reminder_events: {
+    title: string;
+    description: string | null;
+    event_date: string | null;
+  }[];
+  settings:
+    | {
+        branch_name: string;
+        unit_type?: "ward" | "branch";
+        ward_business_footer?: string | null;
+      }
+    | null;
+};
+
+export async function renderPublishedProgramByToken(token: string) {
+  const supabase = createServiceClient();
+  const { data, error } = await supabase.rpc("get_published_program", { p_token: token });
+  if (error || !data) notFound();
+  return renderPayload(data as Payload);
+}
+
+function renderPayload(p: Payload) {
+  const renderData: ProgramRenderData = {
+    branchName: p.settings?.branch_name ?? "Branch",
+    unitType: p.settings?.unit_type ?? "branch",
+    meetingType: p.meeting_type ?? "regular",
+    meetingTypeLabel: p.meeting_type_label ?? null,
+    wardBusinessFooter: p.settings?.ward_business_footer ?? null,
+    meetingDate: p.meeting_date,
+    presiding: p.presiding,
+    conducting: p.conducting,
+    welcomeText: p.welcome_text,
+    briefReminders: p.brief_reminders,
+    openingHymn: p.opening_hymn,
+    invocation: p.invocation,
+    wardBusiness: {
+      releases: { active: !!p.ward_business_releases, names: p.releases },
+      sustainings: { active: !!p.ward_business_sustainings, names: p.sustainings },
+      moveInWelcomes: {
+        active: !!p.ward_business_move_in_welcomes,
+        names: p.move_in_welcomes,
+      },
+      aaronicSustainings: {
+        active: !!p.ward_business_aaronic_sustainings,
+        names: p.aaronic_sustainings,
+      },
+      baptismConfirmation: {
+        active: !!p.ward_business_baptism_confirmation,
+        names: p.baptism_confirmation,
+      },
+      babyBlessing: {
+        active: !!p.ward_business_baby_blessing,
+        names: p.baby_blessing,
+      },
+    },
+    stakeBusiness: p.stake_business,
+    sacramentHymn: p.sacrament_hymn,
+    intermediateHymn: p.intermediate_hymn,
+    intermediateHymnText: p.intermediate_hymn_text,
+    closingHymn: p.closing_hymn,
+    benediction: p.benediction,
+    chorister: p.chorister,
+    organist: p.organist,
+    assignments: (p.assignments ?? []).map((a) => ({
+      slot: a.slot,
+      speakerName: a.speaker_name,
+      topicTitle: a.topic_title,
+      isStake: !!a.is_stake_speaker,
+      lengthMinutes: a.length_minutes,
+    })),
+    events: p.events ?? [],
+    briefReminderEvents: p.brief_reminder_events ?? [],
+  };
+
+  return (
+    <>
+      <PrintStyles />
+      <div className="bg-zinc-100 dark:bg-zinc-900 min-h-screen py-6">
+        <div className="max-w-[7.5in] mx-auto px-4 mb-4 flex items-center justify-end no-print">
+          <PrintTrigger />
+        </div>
+        <div className="bg-white shadow rounded">
+          <ProgramRender data={renderData} />
+        </div>
+      </div>
+    </>
+  );
+}
