@@ -8,6 +8,8 @@ import { SLOT_LABELS } from "@/lib/assignments";
 import type { AssignmentStatus, ProgramStatus, AssignmentSlot } from "@/lib/supabase/types";
 import { AlertTriangle, CircleAlert, Clock, RefreshCw } from "lucide-react";
 
+type Hymn = { number: number; title: string } | null;
+
 type DashboardRow = {
   id: string;
   meeting_date: string;
@@ -15,6 +17,11 @@ type DashboardRow = {
   meeting_type: "regular" | "fast_sunday" | "no_services";
   meeting_type_label: string | null;
   conducting: { full_name: string } | null;
+  opening_hymn: Hymn;
+  sacrament_hymn: Hymn;
+  intermediate_hymn: Hymn;
+  intermediate_hymn_text: string | null;
+  closing_hymn: Hymn;
   assignments: {
     id: string;
     slot: AssignmentSlot;
@@ -43,8 +50,12 @@ export default async function DashboardPage() {
   const { data: programs } = await supabase
     .from("programs")
     .select(
-      `id, meeting_date, status, meeting_type, meeting_type_label,
+      `id, meeting_date, status, meeting_type, meeting_type_label, intermediate_hymn_text,
        conducting:profiles!programs_conducting_id_fkey(full_name),
+       opening_hymn:hymns!programs_opening_hymn_id_fkey(number, title),
+       sacrament_hymn:hymns!programs_sacrament_hymn_id_fkey(number, title),
+       intermediate_hymn:hymns!programs_intermediate_hymn_id_fkey(number, title),
+       closing_hymn:hymns!programs_closing_hymn_id_fkey(number, title),
        assignments:speaking_assignments(id, slot, status, speaker_id, custom_speaker_name, custom_topic_text, asked_at,
          speaker:speakers(full_name),
          topic:topics(title))`,
@@ -109,7 +120,7 @@ export default async function DashboardPage() {
               <div className="text-sm uppercase tracking-widest font-bold text-foreground mb-3">
                 Upcoming Sacrament Meeting
               </div>
-              <DashboardRowCard row={programs[0]} canEdit={isBishopric} />
+              <DashboardRowCard row={programs[0]} canEdit={isBishopric} featured />
             </section>
           )}
           {programs && programs.length > 1 && (
@@ -158,7 +169,15 @@ function DashboardGroupedByMonth({
   );
 }
 
-function DashboardRowCard({ row, canEdit }: { row: DashboardRow; canEdit: boolean }) {
+function DashboardRowCard({
+  row,
+  canEdit,
+  featured = false,
+}: {
+  row: DashboardRow;
+  canEdit: boolean;
+  featured?: boolean;
+}) {
   const date = parseISO(row.meeting_date);
   const daysOut = differenceInDays(date, new Date());
   const alerts = buildAlerts(row);
@@ -250,6 +269,9 @@ function DashboardRowCard({ row, canEdit }: { row: DashboardRow; canEdit: boolea
                 })}
               </div>
               )}
+              {featured && row.meeting_type !== "no_services" && (
+                <DashboardHymns row={row} />
+              )}
             </div>
           </div>
           {alerts.length > 0 && (
@@ -268,6 +290,52 @@ function DashboardRowCard({ row, canEdit }: { row: DashboardRow; canEdit: boolea
         </CardContent>
       </Card>
     </Link>
+  );
+}
+
+function DashboardHymns({ row }: { row: DashboardRow }) {
+  const intermediateValue =
+    row.intermediate_hymn
+      ? `#${row.intermediate_hymn.number} — ${row.intermediate_hymn.title}`
+      : row.intermediate_hymn_text?.trim() || null;
+  const slots: { label: string; value: string | null }[] = [
+    {
+      label: "Opening",
+      value: row.opening_hymn
+        ? `#${row.opening_hymn.number} — ${row.opening_hymn.title}`
+        : null,
+    },
+    {
+      label: "Sacrament",
+      value: row.sacrament_hymn
+        ? `#${row.sacrament_hymn.number} — ${row.sacrament_hymn.title}`
+        : null,
+    },
+    { label: "Intermediate", value: intermediateValue },
+    {
+      label: "Closing",
+      value: row.closing_hymn
+        ? `#${row.closing_hymn.number} — ${row.closing_hymn.title}`
+        : null,
+    },
+  ];
+  return (
+    <div className="mt-4 pt-3 border-t space-y-1">
+      <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+        Hymns
+      </div>
+      {slots.map((s) => (
+        <div
+          key={s.label}
+          className="flex flex-wrap items-center gap-x-2 text-sm"
+        >
+          <span className="text-muted-foreground w-24 shrink-0">{s.label}</span>
+          <span className={s.value ? "font-medium" : "text-muted-foreground italic"}>
+            {s.value ?? "—"}
+          </span>
+        </div>
+      ))}
+    </div>
   );
 }
 
