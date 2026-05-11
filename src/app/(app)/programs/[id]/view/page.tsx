@@ -62,6 +62,9 @@ export default async function ViewProgramPage({
   // Only print events whose event_date is within 6 weeks of this meeting
   // (undated events still print as long as the display window matches).
   const eventHorizon = format(addDays(parseISO(program.meeting_date), 42), "yyyy-MM-dd");
+  // Brief-reminder events get a tighter 32-day window from this program's date
+  // so the upcoming list stays focused on what's actually coming up soon.
+  const briefHorizon = format(addDays(parseISO(program.meeting_date), 32), "yyyy-MM-dd");
   const [{ data: events }, { data: briefReminderEvents }] = await Promise.all([
     supabase
       .from("events")
@@ -71,14 +74,12 @@ export default async function ViewProgramPage({
       .gte("display_end", program.meeting_date)
       .or(`event_date.is.null,event_date.lte.${eventHorizon}`)
       .order("event_date", { ascending: true, nullsFirst: false }),
-    // Brief-reminder events show from now through the event date — ignore the
-    // display window so a flipped-on event auto-appears on every program until
-    // the day passes.
     supabase
       .from("events")
       .select("title, description, event_date")
       .eq("as_brief_reminder", true)
       .gte("event_date", program.meeting_date)
+      .lte("event_date", briefHorizon)
       .order("event_date", { ascending: true }),
   ]);
 
