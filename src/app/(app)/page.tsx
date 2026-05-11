@@ -3,6 +3,7 @@ import { addDays, addMonths, format, parseISO, differenceInDays } from "date-fns
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { DashboardStatusPill } from "@/components/dashboard-status-pill";
+import { DashboardInviteAction } from "@/components/dashboard-invite-action";
 import { GenerateButton } from "./generate-button";
 import { SLOT_LABELS } from "@/lib/assignments";
 import type { AssignmentStatus, ProgramStatus, AssignmentSlot } from "@/lib/supabase/types";
@@ -31,11 +32,13 @@ type DashboardRow = {
     slot: AssignmentSlot;
     status: AssignmentStatus;
     speaker_id: string | null;
-    speaker: { full_name: string } | null;
+    speaker: { full_name: string; phone: string | null } | null;
     custom_speaker_name: string | null;
     topic: { title: string } | null;
     custom_topic_text: string | null;
     asked_at: string | null;
+    invited_at: string | null;
+    confirmation_source: "self" | "manual" | null;
   }[];
 };
 
@@ -61,8 +64,8 @@ export default async function DashboardPage() {
        sacrament_hymn:hymns!programs_sacrament_hymn_id_fkey(number, title),
        intermediate_hymn:hymns!programs_intermediate_hymn_id_fkey(number, title),
        closing_hymn:hymns!programs_closing_hymn_id_fkey(number, title),
-       assignments:speaking_assignments(id, slot, status, speaker_id, custom_speaker_name, custom_topic_text, asked_at,
-         speaker:speakers(full_name),
+       assignments:speaking_assignments(id, slot, status, speaker_id, custom_speaker_name, custom_topic_text, asked_at, invited_at, confirmation_source,
+         speaker:speakers(full_name, phone),
          topic:topics(title))`,
     )
     .gte("meeting_date", today)
@@ -264,31 +267,42 @@ function DashboardRowCard({
                   const speakerName =
                     a.speaker?.full_name ?? a.custom_speaker_name ?? null;
                   return (
-                    <div
-                      key={slot}
-                      className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm"
-                    >
-                      <DashboardStatusPill
-                        assignmentId={a.id}
-                        status={a.status}
-                        past={daysOut < 0}
-                        hasSpeaker={!!a.speaker_id || !!a.custom_speaker_name}
-                        canEdit={canEdit}
-                        dotOnly
-                      />
-                      <span className="text-muted-foreground w-24 shrink-0">
-                        {SLOT_LABELS[slot]}
-                      </span>
-                      <span className="font-medium">{speakerName ?? "—"}</span>
-                      {isStake && (
-                        <span className="text-[10px] uppercase tracking-wider text-amber-700">
-                          Stake
+                    <div key={slot} className="space-y-0.5">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm">
+                        <DashboardStatusPill
+                          assignmentId={a.id}
+                          status={a.status}
+                          past={daysOut < 0}
+                          hasSpeaker={!!a.speaker_id || !!a.custom_speaker_name}
+                          canEdit={canEdit}
+                          dotOnly
+                        />
+                        <span className="text-muted-foreground w-24 shrink-0">
+                          {SLOT_LABELS[slot]}
                         </span>
-                      )}
-                      {topicTitle && (
-                        <span className="text-muted-foreground italic truncate">
-                          — {topicTitle}
-                        </span>
+                        <span className="font-medium">{speakerName ?? "—"}</span>
+                        {isStake && (
+                          <span className="text-[10px] uppercase tracking-wider text-amber-700">
+                            Stake
+                          </span>
+                        )}
+                        {topicTitle && (
+                          <span className="text-muted-foreground italic truncate">
+                            — {topicTitle}
+                          </span>
+                        )}
+                      </div>
+                      {canEdit && !isStake && a.speaker_id && speakerName && (
+                        <div className="ml-7 pl-1">
+                          <DashboardInviteAction
+                            assignmentId={a.id}
+                            speakerName={speakerName}
+                            speakerPhone={a.speaker?.phone ?? null}
+                            status={a.status}
+                            invitedAt={a.invited_at}
+                            confirmationSource={a.confirmation_source}
+                          />
+                        </div>
                       )}
                     </div>
                   );
