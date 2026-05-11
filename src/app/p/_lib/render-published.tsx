@@ -127,7 +127,7 @@ function renderPayload(p: Payload) {
           <PrintTrigger />
         </div>
         <div className="bg-white shadow rounded">
-          <ProgramRender data={renderData} />
+          <ProgramRender data={renderData} mode="public" />
         </div>
       </div>
     </>

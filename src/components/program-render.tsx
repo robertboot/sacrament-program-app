@@ -50,11 +50,24 @@ export type ProgramRenderData = {
   }[];
 };
 
-export function ProgramRender({ data }: { data: ProgramRenderData }) {
+export function ProgramRender({
+  data,
+  mode = "admin",
+}: {
+  data: ProgramRenderData;
+  /**
+   * "admin" shows everything: itemized branch + stake business, conducting
+   * verbiage for the sacrament. "public" is the bulletin view: a single
+   * "Branch and Stake Business" heading with no items, and the sacrament
+   * section trimmed to the hymn line + prayers link only.
+   */
+  mode?: "admin" | "public";
+}) {
   if (data.meetingType === "no_services") {
     return <NoServicesRender data={data} />;
   }
   const isFast = data.meetingType === "fast_sunday";
+  const isPublic = mode === "public";
 
   const intermediate =
     !isFast && (data.intermediateHymn ??
@@ -181,18 +194,28 @@ export function ProgramRender({ data }: { data: ProgramRenderData }) {
       <Row label="Opening Hymn" value={hymnLine(data.openingHymn)} />
       <Row label="Invocation" value={data.invocation?.trim() || "By Invitation"} />
 
-      <WardBusinessSection
-        data={data.wardBusiness}
-        unitType={data.unitType}
-        footer={data.wardBusinessFooter}
-      />
-      {data.stakeBusiness && (
+      {isPublic ? (
         <section className="my-3">
           <h2 className="font-semibold text-sm uppercase tracking-wide border-b pb-1 mb-1">
-            Stake Business
+            {unitLabels(data.unitType).unit} and Stake Business
           </h2>
-          <div className="whitespace-pre-wrap text-sm">{data.stakeBusiness}</div>
         </section>
+      ) : (
+        <>
+          <WardBusinessSection
+            data={data.wardBusiness}
+            unitType={data.unitType}
+            footer={data.wardBusinessFooter}
+          />
+          {data.stakeBusiness && (
+            <section className="my-3">
+              <h2 className="font-semibold text-sm uppercase tracking-wide border-b pb-1 mb-1">
+                Stake Business
+              </h2>
+              <div className="whitespace-pre-wrap text-sm">{data.stakeBusiness}</div>
+            </section>
+          )}
+        </>
       )}
 
       <section className="my-3">
@@ -204,11 +227,15 @@ export function ProgramRender({ data }: { data: ProgramRenderData }) {
             <SacramentPrayersButton />
           </div>
         </div>
-        <p className="text-sm leading-relaxed">
-          We will now prepare for the sacrament by singing{" "}
-          <span className="font-medium">{hymnLine(data.sacramentHymn)}</span>, after which the
-          sacrament will be passed to the congregation.
-        </p>
+        {isPublic ? (
+          <Row label="Sacrament Hymn" value={hymnLine(data.sacramentHymn)} />
+        ) : (
+          <p className="text-sm leading-relaxed">
+            We will now prepare for the sacrament by singing{" "}
+            <span className="font-medium">{hymnLine(data.sacramentHymn)}</span>, after which the
+            sacrament will be passed to the congregation.
+          </p>
+        )}
       </section>
 
       <section className="my-3">
