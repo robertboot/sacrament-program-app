@@ -48,7 +48,7 @@ export function DashboardStatusPill({
         className={cn(
           "inline-flex items-center gap-1.5 rounded-full border",
           dotOnly
-            ? "w-3 h-3 border-zinc-300 bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-700"
+            ? "w-5 h-5 border-2 border-zinc-200 bg-zinc-100 dark:bg-zinc-900 dark:border-zinc-700"
             : "px-2 py-0.5 text-xs bg-zinc-50 text-zinc-500 border-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-800",
           className,
         )}
@@ -69,17 +69,17 @@ export function DashboardStatusPill({
   const canAdvance = canEdit && hasSpeaker && nextStatus !== null;
   const label = STATUS_LABELS[status];
 
-  // Dot-only mode: render a small colored circle (clickable if canAdvance).
+  // Dot-only mode: render a colored circle. Visual stays compact, but the
+  // tap target is extended invisibly so the user can press anywhere in a
+  // ~44px halo without fat-fingering the underlying card link.
   if (dotOnly) {
-    const dotClasses = cn(
-      "inline-block w-3 h-3 rounded-full border border-zinc-300 dark:border-zinc-700 shrink-0",
+    const dotVisual = cn(
+      "inline-block w-5 h-5 rounded-full border-2 border-zinc-200 dark:border-zinc-700 shadow-sm shrink-0",
       STATUS_DOT_CLASS[tone],
-      canAdvance && "cursor-pointer hover:scale-110 transition-transform",
       pending && "opacity-50",
-      className,
     );
     if (!canAdvance) {
-      return <span className={dotClasses} title={label} />;
+      return <span className={cn(dotVisual, className)} title={label} />;
     }
     return (
       <button
@@ -95,8 +95,17 @@ export function DashboardStatusPill({
             else toast.success(`Marked "${STATUS_LABELS[nextStatus]}".`);
           });
         }}
-        className={dotClasses}
-      />
+        // Invisible 44x44 tap area centered on the dot; the visible disc is
+        // 20x20. Relative + a ::before halo so the surrounding layout doesn't
+        // shift when we expand the hit region.
+        className={cn(
+          "relative inline-flex items-center justify-center cursor-pointer transition-transform active:scale-95 hover:scale-110",
+          "before:absolute before:-inset-3 before:content-['']",
+          className,
+        )}
+      >
+        <span className={dotVisual} />
+      </button>
     );
   }
 

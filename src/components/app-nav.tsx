@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CalendarDays, Users, BookOpen, Megaphone, Settings, LogOut } from "lucide-react";
-import { BrandMark } from "@/components/brand-mark";
+import { BrandWordmark } from "@/components/brand-mark";
 import type { UserRole } from "@/lib/supabase/types";
 
 const ITEMS = [
@@ -54,12 +54,8 @@ export function AppNav({ role, fullName }: { role: UserRole; fullName: string })
         className="mx-auto max-w-5xl px-4 h-14 flex items-center gap-2"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
-        <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-          <BrandMark
-            className="w-7 h-7 text-primary-foreground"
-            accentClassName="text-[var(--brand-gold)]"
-          />
-          <span>Rameumptom</span>
+        <Link href="/" className="flex items-center text-primary-foreground">
+          <BrandWordmark className="text-primary-foreground" />
         </Link>
         <nav className="hidden md:flex items-center gap-1 ml-6 flex-1">
           {visibleItems.map((item) => {
