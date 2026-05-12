@@ -1,7 +1,14 @@
+import { BrandWordmark } from "@/components/brand-mark";
+
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <main className="flex-1 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-sm">{children}</div>
+    <main className="flex-1 flex flex-col items-center justify-center px-4 py-12">
+      <div className="w-full max-w-sm space-y-6">
+        <div className="flex justify-center text-primary">
+          <BrandWordmark className="scale-125" />
+        </div>
+        {children}
+      </div>
     </main>
   );
 }

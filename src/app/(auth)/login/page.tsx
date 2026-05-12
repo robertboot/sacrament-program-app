@@ -43,7 +43,7 @@ function LoginForm() {
     <Card>
       <CardHeader>
         <CardTitle>Sign in</CardTitle>
-        <CardDescription>Sacrament Program Planner</CardDescription>
+        <CardDescription>Welcome back.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="space-y-4">
