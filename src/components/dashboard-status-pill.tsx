@@ -48,7 +48,7 @@ export function DashboardStatusPill({
         className={cn(
           "inline-flex items-center gap-1.5 rounded-full border",
           dotOnly
-            ? "w-5 h-5 border-2 border-zinc-200 bg-zinc-100 dark:bg-zinc-900 dark:border-zinc-700"
+            ? "w-7 h-7 border-2 border-zinc-200 bg-zinc-100 dark:bg-zinc-900 dark:border-zinc-700"
             : "px-2 py-0.5 text-xs bg-zinc-50 text-zinc-500 border-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-800",
           className,
         )}
@@ -69,12 +69,12 @@ export function DashboardStatusPill({
   const canAdvance = canEdit && hasSpeaker && nextStatus !== null;
   const label = STATUS_LABELS[status];
 
-  // Dot-only mode: render a colored circle. Visual stays compact, but the
-  // tap target is extended invisibly so the user can press anywhere in a
-  // ~44px halo without fat-fingering the underlying card link.
+  // Dot-only mode: render a colored circle. 28px visible disc with an
+  // invisible halo extending the tap area to ~52px so iPhone fingers can
+  // hit it cleanly without grazing the underlying card link.
   if (dotOnly) {
     const dotVisual = cn(
-      "inline-block w-5 h-5 rounded-full border-2 border-zinc-200 dark:border-zinc-700 shadow-sm shrink-0",
+      "inline-block w-7 h-7 rounded-full border-2 border-zinc-200 dark:border-zinc-700 shadow-sm shrink-0",
       STATUS_DOT_CLASS[tone],
       pending && "opacity-50",
     );
@@ -95,9 +95,6 @@ export function DashboardStatusPill({
             else toast.success(`Marked "${STATUS_LABELS[nextStatus]}".`);
           });
         }}
-        // Invisible 44x44 tap area centered on the dot; the visible disc is
-        // 20x20. Relative + a ::before halo so the surrounding layout doesn't
-        // shift when we expand the hit region.
         className={cn(
           "relative inline-flex items-center justify-center cursor-pointer transition-transform active:scale-95 hover:scale-110",
           "before:absolute before:-inset-3 before:content-['']",

@@ -38,11 +38,11 @@ export function DashboardInviteAction({
       return (
         <Link
           href="/speakers"
-          className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-700 dark:text-blue-400 hover:underline"
           title={`${speakerName} has no phone number on file — open the Speakers page to add one`}
           onClick={(e) => e.stopPropagation()}
         >
-          <UserPen className="w-3 h-3" />
+          <UserPen className="w-4 h-4" />
           Add phone number to send invitation
         </Link>
       );
@@ -50,7 +50,7 @@ export function DashboardInviteAction({
     return (
       <button
         type="button"
-        className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950 rounded px-2 py-0.5 border border-emerald-200 dark:border-emerald-900 disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-800 dark:text-emerald-200 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950 dark:hover:bg-emerald-900 rounded-md px-3 py-2 border border-emerald-200 dark:border-emerald-900 shadow-sm disabled:opacity-60"
         disabled={pending}
         onClick={(e) => {
           e.preventDefault();
@@ -62,7 +62,7 @@ export function DashboardInviteAction({
           });
         }}
       >
-        <MessageSquare className="w-3 h-3" />
+        <MessageSquare className="w-4 h-4" />
         {pending ? "Sending…" : "Send invitation"}
       </button>
     );
@@ -73,7 +73,7 @@ export function DashboardInviteAction({
       ? `Invited ${formatDistanceToNow(new Date(invitedAt), { addSuffix: true })}`
       : "Invited";
     return (
-      <span className="text-[11px] italic text-muted-foreground">
+      <span className="text-sm italic text-muted-foreground">
         {when} — awaiting reply
       </span>
     );
@@ -84,8 +84,8 @@ export function DashboardInviteAction({
       <span
         className={
           confirmationSource === "self"
-            ? "text-[11px] italic text-emerald-700 dark:text-emerald-300"
-            : "text-[11px] italic text-muted-foreground"
+            ? "text-sm italic text-emerald-700 dark:text-emerald-300"
+            : "text-sm italic text-muted-foreground"
         }
       >
         {confirmationSource === "self" ? "Self-confirmed via text" : "Marked confirmed"}
@@ -95,7 +95,7 @@ export function DashboardInviteAction({
 
   if (status === "declined") {
     return (
-      <span className="text-[11px] italic text-red-600 dark:text-red-400">
+      <span className="text-sm italic text-red-600 dark:text-red-400">
         {confirmationSource === "self" ? "Declined via text" : "Marked declined"}
       </span>
     );

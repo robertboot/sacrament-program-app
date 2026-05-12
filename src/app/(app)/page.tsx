@@ -228,12 +228,12 @@ function DashboardRowCard({
                     : `${row.meeting_type_label ?? "No services"} — no sacrament meeting.`}
                 </div>
               ) : (
-              <div className="mt-3 space-y-1.5">
+              <div className="mt-4 space-y-4">
                 {(["first", "second", "concluding"] as AssignmentSlot[]).map((slot) => {
                   const a = row.assignments.find((x) => x.slot === slot);
                   if (!a)
                     return (
-                      <div key={slot} className="text-sm text-muted-foreground">
+                      <div key={slot} className="text-base text-muted-foreground">
                         {SLOT_LABELS[slot]} — <span className="italic">no slot</span>
                       </div>
                     );
@@ -245,8 +245,8 @@ function DashboardRowCard({
                   const speakerName =
                     a.speaker?.full_name ?? a.custom_speaker_name ?? null;
                   return (
-                    <div key={slot} className="space-y-0.5">
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm">
+                    <div key={slot} className="space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-base">
                         <DashboardStatusPill
                           assignmentId={a.id}
                           status={a.status}
@@ -255,10 +255,10 @@ function DashboardRowCard({
                           canEdit={canEdit}
                           dotOnly
                         />
-                        <span className="text-muted-foreground w-24 shrink-0">
+                        <span className="text-muted-foreground w-28 shrink-0 text-sm">
                           {SLOT_LABELS[slot]}
                         </span>
-                        <span className="font-medium">{speakerName ?? "—"}</span>
+                        <span className="font-semibold">{speakerName ?? "—"}</span>
                         {isStake && (
                           <span className="text-[10px] uppercase tracking-wider text-amber-700">
                             Stake
@@ -271,7 +271,7 @@ function DashboardRowCard({
                         )}
                       </div>
                       {canEdit && !isStake && a.speaker_id && speakerName && (
-                        <div className="ml-7 pl-1">
+                        <div className="ml-9 pl-1">
                           <DashboardInviteAction
                             assignmentId={a.id}
                             speakerName={speakerName}
