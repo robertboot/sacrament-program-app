@@ -403,6 +403,7 @@ function SpeakerDialog({
   if (speaker?.id !== trackedId) {
     setTrackedId(speaker?.id);
     setFullName(speaker?.full_name ?? "");
+    setPhone(speaker?.phone ?? "");
     setNotes(speaker?.notes ?? "");
     setIsActive(speaker?.is_active ?? true);
     setCats(speaker?.categories ?? []);
