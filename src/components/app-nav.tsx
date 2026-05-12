@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CalendarDays, Users, BookOpen, Megaphone, Settings, LogOut, Menu } from "lucide-react";
+import { CalendarDays, Users, BookOpen, Megaphone, Settings, LogOut } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import type { UserRole } from "@/lib/supabase/types";
 
@@ -23,6 +23,13 @@ const ITEMS = [
   { href: "/events", label: "Events", icon: Megaphone, bishopricOnly: true },
   { href: "/settings", label: "Settings", icon: Settings, bishopricOnly: true },
 ];
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
 export function AppNav({ role, fullName }: { role: UserRole; fullName: string }) {
   const path = usePathname();
@@ -69,37 +76,19 @@ export function AppNav({ role, fullName }: { role: UserRole; fullName: string })
         <div className="ml-auto flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger
-              className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "md:hidden")}
+              className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
             >
-              <Menu className="w-5 h-5" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {visibleItems.map((item) => (
-                <DropdownMenuItem
-                  key={item.href}
-                  onClick={() => router.push(item.href)}
-                >
-                  {item.label}
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={signOut}>
-                <LogOut className="w-4 h-4 mr-2" /> Sign out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              className={cn(
-                buttonVariants({ variant: "ghost", size: "sm" }),
-                "hidden md:inline-flex",
-              )}
-            >
-              {fullName}
+              <span className="hidden md:inline">{fullName}</span>
+              <span
+                className="md:hidden inline-flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-semibold"
+                aria-hidden
+              >
+                {initials(fullName)}
+              </span>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem disabled className="text-xs text-muted-foreground">
-                {role === "bishopric" ? "Leadership" : "Chorister"}
+                {fullName} · {role === "bishopric" ? "Leadership" : "Chorister"}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={signOut}>

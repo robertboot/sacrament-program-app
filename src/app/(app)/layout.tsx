@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AppNav } from "@/components/app-nav";
+import { MobileTabBar } from "@/components/mobile-tab-bar";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -20,7 +21,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <>
       <AppNav role={profile.role} fullName={profile.full_name} />
-      <main className="flex-1 mx-auto max-w-5xl w-full px-4 py-6">{children}</main>
+      <main className="flex-1 mx-auto max-w-5xl w-full px-4 py-6 pb-24 md:pb-6">
+        {children}
+      </main>
+      <MobileTabBar role={profile.role} />
     </>
   );
 }
