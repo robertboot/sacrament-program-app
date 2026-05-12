@@ -161,19 +161,15 @@ export default async function ViewProgramPage({
             <h1 className="text-xs uppercase tracking-widest font-bold text-muted-foreground">
               Program Preview
             </h1>
-            <Badge variant="outline">
-              {program.status === "published" ? "Published" : "Draft"}
-            </Badge>
+            {program.status === "published" ? (
+              <Badge className="bg-emerald-600 text-white hover:bg-emerald-600 border-transparent">
+                Published
+              </Badge>
+            ) : (
+              <Badge variant="outline">Draft</Badge>
+            )}
           </div>
           <div className="grid grid-cols-3 gap-2">
-            <Link
-              href={`/programs/${id}`}
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-            >
-              <Pencil className="w-4 h-4" />
-              Edit
-            </Link>
-            <PrintTrigger variant="outline" size="sm" />
             <Link
               href="/"
               className={cn(buttonVariants({ variant: "default", size: "sm" }))}
@@ -182,6 +178,14 @@ export default async function ViewProgramPage({
               <ArrowLeft className="w-4 h-4" />
               Done
             </Link>
+            <Link
+              href={`/programs/${id}`}
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            >
+              <Pencil className="w-4 h-4" />
+              Edit
+            </Link>
+            <PrintTrigger variant="outline" size="sm" />
           </div>
         </div>
         <div className="bg-white shadow rounded">
