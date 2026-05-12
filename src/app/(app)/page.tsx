@@ -235,38 +235,43 @@ function DashboardRowCard({
                   const speakerName =
                     a.speaker?.full_name ?? a.custom_speaker_name ?? null;
                   return (
-                    <div key={slot} className="space-y-1.5">
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-base">
-                        <DashboardStatusPill
-                          assignmentId={a.id}
-                          status={a.status}
-                          past={daysOut < 0}
-                          hasSpeaker={!!a.speaker_id || !!a.custom_speaker_name}
-                          canEdit={canEdit}
-                          dotOnly
-                        />
-                        <span className="font-semibold">{speakerName ?? "—"}</span>
-                        <span className="text-sm text-muted-foreground">
-                          {SLOT_LABELS[slot]}
-                        </span>
-                        {isStake && (
-                          <span className="text-[10px] uppercase tracking-wider text-amber-700">
-                            Stake
+                    <div key={slot} className="flex items-start gap-x-3">
+                      <DashboardStatusPill
+                        assignmentId={a.id}
+                        status={a.status}
+                        past={daysOut < 0}
+                        hasSpeaker={!!a.speaker_id || !!a.custom_speaker_name}
+                        canEdit={canEdit}
+                        dotOnly
+                        className="mt-0.5"
+                      />
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-center flex-wrap gap-x-2">
+                          <span className="text-base font-semibold leading-tight">
+                            {speakerName ?? "—"}
                           </span>
+                          {isStake && (
+                            <span className="text-[10px] uppercase tracking-wider text-amber-700">
+                              Stake
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-sm text-muted-foreground leading-tight">
+                          {SLOT_LABELS[slot]}
+                        </div>
+                        {canEdit && !isStake && a.speaker_id && speakerName && (
+                          <div className="pt-1">
+                            <DashboardInviteAction
+                              assignmentId={a.id}
+                              speakerName={speakerName}
+                              speakerPhone={a.speaker?.phone ?? null}
+                              status={a.status}
+                              invitedAt={a.invited_at}
+                              confirmationSource={a.confirmation_source}
+                            />
+                          </div>
                         )}
                       </div>
-                      {canEdit && !isStake && a.speaker_id && speakerName && (
-                        <div className="ml-9 pl-1">
-                          <DashboardInviteAction
-                            assignmentId={a.id}
-                            speakerName={speakerName}
-                            speakerPhone={a.speaker?.phone ?? null}
-                            status={a.status}
-                            invitedAt={a.invited_at}
-                            confirmationSource={a.confirmation_source}
-                          />
-                        </div>
-                      )}
                     </div>
                   );
                 })}
