@@ -367,10 +367,8 @@ function DashboardHymns({ row }: { row: DashboardRow }) {
     },
   ];
   return (
-    <div className="mt-4 pt-3 border-t space-y-1">
-      <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-        Hymns
-      </div>
+    <div className="mt-5 pt-4 border-t space-y-2">
+      <div className="text-lg font-semibold tracking-tight">Hymns</div>
       {slots.map((s) => (
         <div
           key={s.label}

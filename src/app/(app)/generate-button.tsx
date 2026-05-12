@@ -3,7 +3,6 @@
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
-import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles, Lock } from "lucide-react";
 import { ensureNextMonthPrograms } from "./actions";
 
@@ -20,11 +19,16 @@ export function GenerateButton({
   if (locked) {
     return (
       <div className="text-right">
-        <Button variant="outline" disabled title={`Unlocks ${format(parseISO(unlockDate!), "MMM d, yyyy")}`}>
+        <button
+          type="button"
+          disabled
+          title={`Unlocks ${format(parseISO(unlockDate!), "MMM d, yyyy")}`}
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-md border border-zinc-300 bg-zinc-100 text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500 cursor-not-allowed"
+        >
           <Lock className="w-4 h-4" />
           Generate next month
-        </Button>
-        <p className="text-[11px] text-muted-foreground mt-1 max-w-[16rem]">
+        </button>
+        <p className="text-xs text-muted-foreground mt-1 max-w-[16rem]">
           Already scheduled through {format(parseISO(latestMeetingDate!), "MMM d, yyyy")}. Unlocks {format(parseISO(unlockDate!), "MMM d, yyyy")} (3 months before the last meeting).
         </p>
       </div>
@@ -32,8 +36,8 @@ export function GenerateButton({
   }
 
   return (
-    <Button
-      variant="outline"
+    <button
+      type="button"
       onClick={() =>
         start(async () => {
           const r = await ensureNextMonthPrograms();
@@ -47,6 +51,7 @@ export function GenerateButton({
         })
       }
       disabled={pending}
+      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-md bg-[var(--brand-gold)] text-[var(--brand-gold-foreground)] shadow-sm hover:brightness-105 active:brightness-95 disabled:opacity-60 transition"
     >
       {pending ? (
         <Loader2 className="w-4 h-4 animate-spin" />
@@ -54,6 +59,6 @@ export function GenerateButton({
         <Sparkles className="w-4 h-4" />
       )}
       Generate next month
-    </Button>
+    </button>
   );
 }
