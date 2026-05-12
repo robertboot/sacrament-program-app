@@ -35,6 +35,10 @@ export function AppNav({ role, fullName }: { role: UserRole; fullName: string })
   const path = usePathname();
   const router = useRouter();
 
+  // The program preview page has its own focused header (Edit / Print / Done).
+  // Hide the global chrome there so the bulletin gets the full screen.
+  if (path && /^\/programs\/[^/]+\/view$/.test(path)) return null;
+
   async function signOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -45,11 +49,14 @@ export function AppNav({ role, fullName }: { role: UserRole; fullName: string })
   const visibleItems = ITEMS.filter((i) => role === "bishopric" || !i.bishopricOnly);
 
   return (
-    <header className="border-b sticky top-0 bg-background z-30">
-      <div className="mx-auto max-w-5xl px-4 h-14 flex items-center gap-2">
+    <header className="sticky top-0 bg-primary text-primary-foreground z-30 shadow-sm">
+      <div
+        className="mx-auto max-w-5xl px-4 h-14 flex items-center gap-2"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
           <BrandMark
-            className="w-7 h-7 text-primary"
+            className="w-7 h-7 text-primary-foreground"
             accentClassName="text-[var(--brand-gold)]"
           />
           <span>Rameumptom</span>
@@ -63,8 +70,10 @@ export function AppNav({ role, fullName }: { role: UserRole; fullName: string })
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm",
-                  active ? "bg-accent text-accent-foreground" : "hover:bg-accent/50",
+                  "inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors",
+                  active
+                    ? "bg-white/15 text-primary-foreground"
+                    : "text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground",
                 )}
               >
                 <Icon className="w-4 h-4" />
@@ -76,11 +85,14 @@ export function AppNav({ role, fullName }: { role: UserRole; fullName: string })
         <div className="ml-auto flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger
-              className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "sm" }),
+                "text-primary-foreground hover:bg-white/10 hover:text-primary-foreground",
+              )}
             >
               <span className="hidden md:inline">{fullName}</span>
               <span
-                className="md:hidden inline-flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-semibold"
+                className="md:hidden inline-flex items-center justify-center w-7 h-7 rounded-full bg-[var(--brand-gold)] text-[var(--brand-gold-foreground)] text-xs font-semibold"
                 aria-hidden
               >
                 {initials(fullName)}

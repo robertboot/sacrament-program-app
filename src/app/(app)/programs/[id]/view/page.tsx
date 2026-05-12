@@ -156,19 +156,16 @@ export default async function ViewProgramPage({
     <>
       <PrintStyles />
       <div className="bg-zinc-100 dark:bg-zinc-900 min-h-screen py-6">
-        <div className="max-w-[7.5in] mx-auto px-4 mb-4 flex items-center justify-between gap-2 flex-wrap no-print">
-          <div className="flex items-center gap-2">
-            <Link
-              href="/"
-              className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-              title="Back to dashboard"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Dashboard
-            </Link>
-            <Badge variant="outline">{program.status === "published" ? "Published" : "Draft"}</Badge>
+        <div className="max-w-[7.5in] mx-auto px-4 mb-4 no-print">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <h1 className="text-xs uppercase tracking-widest font-bold text-muted-foreground">
+              Program Preview
+            </h1>
+            <Badge variant="outline">
+              {program.status === "published" ? "Published" : "Draft"}
+            </Badge>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <Link
               href={`/programs/${id}`}
               className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
@@ -176,7 +173,15 @@ export default async function ViewProgramPage({
               <Pencil className="w-4 h-4" />
               Edit
             </Link>
-            <PrintTrigger />
+            <PrintTrigger variant="outline" size="sm" />
+            <Link
+              href="/"
+              className={cn(buttonVariants({ variant: "default", size: "sm" }))}
+              title="Back to dashboard"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Done
+            </Link>
           </div>
         </div>
         <div className="bg-white shadow rounded">

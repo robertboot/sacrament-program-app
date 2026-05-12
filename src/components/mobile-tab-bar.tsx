@@ -23,6 +23,9 @@ export function MobileTabBar({ role }: { role: UserRole }) {
   const path = usePathname();
   const visible = ITEMS.filter((i) => role === "bishopric" || !i.bishopricOnly);
 
+  // Hide on the program preview page so the bulletin fills the screen.
+  if (path && /^\/programs\/[^/]+\/view$/.test(path)) return null;
+
   return (
     <nav
       aria-label="Primary"
