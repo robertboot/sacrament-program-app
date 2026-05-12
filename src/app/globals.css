@@ -46,27 +46,34 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --color-brand-gold: var(--brand-gold);
+  --color-brand-gold-foreground: var(--brand-gold-foreground);
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* Background: warm off-white instead of dead white for a reverent feel. */
+  --background: oklch(0.99 0.005 80);
+  --foreground: oklch(0.18 0.02 245);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.18 0.02 245);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.18 0.02 245);
+  /* Primary: deep navy — the Rameumptom brand color. */
+  --primary: oklch(0.32 0.07 248);
+  --primary-foreground: oklch(0.98 0.005 80);
+  --secondary: oklch(0.96 0.008 80);
+  --secondary-foreground: oklch(0.32 0.07 248);
+  --muted: oklch(0.96 0.008 80);
+  --muted-foreground: oklch(0.5 0.01 245);
+  --accent: oklch(0.95 0.01 80);
+  --accent-foreground: oklch(0.32 0.07 248);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: oklch(0.9 0.01 80);
+  --input: oklch(0.9 0.01 80);
+  --ring: oklch(0.32 0.07 248);
+  /* Brand gold — used sparingly on accents (logo book, key CTAs, today). */
+  --brand-gold: oklch(0.72 0.13 78);
+  --brand-gold-foreground: oklch(0.2 0.05 248);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -84,24 +91,26 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: oklch(0.16 0.02 248);
+  --foreground: oklch(0.96 0.005 80);
+  --card: oklch(0.22 0.025 248);
+  --card-foreground: oklch(0.96 0.005 80);
+  --popover: oklch(0.22 0.025 248);
+  --popover-foreground: oklch(0.96 0.005 80);
+  --primary: oklch(0.72 0.13 78);
+  --primary-foreground: oklch(0.18 0.04 248);
+  --secondary: oklch(0.28 0.03 248);
+  --secondary-foreground: oklch(0.96 0.005 80);
+  --muted: oklch(0.28 0.03 248);
+  --muted-foreground: oklch(0.72 0.02 80);
+  --accent: oklch(0.32 0.04 248);
+  --accent-foreground: oklch(0.96 0.005 80);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --ring: oklch(0.72 0.13 78);
+  --brand-gold: oklch(0.78 0.13 78);
+  --brand-gold-foreground: oklch(0.16 0.02 248);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);

@@ -1,11 +1,11 @@
 {
-  "name": "Sacrament Program Planner",
-  "short_name": "Sacrament",
-  "description": "Plan and share sacrament meeting programs",
+  "name": "Rameumptom",
+  "short_name": "Rameumptom",
+  "description": "Plan and share sacrament meeting programs from the high stand.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#1e3a8a",
+  "background_color": "#1e3a5f",
+  "theme_color": "#1e3a5f",
   "orientation": "portrait",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },

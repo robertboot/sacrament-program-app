@@ -15,13 +15,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sacrament Program Planner",
-  description: "Plan and share sacrament meeting programs",
+  title: "Rameumptom",
+  description: "Plan and share sacrament meeting programs from the high stand.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Sacrament",
+    title: "Rameumptom",
   },
   icons: {
     icon: [
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport = {
-  themeColor: "#1e3a8a",
+  themeColor: "#1e3a5f",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
