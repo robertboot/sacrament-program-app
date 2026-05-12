@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { DashboardStatusPill } from "@/components/dashboard-status-pill";
 import { DashboardInviteAction } from "@/components/dashboard-invite-action";
+import { DashboardLegend } from "@/components/dashboard-legend";
 import { GenerateButton } from "./generate-button";
 import { SLOT_LABELS } from "@/lib/assignments";
 import type { AssignmentStatus, ProgramStatus, AssignmentSlot } from "@/lib/supabase/types";
@@ -105,30 +106,7 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:gap-x-4 sm:gap-y-1 text-xs text-muted-foreground border rounded-md px-3 py-2 bg-muted/30">
-        <span className="font-medium uppercase tracking-wider sm:mr-1">Legend:</span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="inline-block w-3 h-3 rounded-full border border-zinc-300 dark:border-zinc-700 bg-zinc-900 dark:bg-zinc-100" />
-          Not yet asked
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="inline-block w-3 h-3 rounded-full border border-zinc-300 dark:border-zinc-700 bg-yellow-500" />
-          Awaiting confirmation
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="inline-block w-3 h-3 rounded-full border border-zinc-300 dark:border-zinc-700 bg-emerald-500" />
-          Confirmed
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="inline-block w-3 h-3 rounded-full border border-zinc-300 dark:border-zinc-700 bg-red-500" />
-          Declined
-        </span>
-        {isBishopric && (
-          <span className="text-[10px] italic ml-auto">
-            tap a dot to advance the status
-          </span>
-        )}
-      </div>
+      <DashboardLegend canEdit={isBishopric} />
 
       {programs && programs.length === 0 ? (
         <Card>
@@ -358,19 +336,17 @@ function FeaturedAlerts({ row }: { row: DashboardRow }) {
 
   if (issues.length === 0) return null;
   return (
-    <Card className="border-red-300 bg-red-50 dark:border-red-900 dark:bg-red-950">
-      <CardContent className="p-4 space-y-1">
-        <div className="text-[10px] uppercase tracking-wider font-bold text-red-700 dark:text-red-300 flex items-center gap-1">
-          <AlertTriangle className="w-3.5 h-3.5" />
-          Alerts
-        </div>
-        <ul className="text-sm text-red-800 dark:text-red-200 list-disc pl-5 space-y-0.5">
-          {issues.map((i) => (
-            <li key={i}>{i}</li>
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
+    <div className="px-1 space-y-0.5">
+      <div className="text-[10px] uppercase tracking-wider font-bold text-red-700 dark:text-red-400 flex items-center gap-1">
+        <AlertTriangle className="w-3.5 h-3.5" />
+        Alerts
+      </div>
+      <ul className="text-sm text-red-700 dark:text-red-300 space-y-0.5">
+        {issues.map((i) => (
+          <li key={i}>• {i}</li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

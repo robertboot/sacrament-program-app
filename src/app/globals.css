@@ -51,8 +51,8 @@
 }
 
 :root {
-  /* Background: warm off-white instead of dead white for a reverent feel. */
-  --background: oklch(0.99 0.005 80);
+  /* Background: warm parchment — slightly darker than white so cards pop. */
+  --background: oklch(0.94 0.012 80);
   --foreground: oklch(0.18 0.02 245);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.18 0.02 245);

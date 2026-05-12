@@ -29,7 +29,7 @@ export function MobileTabBar({ role }: { role: UserRole }) {
   return (
     <nav
       aria-label="Primary"
-      className="md:hidden fixed bottom-0 inset-x-0 z-30 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 no-print"
+      className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-primary text-primary-foreground shadow-[0_-2px_8px_rgba(0,0,0,0.08)] no-print"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <ul className="flex items-stretch justify-around">
@@ -42,10 +42,10 @@ export function MobileTabBar({ role }: { role: UserRole }) {
               <Link
                 href={item.href}
                 className={cn(
-                  "relative flex flex-col items-center justify-center gap-0.5 py-2 px-1 text-[10px] font-medium transition-colors min-h-[3.5rem]",
+                  "relative flex flex-col items-center justify-center gap-0.5 py-2 px-1 text-[10px] font-medium transition-all min-h-[3.5rem]",
                   active
-                    ? "text-primary"
-                    : "text-muted-foreground hover:text-foreground",
+                    ? "text-[var(--brand-gold)]"
+                    : "text-primary-foreground/70 hover:text-primary-foreground",
                 )}
                 aria-current={active ? "page" : undefined}
               >
@@ -58,7 +58,7 @@ export function MobileTabBar({ role }: { role: UserRole }) {
                 />
                 <span className="tracking-tight">{item.label}</span>
                 {active && (
-                  <span className="absolute top-0 h-0.5 w-8 rounded-b-full bg-primary" />
+                  <span className="absolute top-0 h-0.5 w-10 rounded-b-full bg-[var(--brand-gold)]" />
                 )}
               </Link>
             </li>
