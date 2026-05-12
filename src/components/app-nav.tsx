@@ -12,12 +12,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CalendarDays, Users, BookOpen, Megaphone, Settings, LogOut } from "lucide-react";
+import { CalendarDays, Users, BookOpen, Megaphone, Settings, LogOut, Home } from "lucide-react";
 import { BrandWordmark } from "@/components/brand-mark";
 import type { UserRole } from "@/lib/supabase/types";
 
 const ITEMS = [
-  { href: "/", label: "Dashboard", icon: CalendarDays, bishopricOnly: false },
+  { href: "/home", label: "Home", icon: Home, bishopricOnly: false },
+  { href: "/", label: "Sundays", icon: CalendarDays, bishopricOnly: false },
   { href: "/speakers", label: "Speakers", icon: Users, bishopricOnly: true },
   { href: "/topics", label: "Topics", icon: BookOpen, bishopricOnly: true },
   { href: "/events", label: "Events", icon: Megaphone, bishopricOnly: true },

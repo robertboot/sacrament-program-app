@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { CalendarDays, Users, BookOpen, Megaphone, Settings } from "lucide-react";
+import { CalendarDays, Users, BookOpen, Megaphone, Settings, Home } from "lucide-react";
 import type { UserRole } from "@/lib/supabase/types";
 
 const ITEMS = [
+  { href: "/home", label: "Home", icon: Home, bishopricOnly: false },
   { href: "/", label: "Sundays", icon: CalendarDays, bishopricOnly: false },
   { href: "/speakers", label: "Speakers", icon: Users, bishopricOnly: true },
   { href: "/topics", label: "Topics", icon: BookOpen, bishopricOnly: true },

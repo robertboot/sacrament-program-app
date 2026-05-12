@@ -61,8 +61,28 @@ export function BrandMark({
 }
 
 /**
+ * Vertical logo lockup: large pulpit mark above the wordmark. Used on the
+ * splash / home page and the auth screens as a larger, centered identity.
+ */
+export function BrandStack({ className }: { className?: string }) {
+  return (
+    <div className={cn("inline-flex flex-col items-center gap-3", className)}>
+      <BrandMark
+        className="w-24 h-24 text-current"
+        accentClassName="text-[var(--brand-gold)]"
+      />
+      <span className="font-semibold tracking-tight text-3xl leading-none">
+        Ram
+        <span className="text-[var(--brand-gold)]">eum</span>
+        ptom
+      </span>
+    </div>
+  );
+}
+
+/**
  * Horizontal logo lockup: pulpit mark + "Rameumptom" wordmark with the
- * accent "eu" in the brand gold. Used in the top header.
+ * accent "eum" in the brand gold. Used in the top header.
  */
 export function BrandWordmark({ className }: { className?: string }) {
   return (
@@ -73,8 +93,8 @@ export function BrandWordmark({ className }: { className?: string }) {
       />
       <span className="font-semibold tracking-tight text-lg leading-none">
         Ram
-        <span className="text-[var(--brand-gold)]">eu</span>
-        mptom
+        <span className="text-[var(--brand-gold)]">eum</span>
+        ptom
       </span>
     </span>
   );
