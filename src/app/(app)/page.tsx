@@ -91,20 +91,14 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Upcoming Sundays</h1>
-          <p className="text-sm text-muted-foreground">
-            {programs?.length ?? 0} program{programs?.length === 1 ? "" : "s"} in the next 13 weeks.
-          </p>
-        </div>
-        {isBishopric && (
+      {isBishopric && (
+        <div className="flex justify-end">
           <GenerateButton
             unlockDate={generateUnlockDate}
             latestMeetingDate={latestMeetingDate}
           />
-        )}
-      </div>
+        </div>
+      )}
 
       <DashboardLegend canEdit={isBishopric} />
 
@@ -124,7 +118,7 @@ export default async function DashboardPage() {
           {programs && programs[0] && (
             <section className="space-y-3">
               <div className="text-sm uppercase tracking-widest font-bold text-foreground mb-3">
-                Upcoming Sacrament Meeting
+                Upcoming Meetings
               </div>
               <DashboardRowCard row={programs[0]} canEdit={isBishopric} featured />
               <FeaturedAlerts row={programs[0]} />
@@ -238,10 +232,6 @@ function DashboardRowCard({
                       </div>
                     );
                   const isStake = !a.speaker_id && !!a.custom_speaker_name;
-                  const topicTitle =
-                    a.topic?.title ??
-                    a.custom_topic_text ??
-                    (isStake ? "Stake Speaker" : null);
                   const speakerName =
                     a.speaker?.full_name ?? a.custom_speaker_name ?? null;
                   return (
@@ -255,18 +245,13 @@ function DashboardRowCard({
                           canEdit={canEdit}
                           dotOnly
                         />
-                        <span className="text-muted-foreground w-28 shrink-0 text-sm">
+                        <span className="font-semibold">{speakerName ?? "—"}</span>
+                        <span className="text-sm text-muted-foreground">
                           {SLOT_LABELS[slot]}
                         </span>
-                        <span className="font-semibold">{speakerName ?? "—"}</span>
                         {isStake && (
                           <span className="text-[10px] uppercase tracking-wider text-amber-700">
                             Stake
-                          </span>
-                        )}
-                        {topicTitle && (
-                          <span className="text-muted-foreground italic truncate">
-                            — {topicTitle}
                           </span>
                         )}
                       </div>
