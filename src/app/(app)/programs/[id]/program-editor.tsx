@@ -1014,7 +1014,7 @@ function AssignmentCard({
             value={assignment.speaker_id}
             customValue={assignment.custom_speaker_name}
             onChange={handleSpeakerChange}
-            disabled={locked || isPast}
+            disabled={isPast}
           />
         </div>
         <div className="space-y-1.5">
