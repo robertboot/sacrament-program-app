@@ -7,7 +7,9 @@ export const metadata = { title: "Home — Rameumptom" };
 export default function HomePage() {
   return (
     <div className="min-h-[calc(100vh-10rem)] flex flex-col items-center justify-center text-center gap-8 py-8">
-      <BrandStack className="text-primary" />
+      <div className="bg-primary rounded-2xl px-10 py-8 shadow-sm">
+        <BrandStack />
+      </div>
 
       <p className="max-w-sm text-muted-foreground text-base px-4">
         Plan, share, and run your sacrament meetings from the high stand.
