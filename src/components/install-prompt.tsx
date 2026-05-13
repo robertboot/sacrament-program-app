@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ExternalLink, FileText, Share, Smartphone } from "lucide-react";
+import { ExternalLink, FileText, Share } from "lucide-react";
 
 type Mode = "loading" | "installed" | "ios-safari" | "android" | "desktop";
 
@@ -71,9 +71,8 @@ export function InstallPrompt() {
 
   if (mode === "ios-safari") {
     return (
-      <div className="rounded-lg border bg-card px-4 py-3 text-sm shadow-sm space-y-2">
-        <div className="flex items-center gap-2 font-semibold text-foreground">
-          <Smartphone className="w-4 h-4 text-primary" />
+      <div className="rounded-lg border bg-card px-4 py-3 text-sm shadow-sm space-y-2 text-left">
+        <div className="font-semibold text-foreground">
           Add Rameumptom to your home screen
         </div>
         <ol className="text-muted-foreground space-y-1.5 list-decimal pl-5">
@@ -98,11 +97,8 @@ export function InstallPrompt() {
 
   // Android / desktop: try the native prompt first.
   return (
-    <div className="rounded-lg border bg-card px-4 py-3 text-sm shadow-sm space-y-2">
-      <div className="flex items-center gap-2 font-semibold text-foreground">
-        <Smartphone className="w-4 h-4 text-primary" />
-        Install Rameumptom
-      </div>
+    <div className="rounded-lg border bg-card px-4 py-3 text-sm shadow-sm space-y-2 text-left">
+      <div className="font-semibold text-foreground">Install Rameumptom</div>
       {deferred ? (
         <>
           <p className="text-muted-foreground">

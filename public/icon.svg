@@ -9,14 +9,25 @@
   <rect width="512" height="512" rx="96" fill="#1e3a5f"/>
   <rect width="512" height="512" rx="96" fill="url(#warmth)"/>
 
-  <!-- Microphone stand — boom arching up and over to the right -->
+  <!-- Pulpit silhouette in cream, scaled from the 64x64 brand mark -->
+  <g transform="scale(8)" fill="#f6e9c8">
+    <path d="M 11 19 L 53 19 L 53 23 L 11 23 Z"/>
+    <path d="M 14 23 L 50 23 L 46 50 L 18 50 Z"/>
+    <path d="M 9 50 L 55 50 L 54 55 Q 54 57 52 57 L 12 57 Q 10 57 10 55 Z"/>
+  </g>
+
+  <!-- Inset panel on the body -->
   <path
-    d="M 168 416 L 168 224 Q 168 144 256 144 L 336 144"
+    d="M 176 224 L 336 224 L 316 368 L 196 368 Z"
     fill="none"
-    stroke="#f6e9c8"
-    stroke-width="36"
-    stroke-linecap="round"
+    stroke="#1e3a5f"
+    stroke-width="5"
+    opacity="0.25"
   />
-  <!-- Mic head -->
-  <ellipse cx="368" cy="144" rx="40" ry="28" fill="#c9a35c" />
+
+  <!-- Microphone in warm gold — stand arches up and to the right -->
+  <g fill="none" stroke="#c9a35c" stroke-width="14" stroke-linecap="round">
+    <path d="M 256 152 L 256 88 Q 256 56 288 56 L 320 56"/>
+  </g>
+  <ellipse cx="340" cy="56" rx="22" ry="16" fill="#c9a35c"/>
 </svg>
