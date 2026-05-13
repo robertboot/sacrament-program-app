@@ -974,7 +974,7 @@ function AssignmentCard({
             }
           }}
         />
-        <span className="text-xs text-muted-foreground">minutes</span>
+        <span className="text-xs text-muted-foreground">min</span>
         <StatusPill status={assignment.status} past={isPast} className="ml-auto" />
       </div>
 
