@@ -86,9 +86,11 @@ export async function updateAssignmentStatus(
 }
 
 /**
- * Reset a slot: clear speaker + topic, return them to circulation, status → not_yet_asked.
- * The guard trigger normally prevents speaker/topic changes once status > not_yet_asked,
- * so we set status first.
+ * Reset a slot: clear the speaker and return them to circulation, status →
+ * not_yet_asked. The topic is preserved so the bishop can pick a new speaker
+ * without retyping or re-selecting the assignment topic. The guard trigger
+ * normally prevents speaker changes once status > not_yet_asked, so we set
+ * status first.
  */
 export async function resetAssignmentSlot(assignmentId: string) {
   const supabase = await createClient();
@@ -100,14 +102,12 @@ export async function resetAssignmentSlot(assignmentId: string) {
     .select("program_id")
     .single();
   if (e1) return { error: e1.message };
-  // Step 2: clear speaker + topic.
+  // Step 2: clear just the speaker — keep the topic intact.
   const { error: e2 } = await supabase
     .from("speaking_assignments")
     .update({
       speaker_id: null,
       custom_speaker_name: null,
-      topic_id: null,
-      custom_topic_text: null,
     })
     .eq("id", assignmentId);
   if (e2) return { error: e2.message };

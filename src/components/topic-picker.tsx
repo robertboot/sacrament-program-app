@@ -45,83 +45,86 @@ export function TopicPicker({
   const display = selected?.title ?? customValue ?? "";
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        disabled={disabled}
-        className={cn(
-          buttonVariants({ variant: "outline" }),
-          "w-full justify-between font-normal text-left",
-          !display && "text-muted-foreground",
-        )}
-      >
-        <span className="inline-flex items-center gap-2 min-w-0">
-          <BookOpen className="w-4 h-4 shrink-0" />
-          <span className="truncate">{display || "Pick a topic…"}</span>
-        </span>
-        <span className="flex items-center gap-1 shrink-0">
-          {(value || customValue) && !disabled && (
-            <span
-              role="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onChange({ topic_id: null, custom_topic_text: null });
-              }}
-              className="hover:bg-accent rounded-sm p-0.5"
-            >
-              <X className="w-3.5 h-3.5" />
-            </span>
+    <div className="relative">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          disabled={disabled}
+          className={cn(
+            buttonVariants({ variant: "outline" }),
+            "w-full justify-between font-normal text-left",
+            !display && "text-muted-foreground",
+            (value || customValue) && !disabled && "pr-9",
           )}
-          <ChevronDown className="w-4 h-4 opacity-50" />
-        </span>
-      </PopoverTrigger>
-      <PopoverContent className="p-0 w-[min(500px,90vw)]" align="start">
-        <Command>
-          <CommandInput
-            placeholder="Search or type a one-off topic, press Enter…"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                const input = (e.target as HTMLInputElement).value.trim();
-                if (input) {
-                  onChange({ topic_id: null, custom_topic_text: input });
-                  setOpen(false);
-                  e.preventDefault();
-                }
-              }
-            }}
-          />
-          <CommandList>
-            <CommandEmpty>
-              <div className="text-sm text-muted-foreground py-3">
-                Press Enter to use as a one-off topic.
-              </div>
-            </CommandEmpty>
-            <CommandGroup heading="Longest unused first">
-              {sorted.map((t) => (
-                <CommandItem
-                  key={t.id}
-                  value={t.title + " " + (t.description ?? "")}
-                  onSelect={() => {
-                    onChange({ topic_id: t.id, custom_topic_text: null });
+        >
+          <span className="inline-flex items-center gap-2 min-w-0">
+            <BookOpen className="w-4 h-4 shrink-0" />
+            <span className="truncate">{display || "Pick a topic…"}</span>
+          </span>
+          <ChevronDown className="w-4 h-4 opacity-50 shrink-0" />
+        </PopoverTrigger>
+        <PopoverContent className="p-0 w-[min(500px,90vw)]" align="start">
+          <Command>
+            <CommandInput
+              placeholder="Search or type a one-off topic, press Enter…"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const input = (e.target as HTMLInputElement).value.trim();
+                  if (input) {
+                    onChange({ topic_id: null, custom_topic_text: input });
                     setOpen(false);
-                  }}
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="truncate">{t.title}</div>
-                    {t.description && (
-                      <div className="text-xs text-muted-foreground truncate">
-                        {t.description}
-                      </div>
-                    )}
-                  </div>
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    {weeksSinceLabel(t.last_used_date)}
-                  </span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+                    e.preventDefault();
+                  }
+                }
+              }}
+            />
+            <CommandList>
+              <CommandEmpty>
+                <div className="text-sm text-muted-foreground py-3">
+                  Press Enter to use as a one-off topic.
+                </div>
+              </CommandEmpty>
+              <CommandGroup heading="Longest unused first">
+                {sorted.map((t) => (
+                  <CommandItem
+                    key={t.id}
+                    value={t.title + " " + (t.description ?? "")}
+                    onSelect={() => {
+                      onChange({ topic_id: t.id, custom_topic_text: null });
+                      setOpen(false);
+                    }}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate">{t.title}</div>
+                      {t.description && (
+                        <div className="text-xs text-muted-foreground truncate">
+                          {t.description}
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {weeksSinceLabel(t.last_used_date)}
+                    </span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      {(value || customValue) && !disabled && (
+        <button
+          type="button"
+          aria-label="Clear topic"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onChange({ topic_id: null, custom_topic_text: null });
+          }}
+          className="absolute right-7 top-1/2 -translate-y-1/2 hover:bg-accent rounded-sm p-1"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
   );
 }
