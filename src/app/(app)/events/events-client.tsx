@@ -1,8 +1,18 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, RefreshCw, Cloud, Megaphone } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  RefreshCw,
+  Cloud,
+  Megaphone,
+  Search,
+  Info,
+  MoreVertical,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +28,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { addDays, format, parseISO } from "date-fns";
 import type { SacramentEvent } from "@/lib/supabase/types";
 import {
@@ -32,6 +53,7 @@ export function EventsClient({ initialEvents }: { initialEvents: SacramentEvent[
   const [editing, setEditing] = useState<SacramentEvent | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [syncing, startSync] = useTransition();
+  const [search, setSearch] = useState("");
 
   function doSync() {
     startSync(async () => {
@@ -44,39 +66,87 @@ export function EventsClient({ initialEvents }: { initialEvents: SacramentEvent[
     });
   }
 
+  const visibleEvents = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return initialEvents;
+    return initialEvents.filter(
+      (e) =>
+        e.title.toLowerCase().includes(q) ||
+        (e.description ?? "").toLowerCase().includes(q),
+    );
+  }, [initialEvents, search]);
+
   return (
     <div className="space-y-4">
-      <div className="flex items-start justify-between flex-wrap gap-2">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Events</h1>
-          <p className="text-sm text-muted-foreground">
-            Announcements that print on programs during the display window.
-          </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-3xl font-bold tracking-tight">Events</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+            <span>{initialEvents.length} on the calendar</span>
+            <span aria-hidden>·</span>
+            <span>Printed during the display window</span>
+            <Popover>
+              <PopoverTrigger
+                aria-label="How does the display window work?"
+                className="rounded-full p-0.5 text-muted-foreground hover:text-foreground"
+              >
+                <Info className="w-3.5 h-3.5" />
+              </PopoverTrigger>
+              <PopoverContent className="text-xs w-64">
+                Each event prints at the bottom of every program whose meeting
+                date falls between the event&rsquo;s start and end dates.
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={doSync} disabled={syncing}>
-            {syncing ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
-            ) : (
-              <Cloud className="w-4 h-4" />
-            )}
-            Sync calendar
-          </Button>
-          <Button onClick={() => setShowAdd(true)}>
-            <Plus className="w-4 h-4" /> Add event
-          </Button>
-        </div>
+        <Button onClick={() => setShowAdd(true)} className="shrink-0">
+          <Plus className="w-4 h-4" />
+          Add event
+        </Button>
+      </div>
+
+      <div className="relative">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+        <Input
+          placeholder="Search events by title or description…"
+          className="pl-12 h-12 rounded-xl bg-card text-base"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      <div className="flex items-center gap-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            aria-label="More event actions"
+            className="ml-auto inline-flex items-center justify-center rounded-lg bg-card h-7 w-7 ring-1 ring-border hover:bg-muted"
+          >
+            <MoreVertical className="w-4 h-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={doSync} disabled={syncing}>
+              {syncing ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Cloud className="w-4 h-4" />
+              )}
+              Sync calendar
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="space-y-2">
-        {initialEvents.length === 0 && (
+        {visibleEvents.length === 0 && (
           <Card>
             <CardContent className="py-8 text-center text-sm text-muted-foreground">
-              No events yet.
+              {search.trim()
+                ? "No events match that search."
+                : "No events yet."}
             </CardContent>
           </Card>
         )}
-        {initialEvents.map((e) => (
+        {visibleEvents.map((e) => (
           <Card key={e.id} className="py-0">
             <CardContent className="p-3 flex items-start gap-3">
               <div className="flex-1 min-w-0">
