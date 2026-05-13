@@ -271,7 +271,7 @@ function DashboardRowCard({
                         key={slot}
                         className="flex items-start gap-3 px-3 py-3"
                       >
-                        <div className="w-9 h-9 rounded-full bg-[var(--brand-gold)] text-[var(--brand-gold-foreground)] flex items-center justify-center shrink-0">
+                        <div className="w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 flex items-center justify-center shrink-0">
                           <User className="w-4 h-4" />
                         </div>
                         <div className="flex-1 min-w-0">
