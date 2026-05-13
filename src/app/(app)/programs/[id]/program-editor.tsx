@@ -211,7 +211,10 @@ export function ProgramEditor({
           <Link
             href={`/programs/${program.id}/view`}
             target="_blank"
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              "bg-white hover:bg-zinc-50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100",
+            )}
           >
             <Eye className="w-4 h-4" />
             View
@@ -220,10 +223,13 @@ export function ProgramEditor({
             <Link
               href={`/programs/${program.id}/papers`}
               target="_blank"
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+              className={cn(
+                buttonVariants({ variant: "outline", size: "sm" }),
+                "bg-white hover:bg-zinc-50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100",
+              )}
             >
               <Printer className="w-4 h-4" />
-              Papers
+              Assignments
             </Link>
           )}
         </div>
