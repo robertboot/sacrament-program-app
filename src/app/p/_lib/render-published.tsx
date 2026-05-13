@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase/server";
 import { ProgramRender, type ProgramRenderData } from "@/components/program-render";
 import { PrintStyles } from "@/components/print-styles";
-import { PrintTrigger } from "@/components/print-trigger";
+import { PublicViewToolbar } from "@/components/public-view-toolbar";
+import { format, parseISO } from "date-fns";
 
 type PayloadAssignment = {
   slot: ProgramRenderData["assignments"][number]["slot"];
@@ -119,14 +120,14 @@ function renderPayload(p: Payload) {
     briefReminderEvents: p.brief_reminder_events ?? [],
   };
 
+  const shareTitle = `${renderData.branchName} — ${format(parseISO(renderData.meetingDate), "MMM d, yyyy")} sacrament meeting`;
+
   return (
     <>
       <PrintStyles />
       <div className="bg-zinc-100 dark:bg-zinc-900 min-h-screen py-6">
-        <div className="max-w-[7.5in] mx-auto px-4 mb-4 flex items-center justify-end no-print">
-          <PrintTrigger />
-        </div>
-        <div className="bg-white shadow rounded">
+        <PublicViewToolbar title={shareTitle} />
+        <div className="bg-white shadow rounded max-w-[7.5in] mx-auto">
           <ProgramRender data={renderData} mode="public" />
         </div>
       </div>
