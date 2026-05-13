@@ -105,7 +105,7 @@ export function BrandWordmark({ className }: { className?: string }) {
   return (
     /* eslint-disable-next-line @next/next/no-img-element */
     <img
-      src="/RAMIUMPTUM-Horz.png"
+      src="/rameumptom-horz-logo-alt.png"
       alt="Rameumptom"
       className={cn("h-10 w-auto", className)}
       onError={() => setImgFailed(true)}
