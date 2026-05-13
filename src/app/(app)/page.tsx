@@ -190,6 +190,11 @@ function DashboardRowCard({
           <CardContent className="p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
+              {row.status === "published" && (
+                <div className="text-[10px] uppercase tracking-wider font-semibold text-emerald-700 dark:text-emerald-400 mb-1">
+                  Published
+                </div>
+              )}
               <div className="flex items-baseline gap-2 flex-wrap">
                 <div className="text-lg font-semibold tracking-tight">
                   {format(date, "EEE, MMM d")}
@@ -205,11 +210,6 @@ function DashboardRowCard({
                 {row.meeting_type === "no_services" && (
                   <span className="text-[10px] uppercase tracking-wider font-semibold text-purple-700 dark:text-purple-400">
                     {row.meeting_type_label ?? "No services"}
-                  </span>
-                )}
-                {row.status === "published" && (
-                  <span className="text-[10px] uppercase tracking-wider font-semibold text-emerald-700 dark:text-emerald-400">
-                    Published
                   </span>
                 )}
               </div>
