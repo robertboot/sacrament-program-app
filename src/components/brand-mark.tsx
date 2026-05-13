@@ -75,7 +75,7 @@ export function BrandStack({ className }: { className?: string }) {
   return (
     /* eslint-disable-next-line @next/next/no-img-element */
     <img
-      src="/RAMIUMPTUM-vert.png"
+      src="/rameumptom-vert-logo.png"
       alt="Rameumptom"
       className={cn("max-w-[20rem] w-full h-auto", className)}
       onError={() => setImgFailed(true)}
