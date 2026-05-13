@@ -1,9 +1,11 @@
+"use client";
+
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * The Rameumptom mark — a trapezoidal pulpit with a thin gold microphone
- * boom reaching up from behind the top. Pulpit takes `currentColor`; the
- * mic uses the brand gold via `accentClassName`.
+ * Inline pulpit + microphone mark as an SVG fallback. Adapts to currentColor
+ * for the pulpit; the microphone uses the brand gold.
  */
 export function BrandMark({
   className,
@@ -22,17 +24,11 @@ export function BrandMark({
       aria-hidden
       focusable="false"
     >
-      {/* Pulpit silhouette */}
       <g fill="currentColor">
-        {/* Top horizontal cap — slightly wider than the body */}
         <path d="M 11 19 L 53 19 L 53 23 L 11 23 Z" />
-        {/* Body trapezoid (wider at top, narrower at bottom) */}
         <path d="M 14 23 L 50 23 L 46 50 L 18 50 Z" />
-        {/* Base platform */}
         <path d="M 9 50 L 55 50 L 54 55 Q 54 57 52 57 L 12 57 Q 10 57 10 55 Z" />
       </g>
-
-      {/* Inset panel on the body — subtle */}
       <path
         d="M 22 28 L 42 28 L 39.5 46 L 24.5 46 Z"
         fill="none"
@@ -40,8 +36,6 @@ export function BrandMark({
         strokeWidth="0.7"
         opacity="0.18"
       />
-
-      {/* Microphone — stand rises from behind the pulpit top, arches forward */}
       {showMic && (
         <g className={accentClassName}>
           <path
@@ -59,34 +53,61 @@ export function BrandMark({
 }
 
 /**
- * Vertical lockup: large mark above the wordmark. Used on the splash and
- * the auth screens.
+ * If /public/logo-vertical.png exists, we render that exact image (perfect
+ * fidelity to whatever the user uploaded). If the file is missing or fails
+ * to load, we render the inline SVG stack instead so nothing is broken.
  */
 export function BrandStack({ className }: { className?: string }) {
+  const [imgFailed, setImgFailed] = useState(false);
+
+  if (imgFailed) {
+    return (
+      <div className={cn("inline-flex flex-col items-center gap-5", className)}>
+        <BrandMark className="w-24 h-24 text-current" />
+        <span className="font-semibold tracking-tight text-4xl leading-none">
+          Ram
+          <span className="text-[var(--brand-gold)]">eum</span>
+          ptom
+        </span>
+      </div>
+    );
+  }
   return (
-    <div className={cn("inline-flex flex-col items-center gap-5", className)}>
-      <BrandMark className="w-24 h-24 text-current" />
-      <span className="font-semibold tracking-tight text-4xl leading-none">
-        Ram
-        <span className="text-[var(--brand-gold)]">eum</span>
-        ptom
-      </span>
-    </div>
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img
+      src="/logo-vertical.png"
+      alt="Rameumptom"
+      className={cn("max-w-[18rem] w-full h-auto", className)}
+      onError={() => setImgFailed(true)}
+    />
   );
 }
 
 /**
- * Horizontal lockup: mark + wordmark side by side. Used in the top header.
+ * Same fallback strategy for the horizontal header lockup.
  */
 export function BrandWordmark({ className }: { className?: string }) {
-  return (
-    <span className={cn("inline-flex items-center gap-2.5", className)}>
-      <BrandMark className="w-7 h-7 text-current" />
-      <span className="font-semibold tracking-tight text-lg leading-none">
-        Ram
-        <span className="text-[var(--brand-gold)]">eum</span>
-        ptom
+  const [imgFailed, setImgFailed] = useState(false);
+
+  if (imgFailed) {
+    return (
+      <span className={cn("inline-flex items-center gap-2.5", className)}>
+        <BrandMark className="w-7 h-7 text-current" />
+        <span className="font-semibold tracking-tight text-lg leading-none">
+          Ram
+          <span className="text-[var(--brand-gold)]">eum</span>
+          ptom
+        </span>
       </span>
-    </span>
+    );
+  }
+  return (
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img
+      src="/logo-horizontal.png"
+      alt="Rameumptom"
+      className={cn("h-8 w-auto", className)}
+      onError={() => setImgFailed(true)}
+    />
   );
 }
