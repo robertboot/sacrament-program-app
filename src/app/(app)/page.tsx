@@ -8,7 +8,7 @@ import { DashboardLegend } from "@/components/dashboard-legend";
 import { GenerateButton } from "./generate-button";
 import { SLOT_LABELS } from "@/lib/assignments";
 import type { AssignmentStatus, ProgramStatus, AssignmentSlot } from "@/lib/supabase/types";
-import { AlertTriangle, CircleAlert, Clock, RefreshCw } from "lucide-react";
+import { AlertTriangle, CircleAlert, Clock, Pencil, RefreshCw } from "lucide-react";
 
 type Hymn = { number: number; title: string } | null;
 
@@ -184,9 +184,10 @@ function DashboardRowCard({
   const alerts = buildAlerts(row);
 
   return (
-    <Link href={`/programs/${row.id}/view`} className="block">
-      <Card className="py-0 border-l-4 border-l-zinc-300 dark:border-l-zinc-700 shadow-sm transition-all hover:bg-accent hover:border-l-blue-600 dark:hover:border-l-blue-400 hover:shadow-md hover:-translate-y-px">
-        <CardContent className="p-4">
+    <div className="relative">
+      <Link href={`/programs/${row.id}/view`} className="block">
+        <Card className="py-0 border-l-4 border-l-zinc-300 dark:border-l-zinc-700 shadow-sm transition-all hover:bg-accent hover:border-l-blue-600 dark:hover:border-l-blue-400 hover:shadow-md hover:-translate-y-px">
+          <CardContent className="p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-baseline gap-2 flex-wrap">
@@ -295,9 +296,20 @@ function DashboardRowCard({
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
-    </Link>
+          </CardContent>
+        </Card>
+      </Link>
+      {canEdit && (
+        <Link
+          href={`/programs/${row.id}`}
+          aria-label="Edit program"
+          className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-md bg-background/95 px-2 py-1 text-xs font-medium text-foreground ring-1 ring-foreground/10 shadow-sm hover:bg-accent hover:text-foreground transition-colors"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+          Edit
+        </Link>
+      )}
+    </div>
   );
 }
 
