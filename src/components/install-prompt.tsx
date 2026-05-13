@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Share, Smartphone } from "lucide-react";
+import { ExternalLink, FileText, Share, Smartphone } from "lucide-react";
 
 type Mode = "loading" | "installed" | "ios-safari" | "android" | "desktop";
 
@@ -56,10 +56,16 @@ export function InstallPrompt() {
 
   if (mode === "installed") {
     return (
-      <div className="rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950 px-4 py-3 text-sm text-emerald-800 dark:text-emerald-200 flex items-center gap-2">
-        <Check className="w-4 h-4 shrink-0" />
-        Installed on your home screen — feels just like an app.
-      </div>
+      <a
+        href="/p/now"
+        target="_blank"
+        rel="noreferrer"
+        className="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-primary text-primary-foreground text-base font-semibold shadow-sm hover:opacity-90 transition"
+      >
+        <FileText className="w-5 h-5 shrink-0" />
+        View this Sunday&rsquo;s program
+        <ExternalLink className="w-4 h-4 shrink-0 opacity-70" />
+      </a>
     );
   }
 
