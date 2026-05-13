@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ExternalLink, Share } from "lucide-react";
+import { Calendar, ChevronRight, Share } from "lucide-react";
 
 type Mode =
   | "loading"
@@ -73,10 +73,11 @@ export function InstallPrompt() {
         href="/p/now"
         target="_blank"
         rel="noreferrer"
-        className="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-primary text-primary-foreground text-base font-semibold shadow-sm hover:opacity-90 transition"
+        className="grid grid-cols-[auto_1fr_auto] items-center gap-3 w-full px-5 py-4 rounded-xl bg-primary text-primary-foreground text-base font-semibold shadow-sm hover:opacity-90 transition"
       >
-        View this Sunday&rsquo;s program
-        <ExternalLink className="w-4 h-4 shrink-0 opacity-70" />
+        <Calendar className="w-5 h-5 shrink-0" />
+        <span className="text-left">View this Sunday&rsquo;s Program</span>
+        <ChevronRight className="w-5 h-5 shrink-0 opacity-80" />
       </a>
     );
   }
