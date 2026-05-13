@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ExternalLink, FileText, Share } from "lucide-react";
+import { ExternalLink, Share } from "lucide-react";
 
 type Mode =
   | "loading"
@@ -75,7 +75,6 @@ export function InstallPrompt() {
         rel="noreferrer"
         className="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-primary text-primary-foreground text-base font-semibold shadow-sm hover:opacity-90 transition"
       >
-        <FileText className="w-5 h-5 shrink-0" />
         View this Sunday&rsquo;s program
         <ExternalLink className="w-4 h-4 shrink-0 opacity-70" />
       </a>
