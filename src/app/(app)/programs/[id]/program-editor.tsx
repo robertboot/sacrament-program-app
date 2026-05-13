@@ -1032,7 +1032,7 @@ function AssignmentCard({
                 custom_topic_text: next.custom_topic_text,
               })
             }
-            disabled={locked || isPast}
+            disabled={isPast}
           />
         </div>
       </div>
