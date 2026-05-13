@@ -17,13 +17,13 @@ export function GenerateButton({
   const locked = unlockDate !== null;
 
   return (
-    <div className="rounded-2xl bg-card ring-1 ring-foreground/10 shadow-sm p-3 sm:p-4 grid grid-cols-[auto_1px_1fr] items-center gap-3 sm:gap-4">
+    <div className="rounded-2xl bg-card ring-1 ring-foreground/10 shadow-sm p-3 sm:p-4 flex flex-col gap-3 sm:grid sm:grid-cols-[auto_1px_1fr] sm:items-center sm:gap-4">
       {locked ? (
         <button
           type="button"
           disabled
           title={`Unlocks ${format(parseISO(unlockDate!), "MMM d, yyyy")}`}
-          className="inline-flex items-center gap-2 px-4 py-3 text-sm font-semibold rounded-xl bg-muted text-muted-foreground cursor-not-allowed shrink-0"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold rounded-xl bg-muted text-muted-foreground cursor-not-allowed shrink-0"
         >
           <Lock className="w-4 h-4" />
           Generate next month
@@ -44,7 +44,7 @@ export function GenerateButton({
             })
           }
           disabled={pending}
-          className="inline-flex items-center gap-2 px-4 py-3 text-sm font-semibold rounded-xl bg-[var(--brand-gold)] text-[var(--brand-gold-foreground)] shadow-sm hover:brightness-105 active:brightness-95 disabled:opacity-60 transition shrink-0"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold rounded-xl bg-[var(--brand-gold)] text-[var(--brand-gold-foreground)] shadow-sm hover:brightness-105 active:brightness-95 disabled:opacity-60 transition shrink-0"
         >
           {pending ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -54,8 +54,11 @@ export function GenerateButton({
           Generate next month
         </button>
       )}
-      <div aria-hidden className="self-stretch w-px bg-border" />
-      <div className="min-w-0 text-xs sm:text-sm">
+      <div
+        aria-hidden
+        className="hidden sm:block self-stretch w-px bg-border"
+      />
+      <div className="min-w-0 text-sm border-t sm:border-t-0 border-border pt-3 sm:pt-0">
         {latestMeetingDate ? (
           <p className="font-semibold text-foreground leading-tight">
             Scheduled through{" "}
@@ -71,7 +74,7 @@ export function GenerateButton({
             <p className="text-muted-foreground leading-tight mt-1">
               Unlocks {format(parseISO(unlockDate!), "MMM d, yyyy")}
             </p>
-            <p className="text-[11px] text-muted-foreground/80 leading-tight mt-0.5">
+            <p className="text-xs text-muted-foreground/80 leading-tight mt-0.5">
               (3 months before the last meeting)
             </p>
           </>
