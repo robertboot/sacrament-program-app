@@ -19,6 +19,7 @@ import {
   Send,
   MessageSquare,
   UserPlus,
+  ArrowLeft,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -208,6 +209,14 @@ export function ProgramEditor({
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
+          <Link
+            href="/"
+            className={cn(buttonVariants({ variant: "default", size: "sm" }))}
+            title="Back to dashboard"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Done
+          </Link>
           <Link
             href={`/programs/${program.id}/view`}
             target="_blank"
