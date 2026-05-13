@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { SiteDisclaimer } from "@/components/site-disclaimer";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
+// Body text uses the system font stack — SF Pro on iOS/macOS, Segoe on
+// Windows, Roboto on Android, and Arial as the universal fallback. Reads
+// instantly native on every device without a webfont download. Mono stays
+// Geist Mono for code/numbers where we need it.
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
@@ -47,7 +46,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         {children}

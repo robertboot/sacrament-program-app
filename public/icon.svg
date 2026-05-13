@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <radialGradient id="warmth" cx="50%" cy="38%" r="65%">
+    <radialGradient id="warmth" cx="50%" cy="40%" r="65%">
       <stop offset="0%" stop-color="#2a4a73" stop-opacity="0.55"/>
       <stop offset="100%" stop-color="#1e3a5f" stop-opacity="0"/>
     </radialGradient>
@@ -9,25 +9,14 @@
   <rect width="512" height="512" rx="96" fill="#1e3a5f"/>
   <rect width="512" height="512" rx="96" fill="url(#warmth)"/>
 
-  <!-- Pulpit silhouette in cream, scaled from the 64x64 brand mark -->
-  <g transform="scale(8)" fill="#f6e9c8">
-    <path d="M 11 18 L 53 18 L 53 23 L 11 23 Z"/>
-    <path d="M 14 23 L 50 23 L 46 50 L 18 50 Z"/>
-    <path d="M 9 50 L 55 50 L 53 56 Q 53 58 51 58 L 13 58 Q 11 58 11 56 Z"/>
-  </g>
-
-  <!-- Inset panel detail on the body -->
+  <!-- Microphone stand — boom arching up and over to the right -->
   <path
-    d="M 176 224 L 336 224 L 316 368 L 196 368 Z"
+    d="M 168 416 L 168 224 Q 168 144 256 144 L 336 144"
     fill="none"
-    stroke="#1e3a5f"
-    stroke-width="6"
-    opacity="0.25"
+    stroke="#f6e9c8"
+    stroke-width="36"
+    stroke-linecap="round"
   />
-
-  <!-- Microphone in warm gold -->
-  <g fill="none" stroke="#c9a35c" stroke-width="13" stroke-linecap="round">
-    <path d="M 256 144 L 256 96 Q 256 72 280 72 L 312 72"/>
-  </g>
-  <circle cx="324" cy="72" r="16" fill="#c9a35c"/>
+  <!-- Mic head -->
+  <ellipse cx="368" cy="144" rx="40" ry="28" fill="#c9a35c" />
 </svg>
