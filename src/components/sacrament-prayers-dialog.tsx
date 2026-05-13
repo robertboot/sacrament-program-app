@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { BookMarked } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -21,16 +20,15 @@ export function SacramentPrayersButton() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button
+      <button
         type="button"
-        variant="ghost"
-        size="sm"
         onClick={() => setOpen(true)}
         title="Show the bread and water blessings"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 underline underline-offset-4 hover:text-blue-700 dark:hover:text-blue-300"
       >
         <BookMarked className="w-4 h-4" />
         Sacrament Prayers
-      </Button>
+      </button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
