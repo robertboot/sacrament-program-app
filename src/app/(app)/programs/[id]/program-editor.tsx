@@ -1074,7 +1074,9 @@ function AssignmentCard({
               <XCircle className="w-4 h-4" /> Mark declined
             </Button>
           )}
-          {locked && (
+          {(locked ||
+            !!assignment.custom_speaker_name ||
+            !!assignment.speaker_id) && (
             <Button size="sm" variant="ghost" onClick={resetSlot} disabled={pending}>
               <RotateCcw className="w-4 h-4" /> Reset slot
             </Button>
@@ -1139,8 +1141,7 @@ function AssignmentCard({
           {conflict?.rows.some((r) => r.status !== "not_yet_asked") && (
             <p className="text-xs text-amber-700 dark:text-amber-400">
               Note: some of those slots are already past <em>not yet asked</em> — moving here
-              will fully reset them (topic clears too). Use the link to handle them manually if
-              you&apos;d rather not lose the topic.
+              will reset them back to <em>not yet asked</em> (the topic stays put).
             </p>
           )}
           <DialogFooter className="gap-2">
