@@ -848,13 +848,24 @@ function AssignmentCard({
     topic_id?: string | null;
     custom_topic_text?: string | null;
   }) {
+    // Distinguish "not provided" (undefined → keep current value) from
+    // "explicitly cleared" (null → write null). Using `??` collapses both
+    // to the existing value, which prevented the X-clear button on each
+    // picker from actually clearing the field.
     start(async () => {
       const r = await updateAssignmentSpeakerTopic(assignment.id, {
-        speaker_id: next.speaker_id ?? assignment.speaker_id,
+        speaker_id:
+          next.speaker_id === undefined ? assignment.speaker_id : next.speaker_id,
         custom_speaker_name:
-          next.custom_speaker_name ?? assignment.custom_speaker_name,
-        topic_id: next.topic_id ?? assignment.topic_id,
-        custom_topic_text: next.custom_topic_text ?? assignment.custom_topic_text,
+          next.custom_speaker_name === undefined
+            ? assignment.custom_speaker_name
+            : next.custom_speaker_name,
+        topic_id:
+          next.topic_id === undefined ? assignment.topic_id : next.topic_id,
+        custom_topic_text:
+          next.custom_topic_text === undefined
+            ? assignment.custom_topic_text
+            : next.custom_topic_text,
       });
       if (r.error) toast.error(r.error);
     });
