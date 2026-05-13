@@ -421,14 +421,17 @@ function DashboardHymns({ row }: { row: DashboardRow }) {
         <span className="text-lg font-bold tracking-tight">Hymns</span>
       </div>
       {slots.map((s) => (
-        <div
-          key={s.label}
-          className="flex flex-wrap items-center gap-x-2 text-sm"
-        >
-          <span className="text-muted-foreground w-24 shrink-0">{s.label}</span>
-          <span className={s.value ? "font-medium" : "text-muted-foreground italic"}>
+        <div key={s.label} className="text-sm">
+          <div className="text-muted-foreground">{s.label}</div>
+          <div
+            className={
+              s.value
+                ? "italic font-medium"
+                : "italic text-muted-foreground"
+            }
+          >
             {s.value ?? "—"}
-          </span>
+          </div>
         </div>
       ))}
     </div>
