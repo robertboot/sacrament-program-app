@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { AssignmentPaper } from "@/components/assignment-paper";
 import { PrintStyles } from "@/components/print-styles";
 import { PrintTrigger } from "@/components/print-trigger";
+import { CloseTabButton } from "@/components/close-tab-button";
 import { SLOT_DEFAULT_MINUTES } from "@/lib/assignments";
 import type { AssignmentSlot } from "@/lib/supabase/types";
 
@@ -81,12 +82,15 @@ export default async function PapersPage({
     <>
       <PrintStyles />
       <div className="bg-zinc-100 dark:bg-zinc-900 min-h-screen py-6">
-        <div className="max-w-[8.5in] mx-auto px-4 mb-4 flex items-center justify-between no-print">
+        <div className="max-w-[8.5in] mx-auto px-4 mb-4 flex items-center justify-between gap-2 no-print">
           <p className="text-sm text-muted-foreground">
-            {papers.length} paper{papers.length === 1 ? "" : "s"} ready. Use Cmd/Ctrl+P or the
-            button →
+            {papers.length} assignment{papers.length === 1 ? "" : "s"} ready.
+            Use Cmd/Ctrl+P or the button →
           </p>
-          <PrintTrigger />
+          <div className="flex items-center gap-2">
+            <CloseTabButton fallbackHref={`/programs/${id}`} />
+            <PrintTrigger />
+          </div>
         </div>
         <div className="space-y-4">
           {papers.length === 0 ? (

@@ -1113,7 +1113,7 @@ function AssignmentCard({
             className="ml-auto"
           >
             <Button size="sm" variant="ghost">
-              <Printer className="w-4 h-4" /> Print paper
+              <Printer className="w-4 h-4" /> Print assignment
             </Button>
           </Link>
         </div>
