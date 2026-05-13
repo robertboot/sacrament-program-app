@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { buttonVariants } from "@/components/ui/button";
-import { User, X, ChevronDown, AlertTriangle } from "lucide-react";
+import { User, X, ChevronDown, AlertTriangle, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { weeksSinceLabel, rotationTier } from "@/lib/dates";
 import { sortSpeakers } from "@/lib/rotation";
@@ -49,111 +49,108 @@ export function SpeakerPicker({
   const isCustom = !selected && !!customValue;
 
   return (
-    <div className="relative flex items-stretch gap-2">
-      {/* Person icon — opens speaker detail when a speaker is selected */}
-      <button
-        type="button"
-        aria-label={selected ? `View ${selected.full_name}` : "No speaker selected"}
-        disabled={!selected || disabled}
-        onClick={(e) => {
-          e.preventDefault();
-          if (selected) setViewing(selected);
-        }}
-        className={cn(
-          "inline-flex items-center justify-center w-10 shrink-0 rounded-md border bg-card transition-colors",
-          selected && !disabled
-            ? "hover:bg-accent hover:text-primary cursor-pointer"
-            : "text-muted-foreground cursor-default",
-        )}
-        title={selected ? "View speaker details" : undefined}
-      >
-        <User className="w-4 h-4" />
-      </button>
-
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger
-          type="button"
-          disabled={disabled}
-          onClick={(e) => {
-            e.stopPropagation();
-          }}
-          className={cn(
-            buttonVariants({ variant: "outline" }),
-            "flex-1 justify-between font-normal",
-            !selected && !isCustom && "text-muted-foreground",
-            (selected || isCustom) && !disabled && "pr-9",
-          )}
-        >
-          <span className="inline-flex items-center gap-2 min-w-0">
-            <span className="truncate">
-              {selected
-                ? selected.full_name
-                : isCustom
-                  ? customValue
-                  : placeholder}
+    <div className="space-y-1.5">
+      <div className="relative">
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger
+            type="button"
+            disabled={disabled}
+            onClick={(e) => e.stopPropagation()}
+            className={cn(
+              buttonVariants({ variant: "outline" }),
+              "w-full justify-between font-normal",
+              !selected && !isCustom && "text-muted-foreground",
+              (selected || isCustom) && !disabled && "pr-9",
+            )}
+          >
+            <span className="inline-flex items-center gap-2 min-w-0">
+              <User className="w-4 h-4 shrink-0" />
+              <span className="truncate">
+                {selected
+                  ? selected.full_name
+                  : isCustom
+                    ? customValue
+                    : placeholder}
+              </span>
+              {isCustom && (
+                <span className="text-[10px] uppercase tracking-wider text-amber-700 bg-amber-50 dark:bg-amber-950 dark:text-amber-300 px-1.5 py-0.5 rounded">
+                  Stake
+                </span>
+              )}
+              {selected && rotationTier(selected.last_spoke_date) === "stale" && (
+                <span className="inline-flex items-center gap-1 text-[10px] text-red-700 bg-red-50 dark:bg-red-950 dark:text-red-300 px-1.5 py-0.5 rounded">
+                  <AlertTriangle className="w-3 h-3" />
+                  {weeksSinceLabel(selected.last_spoke_date)}
+                </span>
+              )}
             </span>
-            {isCustom && (
-              <span className="text-[10px] uppercase tracking-wider text-amber-700 bg-amber-50 dark:bg-amber-950 dark:text-amber-300 px-1.5 py-0.5 rounded">
-                Stake
-              </span>
-            )}
-            {selected && rotationTier(selected.last_spoke_date) === "stale" && (
-              <span className="inline-flex items-center gap-1 text-[10px] text-red-700 bg-red-50 dark:bg-red-950 dark:text-red-300 px-1.5 py-0.5 rounded">
-                <AlertTriangle className="w-3 h-3" />
-                {weeksSinceLabel(selected.last_spoke_date)}
-              </span>
-            )}
-          </span>
-          <ChevronDown className="w-4 h-4 opacity-50 shrink-0" />
-        </PopoverTrigger>
-        <PopoverContent className="p-0 w-[min(420px,90vw)]" align="start">
-          <Command>
-            <CommandInput placeholder="Search speakers…" />
-            <CommandList>
-              <CommandEmpty>No matching speakers.</CommandEmpty>
-              <CommandGroup heading="Longest gap first">
-                {sorted.map((s) => {
-                  const tier = rotationTier(s.last_spoke_date);
-                  return (
-                    <CommandItem
-                      key={s.id}
-                      value={s.full_name}
-                      onSelect={() => {
-                        onChange({ speaker_id: s.id, custom_speaker_name: null });
-                        setOpen(false);
-                      }}
-                    >
-                      <span className="flex-1">{s.full_name}</span>
-                      <span
-                        className={cn(
-                          "text-xs",
-                          tier === "stale" && "text-red-600",
-                          tier === "caution" && "text-yellow-700",
-                          tier === "fresh" && "text-muted-foreground",
-                        )}
+            <ChevronDown className="w-4 h-4 opacity-50 shrink-0" />
+          </PopoverTrigger>
+          <PopoverContent className="p-0 w-[min(420px,90vw)]" align="start">
+            <Command>
+              <CommandInput placeholder="Search speakers…" />
+              <CommandList>
+                <CommandEmpty>No matching speakers.</CommandEmpty>
+                <CommandGroup heading="Longest gap first">
+                  {sorted.map((s) => {
+                    const tier = rotationTier(s.last_spoke_date);
+                    return (
+                      <CommandItem
+                        key={s.id}
+                        value={s.full_name}
+                        onSelect={() => {
+                          onChange({ speaker_id: s.id, custom_speaker_name: null });
+                          setOpen(false);
+                        }}
                       >
-                        {weeksSinceLabel(s.last_spoke_date)}
-                      </span>
-                    </CommandItem>
-                  );
-                })}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-      {(selected || isCustom) && !disabled && (
+                        <span className="flex-1">{s.full_name}</span>
+                        <span
+                          className={cn(
+                            "text-xs",
+                            tier === "stale" && "text-red-600",
+                            tier === "caution" && "text-yellow-700",
+                            tier === "fresh" && "text-muted-foreground",
+                          )}
+                        >
+                          {weeksSinceLabel(s.last_spoke_date)}
+                        </span>
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+        {(selected || isCustom) && !disabled && (
+          <button
+            type="button"
+            aria-label="Clear speaker"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onChange({ speaker_id: null, custom_speaker_name: null });
+            }}
+            className="absolute right-7 top-1/2 -translate-y-1/2 hover:bg-accent rounded-sm p-1"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
+      {/* Tiny "View details" link, only when a real speaker is selected */}
+      {selected && !disabled && (
         <button
           type="button"
-          aria-label="Clear speaker"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            onChange({ speaker_id: null, custom_speaker_name: null });
+            setViewing(selected);
           }}
-          className="absolute right-7 top-1/2 -translate-y-1/2 hover:bg-accent rounded-sm p-1"
+          className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground hover:underline"
         >
-          <X className="w-3.5 h-3.5" />
+          <Info className="w-3 h-3" />
+          View {selected.full_name}&rsquo;s details
         </button>
       )}
 
@@ -161,8 +158,6 @@ export function SpeakerPicker({
         speaker={viewing}
         onClose={() => setViewing(null)}
         onEdit={() => {
-          // Editing a speaker happens on the /speakers page (it owns the edit
-          // dialog + the bulk-history view). Close and navigate over.
           setViewing(null);
           router.push("/speakers");
         }}
