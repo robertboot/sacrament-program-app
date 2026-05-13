@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Command,
   CommandEmpty,
@@ -16,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { weeksSinceLabel, rotationTier } from "@/lib/dates";
 import { sortSpeakers } from "@/lib/rotation";
 import type { Speaker, SpeakerCategory } from "@/lib/supabase/types";
+import { SpeakerViewDialog } from "@/components/speaker-view-dialog";
 
 export type SpeakerPickerChange = {
   speaker_id: string | null;
@@ -39,25 +41,46 @@ export function SpeakerPicker({
   disabled?: boolean;
   placeholder?: string;
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [viewing, setViewing] = useState<Speaker | null>(null);
   const sorted = useMemo(() => sortSpeakers(speakers, category), [speakers, category]);
   const selected = value ? speakers.find((s) => s.id === value) : null;
   const isCustom = !selected && !!customValue;
 
   return (
-    <div className="relative">
+    <div className="relative flex items-stretch gap-2">
+      {/* Person icon — opens speaker detail when a speaker is selected */}
+      <button
+        type="button"
+        aria-label={selected ? `View ${selected.full_name}` : "No speaker selected"}
+        disabled={!selected || disabled}
+        onClick={(e) => {
+          e.preventDefault();
+          if (selected) setViewing(selected);
+        }}
+        className={cn(
+          "inline-flex items-center justify-center w-10 shrink-0 rounded-md border bg-card transition-colors",
+          selected && !disabled
+            ? "hover:bg-accent hover:text-primary cursor-pointer"
+            : "text-muted-foreground cursor-default",
+        )}
+        title={selected ? "View speaker details" : undefined}
+      >
+        <User className="w-4 h-4" />
+      </button>
+
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           disabled={disabled}
           className={cn(
             buttonVariants({ variant: "outline" }),
-            "w-full justify-between font-normal",
+            "flex-1 justify-between font-normal",
             !selected && !isCustom && "text-muted-foreground",
             (selected || isCustom) && !disabled && "pr-9",
           )}
         >
           <span className="inline-flex items-center gap-2 min-w-0">
-            <User className="w-4 h-4 shrink-0" />
             <span className="truncate">
               {selected
                 ? selected.full_name
@@ -129,6 +152,17 @@ export function SpeakerPicker({
           <X className="w-3.5 h-3.5" />
         </button>
       )}
+
+      <SpeakerViewDialog
+        speaker={viewing}
+        onClose={() => setViewing(null)}
+        onEdit={() => {
+          // Editing a speaker happens on the /speakers page (it owns the edit
+          // dialog + the bulk-history view). Close and navigate over.
+          setViewing(null);
+          router.push("/speakers");
+        }}
+      />
     </div>
   );
 }
