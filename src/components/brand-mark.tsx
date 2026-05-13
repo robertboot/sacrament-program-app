@@ -53,8 +53,9 @@ export function BrandMark({
 }
 
 /**
- * Renders the uploaded vertical brand PNG; falls back to the inline SVG stack
- * if the file fails to load so nothing breaks.
+ * If /public/logo-vertical.png exists, we render that exact image (perfect
+ * fidelity to whatever the user uploaded). If the file is missing or fails
+ * to load, we render the inline SVG stack instead so nothing is broken.
  */
 export function BrandStack({ className }: { className?: string }) {
   const [imgFailed, setImgFailed] = useState(false);
@@ -74,7 +75,7 @@ export function BrandStack({ className }: { className?: string }) {
   return (
     /* eslint-disable-next-line @next/next/no-img-element */
     <img
-      src="/RAMIUMPTUM-vert.png"
+      src="/logo-vertical.png"
       alt="Rameumptom"
       className={cn("max-w-[18rem] w-full h-auto", className)}
       onError={() => setImgFailed(true)}
@@ -103,7 +104,7 @@ export function BrandWordmark({ className }: { className?: string }) {
   return (
     /* eslint-disable-next-line @next/next/no-img-element */
     <img
-      src="/RAMIUMPTUM-Horz.png"
+      src="/logo-horizontal.png"
       alt="Rameumptom"
       className={cn("h-8 w-auto", className)}
       onError={() => setImgFailed(true)}
