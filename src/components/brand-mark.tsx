@@ -53,9 +53,9 @@ export function BrandMark({
 }
 
 /**
- * If /public/logo-vertical.png exists, we render that exact image (perfect
- * fidelity to whatever the user uploaded). If the file is missing or fails
- * to load, we render the inline SVG stack instead so nothing is broken.
+ * The full vertical brand lockup (pulpit + halo + Rameumptom wordmark) used
+ * on the Home splash. Falls back to the inline SVG stack if the PNG fails
+ * to load so nothing is broken.
  */
 export function BrandStack({ className }: { className?: string }) {
   const [imgFailed, setImgFailed] = useState(false);
@@ -75,16 +75,17 @@ export function BrandStack({ className }: { className?: string }) {
   return (
     /* eslint-disable-next-line @next/next/no-img-element */
     <img
-      src="/logo-vertical.png"
+      src="/RAMIUMPTUM-vert.png"
       alt="Rameumptom"
-      className={cn("max-w-[18rem] w-full h-auto", className)}
+      className={cn("max-w-[20rem] w-full h-auto", className)}
       onError={() => setImgFailed(true)}
     />
   );
 }
 
 /**
- * Same fallback strategy for the horizontal header lockup.
+ * Horizontal pulpit + Rameumptom lockup for headers and auth pages. Same
+ * SVG fallback as BrandStack.
  */
 export function BrandWordmark({ className }: { className?: string }) {
   const [imgFailed, setImgFailed] = useState(false);
@@ -104,9 +105,9 @@ export function BrandWordmark({ className }: { className?: string }) {
   return (
     /* eslint-disable-next-line @next/next/no-img-element */
     <img
-      src="/logo-horizontal.png"
+      src="/RAMIUMPTUM-Horz.png"
       alt="Rameumptom"
-      className={cn("h-8 w-auto", className)}
+      className={cn("h-10 w-auto", className)}
       onError={() => setImgFailed(true)}
     />
   );

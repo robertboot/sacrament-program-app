@@ -2,7 +2,7 @@ import Link from "next/link";
 import { BookOpen, CalendarDays, Users } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { BrandMark } from "@/components/brand-mark";
+import { BrandStack } from "@/components/brand-mark";
 import { InstallPrompt } from "@/components/install-prompt";
 import { APP_VERSION } from "@/lib/version";
 
@@ -23,27 +23,7 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-[calc(100vh-10rem)] flex flex-col items-center text-center px-4 pb-6 pt-2">
-      <div className="relative mt-2 mb-3 w-44 h-44 flex items-center justify-center">
-        <div
-          aria-hidden
-          className="absolute inset-0 rounded-full bg-amber-100/50 blur-2xl"
-        />
-        <BrandMark className="relative w-32 h-32 text-primary" />
-      </div>
-
-      <h1 className="font-bold tracking-tight text-5xl leading-none">
-        Ram
-        <span className="text-[var(--brand-gold)]">eum</span>
-        ptom
-      </h1>
-
-      <div className="relative w-32 my-5">
-        <div className="h-px bg-border" />
-        <div
-          aria-hidden
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[var(--brand-gold)]"
-        />
-      </div>
+      <BrandStack className="mt-2 mb-4" />
 
       <p className="text-muted-foreground text-base max-w-sm">
         Plan, share, and run your sacrament meetings with ease.
