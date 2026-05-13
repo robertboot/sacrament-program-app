@@ -2,7 +2,14 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Plus, Search, Upload, Pencil } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Upload,
+  Pencil,
+  Info,
+  MoreVertical,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,12 +22,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { weeksSinceLabel } from "@/lib/dates";
 import type { SpeakerCategory, Topic } from "@/lib/supabase/types";
 import { createTopic, updateTopic, deleteTopic, bulkImportTopics } from "./actions";
+import { cn } from "@/lib/utils";
 
 type CategoryFilter = "all" | "first" | "long";
 
@@ -89,47 +108,73 @@ export function TopicsClient({ initialTopics }: { initialTopics: Topic[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start justify-between gap-2 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Topics</h1>
-          <p className="text-sm text-muted-foreground">
-            {active.length} active. Rotation auto-picks the longest-unused one.
-          </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-3xl font-bold tracking-tight">Topics</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+            <span>{active.length} active</span>
+            <span aria-hidden>·</span>
+            <span>Rotation picks the longest-unused</span>
+            <Popover>
+              <PopoverTrigger
+                aria-label="How does the topic rotation work?"
+                className="rounded-full p-0.5 text-muted-foreground hover:text-foreground"
+              >
+                <Info className="w-3.5 h-3.5" />
+              </PopoverTrigger>
+              <PopoverContent className="text-xs w-64">
+                Topics with the longest gap since they were last used float to
+                the top of the rotation. The topic picker uses the same order.
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowImport(true)}>
-            <Upload className="w-4 h-4" />
-            Bulk import
-          </Button>
-          <Button onClick={() => setShowAdd(true)}>
-            <Plus className="w-4 h-4" />
-            Add topic
-          </Button>
-        </div>
+        <Button onClick={() => setShowAdd(true)} className="shrink-0">
+          <Plus className="w-4 h-4" />
+          Add topic
+        </Button>
       </div>
 
-      <div className="flex flex-wrap gap-1">
+      <div className="relative">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+        <Input
+          placeholder="Search topics by title or description…"
+          className="pl-12 h-12 rounded-xl bg-card text-base"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
         {FILTERS.map((f) => (
           <Button
             key={f.value}
             type="button"
             size="sm"
             variant={categoryFilter === f.value ? "default" : "outline"}
+            className={cn(
+              "rounded-lg",
+              categoryFilter !== f.value && "bg-card",
+            )}
             onClick={() => setCategoryFilter(f.value)}
           >
             {f.label}
           </Button>
         ))}
-      </div>
-
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder="Search topics by title or description…"
-          className="pl-9"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            aria-label="More topic actions"
+            className="ml-auto inline-flex items-center justify-center rounded-lg bg-card h-7 w-7 ring-1 ring-border hover:bg-muted"
+          >
+            <MoreVertical className="w-4 h-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setShowImport(true)}>
+              <Upload className="w-4 h-4" />
+              Bulk import
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="space-y-2">
