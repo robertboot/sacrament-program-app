@@ -3,7 +3,16 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
-import { Plus, Search, Upload, Pencil, Trash2 } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Upload,
+  Pencil,
+  Trash2,
+  ChevronDown,
+  Info,
+  MoreVertical,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +25,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -47,9 +67,13 @@ const FILTERS: { value: CategoryFilter; label: string }[] = [
 
 type SortBy = "name" | "last_spoke";
 
-const SORTS: { value: SortBy; label: string }[] = [
-  { value: "name", label: "Name (A→Z)" },
-  { value: "last_spoke", label: "Last spoke (longest gap first)" },
+const SORTS: { value: SortBy; label: string; shortLabel: string }[] = [
+  { value: "name", label: "Name (A→Z)", shortLabel: "Name A–Z" },
+  {
+    value: "last_spoke",
+    label: "Last spoke (longest gap first)",
+    shortLabel: "Last spoke",
+  },
 ];
 
 export function SpeakersClient({ initialSpeakers }: { initialSpeakers: Speaker[] }) {
@@ -88,62 +112,97 @@ export function SpeakersClient({ initialSpeakers }: { initialSpeakers: Speaker[]
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start justify-between gap-2 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Speakers</h1>
-          <p className="text-sm text-muted-foreground">
-            {active.length} active · sorted by name. Rotation order is calculated by gap.
-          </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-3xl font-bold tracking-tight">Speakers</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+            <span>{active.length} active</span>
+            <span aria-hidden>·</span>
+            <span>Rotation uses longest gap</span>
+            <Popover>
+              <PopoverTrigger
+                aria-label="What does the rotation use?"
+                className="rounded-full p-0.5 text-muted-foreground hover:text-foreground"
+              >
+                <Info className="w-3.5 h-3.5" />
+              </PopoverTrigger>
+              <PopoverContent className="text-xs w-64">
+                Speakers with the longest gap since they last spoke float to the
+                top of the rotation. The picker uses the same order so the
+                bishop sees who&rsquo;s up next.
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowImport(true)}>
-            <Upload className="w-4 h-4" />
-            Bulk import
-          </Button>
-          <Button onClick={() => setShowAdd(true)}>
-            <Plus className="w-4 h-4" />
-            Add speaker
-          </Button>
-        </div>
+        <Button onClick={() => setShowAdd(true)} className="shrink-0">
+          <Plus className="w-4 h-4" />
+          Add speaker
+        </Button>
       </div>
 
-      <div className="flex flex-wrap gap-1">
+      <div className="relative">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+        <Input
+          placeholder="Search speakers…"
+          className="pl-12 h-12 rounded-xl bg-card text-base"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
         {FILTERS.map((f) => (
           <Button
             key={f.value}
             type="button"
             size="sm"
             variant={categoryFilter === f.value ? "default" : "outline"}
+            className={cn(
+              "rounded-lg",
+              categoryFilter !== f.value && "bg-card",
+            )}
             onClick={() => setCategoryFilter(f.value)}
           >
             {f.label}
           </Button>
         ))}
-      </div>
-
-      <div className="flex flex-wrap gap-1 items-center">
-        <span className="text-xs text-muted-foreground mr-1">Sort:</span>
-        {SORTS.map((s) => (
-          <Button
-            key={s.value}
-            type="button"
-            size="sm"
-            variant={sortBy === s.value ? "default" : "outline"}
-            onClick={() => setSortBy(s.value)}
-          >
-            {s.label}
-          </Button>
-        ))}
-      </div>
-
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder="Search speakers…"
-          className="pl-9"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <div className="ml-auto flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-lg bg-card px-3 h-7 text-[0.8rem] font-medium ring-1 ring-border hover:bg-muted",
+              )}
+            >
+              {SORTS.find((s) => s.value === sortBy)?.shortLabel ??
+                "Name A–Z"}
+              <ChevronDown className="w-3.5 h-3.5 opacity-60" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {SORTS.map((s) => (
+                <DropdownMenuItem
+                  key={s.value}
+                  onClick={() => setSortBy(s.value)}
+                >
+                  {s.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              aria-label="More speaker actions"
+              className="inline-flex items-center justify-center rounded-lg bg-card h-7 w-7 ring-1 ring-border hover:bg-muted"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setShowImport(true)}>
+                <Upload className="w-4 h-4" />
+                Bulk import
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       <div className="space-y-2">
