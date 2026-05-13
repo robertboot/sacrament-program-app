@@ -72,7 +72,11 @@ export function SpeakerPicker({
 
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
+          type="button"
           disabled={disabled}
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
           className={cn(
             buttonVariants({ variant: "outline" }),
             "flex-1 justify-between font-normal",
