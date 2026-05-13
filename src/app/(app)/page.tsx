@@ -8,7 +8,17 @@ import { DashboardLegend } from "@/components/dashboard-legend";
 import { GenerateButton } from "./generate-button";
 import { SLOT_LABELS } from "@/lib/assignments";
 import type { AssignmentStatus, ProgramStatus, AssignmentSlot } from "@/lib/supabase/types";
-import { AlertTriangle, CircleAlert, Clock, Pencil, RefreshCw } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarDays as CalendarIcon,
+  CheckCircle2,
+  CircleAlert,
+  Clock,
+  Music2,
+  Pencil,
+  RefreshCw,
+  User,
+} from "lucide-react";
 
 type Hymn = { number: number; title: string } | null;
 
@@ -91,13 +101,18 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Sundays</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Upcoming meetings and schedules
+        </p>
+      </div>
+
       {isBishopric && (
-        <div className="flex justify-end">
-          <GenerateButton
-            unlockDate={generateUnlockDate}
-            latestMeetingDate={latestMeetingDate}
-          />
-        </div>
+        <GenerateButton
+          unlockDate={generateUnlockDate}
+          latestMeetingDate={latestMeetingDate}
+        />
       )}
 
       <DashboardLegend canEdit={isBishopric} />
@@ -186,103 +201,127 @@ function DashboardRowCard({
   return (
     <div className="relative">
       <Link href={`/programs/${row.id}/view`} className="block">
-        <Card className="py-0 border-l-4 border-l-zinc-300 dark:border-l-zinc-700 shadow-sm transition-all hover:bg-accent hover:border-l-blue-600 dark:hover:border-l-blue-400 hover:shadow-md hover:-translate-y-px">
-          <CardContent className="p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              {row.status === "published" && (
-                <div className="text-[10px] uppercase tracking-wider font-semibold text-emerald-700 dark:text-emerald-400 mb-1">
+        <Card className="py-0 rounded-2xl shadow-sm ring-1 ring-foreground/10 transition-all hover:bg-accent hover:shadow-md hover:-translate-y-px">
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex items-center gap-2 mb-3">
+              {row.status === "published" ? (
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 ring-1 ring-emerald-200 dark:ring-emerald-800 rounded-full px-2 py-0.5">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
                   Published
-                </div>
-              )}
-              <div className="flex items-baseline gap-2 flex-wrap">
-                <div className="text-lg font-semibold tracking-tight">
-                  {format(date, "EEE, MMM d")}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {daysOut === 0 ? "Today" : `${daysOut} day${daysOut === 1 ? "" : "s"}`}
-                </div>
-                {row.meeting_type === "fast_sunday" && (
-                  <span className="text-[10px] uppercase tracking-wider font-semibold text-blue-700 dark:text-blue-400">
-                    Fast Sunday
-                  </span>
-                )}
-                {row.meeting_type === "no_services" && (
-                  <span className="text-[10px] uppercase tracking-wider font-semibold text-purple-700 dark:text-purple-400">
-                    {row.meeting_type_label ?? "No services"}
-                  </span>
-                )}
-              </div>
-              <div className="text-sm text-muted-foreground mt-0.5">
-                Conducting: {row.conducting?.full_name ?? "—"}
-              </div>
-              {row.meeting_type !== "regular" ? (
-                <div className="text-xs text-muted-foreground italic mt-2">
-                  {row.meeting_type === "fast_sunday"
-                    ? "Fast & Testimony Meeting — no speakers."
-                    : `${row.meeting_type_label ?? "No services"} — no sacrament meeting.`}
-                </div>
+                </span>
               ) : (
-              <div className="mt-4 space-y-4">
-                {(["first", "second", "concluding"] as AssignmentSlot[]).map((slot) => {
-                  const a = row.assignments.find((x) => x.slot === slot);
-                  if (!a)
-                    return (
-                      <div key={slot} className="text-base text-muted-foreground">
-                        {SLOT_LABELS[slot]} — <span className="italic">no slot</span>
-                      </div>
-                    );
-                  const isStake = !a.speaker_id && !!a.custom_speaker_name;
-                  const speakerName =
-                    a.speaker?.full_name ?? a.custom_speaker_name ?? null;
-                  return (
-                    <div key={slot} className="flex items-start gap-x-3">
-                      <DashboardStatusPill
-                        assignmentId={a.id}
-                        status={a.status}
-                        past={daysOut < 0}
-                        hasSpeaker={!!a.speaker_id || !!a.custom_speaker_name}
-                        canEdit={canEdit}
-                        dotOnly
-                        className="mt-0.5"
-                      />
-                      <div className="flex-1 min-w-0 space-y-1">
-                        <div className="flex items-center flex-wrap gap-x-2">
-                          <span className="text-base font-semibold leading-tight">
-                            {speakerName ?? "—"}
-                          </span>
-                          {isStake && (
-                            <span className="text-[10px] uppercase tracking-wider text-amber-700">
-                              Stake
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-sm text-muted-foreground leading-tight">
-                          {SLOT_LABELS[slot]}
-                        </div>
-                        {canEdit && !isStake && a.speaker_id && speakerName && (
-                          <div className="pt-1">
-                            <DashboardInviteAction
-                              assignmentId={a.id}
-                              speakerName={speakerName}
-                              speakerPhone={a.speaker?.phone ?? null}
-                              status={a.status}
-                              invitedAt={a.invited_at}
-                              confirmationSource={a.confirmation_source}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              )}
-              {featured && row.meeting_type !== "no_services" && (
-                <DashboardHymns row={row} />
+                <span className="inline-flex items-center text-[10px] uppercase tracking-wider font-semibold text-muted-foreground bg-muted ring-1 ring-border rounded-full px-2 py-0.5">
+                  Draft
+                </span>
               )}
             </div>
-          </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shrink-0">
+                <CalendarIcon className="w-5 h-5" />
+              </div>
+              <div className="text-xl font-bold tracking-tight">
+                {format(date, "EEE, MMM d")}
+              </div>
+              <div className="text-xs font-medium px-2 py-1 rounded-full bg-muted text-muted-foreground">
+                {daysOut === 0
+                  ? "Today"
+                  : `in ${daysOut} day${daysOut === 1 ? "" : "s"}`}
+              </div>
+              {row.meeting_type === "fast_sunday" && (
+                <span className="text-[10px] uppercase tracking-wider font-semibold text-blue-700 dark:text-blue-400">
+                  Fast Sunday
+                </span>
+              )}
+              {row.meeting_type === "no_services" && (
+                <span className="text-[10px] uppercase tracking-wider font-semibold text-purple-700 dark:text-purple-400">
+                  {row.meeting_type_label ?? "No services"}
+                </span>
+              )}
+            </div>
+            <div className="text-sm text-muted-foreground mt-2 ml-[3.25rem]">
+              Conducting: {row.conducting?.full_name ?? "—"}
+            </div>
+
+            {row.meeting_type !== "regular" ? (
+              <div className="text-xs text-muted-foreground italic mt-3">
+                {row.meeting_type === "fast_sunday"
+                  ? "Fast & Testimony Meeting — no speakers."
+                  : `${row.meeting_type_label ?? "No services"} — no sacrament meeting.`}
+              </div>
+            ) : (
+              <div className="mt-4 rounded-xl bg-muted/40 divide-y divide-border">
+                {(["first", "second", "concluding"] as AssignmentSlot[]).map(
+                  (slot) => {
+                    const a = row.assignments.find((x) => x.slot === slot);
+                    if (!a)
+                      return (
+                        <div
+                          key={slot}
+                          className="px-3 py-3 text-sm text-muted-foreground"
+                        >
+                          {SLOT_LABELS[slot]} —{" "}
+                          <span className="italic">no slot</span>
+                        </div>
+                      );
+                    const isStake = !a.speaker_id && !!a.custom_speaker_name;
+                    const speakerName =
+                      a.speaker?.full_name ?? a.custom_speaker_name ?? null;
+                    return (
+                      <div
+                        key={slot}
+                        className="flex items-start gap-3 px-3 py-3"
+                      >
+                        <div className="w-9 h-9 rounded-full bg-[var(--brand-gold)] text-[var(--brand-gold-foreground)] flex items-center justify-center shrink-0">
+                          <User className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center flex-wrap gap-x-2">
+                            <span className="text-base font-semibold leading-tight">
+                              {speakerName ?? "—"}
+                            </span>
+                            {isStake && (
+                              <span className="text-[10px] uppercase tracking-wider text-amber-700">
+                                Stake
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-sm text-muted-foreground leading-tight">
+                            {SLOT_LABELS[slot]}
+                          </div>
+                          {canEdit && !isStake && a.speaker_id && speakerName && (
+                            <div className="pt-1.5">
+                              <DashboardInviteAction
+                                assignmentId={a.id}
+                                speakerName={speakerName}
+                                speakerPhone={a.speaker?.phone ?? null}
+                                status={a.status}
+                                invitedAt={a.invited_at}
+                                confirmationSource={a.confirmation_source}
+                              />
+                            </div>
+                          )}
+                        </div>
+                        <DashboardStatusPill
+                          assignmentId={a.id}
+                          status={a.status}
+                          past={daysOut < 0}
+                          hasSpeaker={
+                            !!a.speaker_id || !!a.custom_speaker_name
+                          }
+                          canEdit={canEdit}
+                          dotOnly
+                          className="mt-1.5 shrink-0"
+                        />
+                      </div>
+                    );
+                  },
+                )}
+              </div>
+            )}
+
+            {featured && row.meeting_type !== "no_services" && (
+              <DashboardHymns row={row} />
+            )}
           {alerts.length > 0 && (
             <div className="mt-3 pt-3 border-t flex flex-wrap gap-1.5">
               {alerts.map((a) => (
@@ -338,14 +377,11 @@ function FeaturedAlerts({ row }: { row: DashboardRow }) {
 
   if (issues.length === 0) return null;
   return (
-    <div className="px-1 space-y-0.5">
-      <div className="text-[10px] uppercase tracking-wider font-bold text-red-700 dark:text-red-400 flex items-center gap-1">
-        <AlertTriangle className="w-3.5 h-3.5" />
-        Alerts
-      </div>
-      <ul className="text-sm text-red-700 dark:text-red-300 space-y-0.5">
+    <div className="rounded-2xl bg-red-50 dark:bg-red-950/40 ring-1 ring-red-200 dark:ring-red-900 px-4 py-3 flex items-start gap-3">
+      <AlertTriangle className="w-5 h-5 text-red-700 dark:text-red-400 shrink-0 mt-0.5" />
+      <ul className="text-sm font-medium text-red-700 dark:text-red-300 space-y-1">
         {issues.map((i) => (
-          <li key={i}>• {i}</li>
+          <li key={i}>{i}</li>
         ))}
       </ul>
     </div>
@@ -380,7 +416,10 @@ function DashboardHymns({ row }: { row: DashboardRow }) {
   ];
   return (
     <div className="mt-5 pt-4 border-t space-y-2">
-      <div className="text-lg font-semibold tracking-tight">Hymns</div>
+      <div className="flex items-center gap-2 mb-1">
+        <Music2 className="w-5 h-5 text-[var(--brand-gold)]" />
+        <span className="text-lg font-bold tracking-tight">Hymns</span>
+      </div>
       {slots.map((s) => (
         <div
           key={s.label}
