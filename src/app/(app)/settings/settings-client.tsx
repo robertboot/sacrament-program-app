@@ -116,10 +116,6 @@ export function SettingsClient({
           <Textarea rows={3} value={welcome} onChange={(e) => setWelcome(e.target.value)} />
         </div>
         <div className="space-y-1.5">
-          <Label>Assignment paper template</Label>
-          <Textarea rows={4} value={template} onChange={(e) => setTemplate(e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
           <Label>{labels.unit} business footer</Label>
           <Textarea rows={2} value={wbFooter} onChange={(e) => setWbFooter(e.target.value)} />
         </div>
@@ -131,6 +127,29 @@ export function SettingsClient({
             value={calendarUrl}
             onChange={(e) => setCalendarUrl(e.target.value)}
           />
+        </div>
+        <div className="flex justify-end">
+          <Button onClick={saveSettings} disabled={pending}>
+            <Save className="w-4 h-4" /> Save
+          </Button>
+        </div>
+      </CollapsibleCard>
+
+      <CollapsibleCard
+        title="Speaking Assignment Template"
+        defaultOpen={false}
+        contentClassName="space-y-3"
+      >
+        <div className="space-y-1.5">
+          <Label>Template</Label>
+          <Textarea
+            rows={6}
+            value={template}
+            onChange={(e) => setTemplate(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Printed below the topic on each speaker&apos;s assignment paper.
+          </p>
         </div>
         <div className="flex justify-end">
           <Button onClick={saveSettings} disabled={pending}>
