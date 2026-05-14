@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { loadActiveUnit } from "@/lib/active-unit";
 import type { SpeakerCategory } from "@/lib/supabase/types";
 
 type TopicInput = {
@@ -12,10 +13,14 @@ type TopicInput = {
 };
 
 export async function createTopic(input: TopicInput) {
+  const ctx = await loadActiveUnit();
+  if (!ctx) return { error: "No active unit." };
+  if (ctx.role !== "leader") return { error: "Leaders only." };
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("topics")
     .insert({
+      unit_id: ctx.unit.id,
       title: input.title,
       description: input.description,
       is_active: input.is_active,
@@ -81,6 +86,9 @@ export async function bulkImportTopics(
   categories: SpeakerCategory[],
   isActive: boolean,
 ) {
+  const ctx = await loadActiveUnit();
+  if (!ctx) return { inserted: 0, error: "No active unit." };
+  if (ctx.role !== "leader") return { inserted: 0, error: "Leaders only." };
   const supabase = await createClient();
   const lines = rawText
     .split("\n")
@@ -92,12 +100,18 @@ export async function bulkImportTopics(
     if (m) {
       const idx = m.index!;
       return {
+        unit_id: ctx.unit.id,
         title: line.slice(0, idx).trim(),
         description: line.slice(idx + m[0].length).trim(),
         is_active: isActive,
       };
     }
-    return { title: line, description: null, is_active: isActive };
+    return {
+      unit_id: ctx.unit.id,
+      title: line,
+      description: null,
+      is_active: isActive,
+    };
   });
   if (rows.length === 0) return { inserted: 0, error: null };
   const { data, error } = await supabase.from("topics").insert(rows).select("id");

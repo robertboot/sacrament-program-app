@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { addDays, addMonths, format, parseISO, differenceInDays } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
+import { loadActiveUnit } from "@/lib/active-unit";
 import { Card, CardContent } from "@/components/ui/card";
 import { DashboardStatusPill } from "@/components/dashboard-status-pill";
 import { DashboardInviteAction } from "@/components/dashboard-invite-action";
@@ -56,16 +58,13 @@ type DashboardRow = {
 };
 
 export default async function DashboardPage() {
+  const ctx = await loadActiveUnit();
+  if (!ctx) redirect("/onboarding");
   const supabase = await createClient();
   const today = format(new Date(), "yyyy-MM-dd");
   const horizon = format(addDays(new Date(), 91), "yyyy-MM-dd");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", (await supabase.auth.getUser()).data.user!.id)
-    .single();
-  const isBishopric = profile?.role === "bishopric";
+  const isBishopric = ctx.role === "leader";
 
   const { data: programs } = await supabase
     .from("programs")
@@ -81,16 +80,18 @@ export default async function DashboardPage() {
          speaker:speakers(full_name, phone),
          topic:topics(title))`,
     )
+    .eq("unit_id", ctx.unit.id)
     .gte("meeting_date", today)
     .lte("meeting_date", horizon)
     .order("meeting_date", { ascending: true })
     .returns<DashboardRow[]>();
 
-  // Absolute latest program date (any future date) so we can lock the Generate
+  // Absolute latest program date in this unit, used to lock the Generate
   // button until we're within 3 months of running out of scheduled meetings.
   const { data: lastProgram } = await supabase
     .from("programs")
     .select("meeting_date")
+    .eq("unit_id", ctx.unit.id)
     .order("meeting_date", { ascending: false })
     .limit(1)
     .maybeSingle();

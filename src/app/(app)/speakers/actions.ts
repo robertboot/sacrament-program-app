@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { loadActiveUnit } from "@/lib/active-unit";
 import type { SpeakerCategory } from "@/lib/supabase/types";
 
 type SpeakerInput = {
@@ -21,10 +22,14 @@ type SpeakerInput = {
 };
 
 export async function createSpeaker(input: SpeakerInput) {
+  const ctx = await loadActiveUnit();
+  if (!ctx) return { error: "No active unit." };
+  if (ctx.role !== "leader") return { error: "Leaders only." };
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("speakers")
     .insert({
+      unit_id: ctx.unit.id,
       full_name: input.full_name,
       phone: input.phone,
       email: input.email,
@@ -221,6 +226,9 @@ export async function bulkImportSpeakers(
   defaultCategories: SpeakerCategory[],
   isActive: boolean,
 ) {
+  const ctx = await loadActiveUnit();
+  if (!ctx) return { inserted: 0, error: "No active unit." };
+  if (ctx.role !== "leader") return { inserted: 0, error: "Leaders only." };
   const supabase = await createClient();
   const lines = rawText
     .split("\n")
@@ -245,7 +253,7 @@ export async function bulkImportSpeakers(
 
     const { data, error } = await supabase
       .from("speakers")
-      .insert({ full_name: namePart, is_active: isActive })
+      .insert({ unit_id: ctx.unit.id, full_name: namePart, is_active: isActive })
       .select("id")
       .single();
     if (error) continue;

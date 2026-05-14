@@ -1,6 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
+import { loadActiveUnit } from "@/lib/active-unit";
 import type {
   AppSettings,
   AssignmentSlot,
@@ -17,15 +18,10 @@ import { ProgramEditor, type FutureAssignment } from "./program-editor";
 
 export default async function ProgramPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const ctx = await loadActiveUnit();
+  if (!ctx) redirect("/onboarding");
+
   const supabase = await createClient();
-
-  const { data: userRes } = await supabase.auth.getUser();
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", userRes.user!.id)
-    .single();
-
   const today = format(new Date(), "yyyy-MM-dd");
 
   const [
@@ -34,37 +30,42 @@ export default async function ProgramPage({ params }: { params: Promise<{ id: st
     { data: speakers },
     { data: topics },
     { data: hymns },
-    { data: bishopric },
-    { data: settings },
+    { data: leaderRows },
     { data: futureRaw },
     { data: pastForLastSpoke },
   ] = await Promise.all([
-    supabase.from("programs").select("*").eq("id", id).single(),
+    supabase.from("programs").select("*").eq("id", id).eq("unit_id", ctx.unit.id).single(),
     supabase
       .from("speaking_assignments")
       .select("*")
       .eq("program_id", id)
       .order("slot"),
-    supabase.from("speakers").select("*, speaker_categories(category)").order("full_name"),
-    supabase.from("topics").select("*, topic_categories(category)").order("title"),
+    supabase.from("speakers").select("*, speaker_categories(category)").eq("unit_id", ctx.unit.id).order("full_name"),
+    supabase.from("topics").select("*, topic_categories(category)").eq("unit_id", ctx.unit.id).order("title"),
     supabase.from("hymns").select("*").order("number"),
-    supabase.from("profiles").select("*").eq("role", "bishopric"),
-    supabase.from("app_settings").select("*").eq("id", 1).single(),
+    // Leaders for the conducting picker — unit_members joined to profiles.
+    supabase
+      .from("unit_members")
+      .select("user_id, position, last_conducted_date, profiles(full_name, email)")
+      .eq("unit_id", ctx.unit.id)
+      .eq("role", "leader"),
     supabase
       .from("speaking_assignments")
-      .select(`id, speaker_id, slot, status, program:programs!inner(id, meeting_date)`)
+      .select(`id, speaker_id, slot, status, program:programs!inner(id, unit_id, meeting_date)`)
       .not("speaker_id", "is", null)
       .neq("status", "declined")
       .neq("program_id", id)
+      .eq("program.unit_id", ctx.unit.id)
       .gte("program.meeting_date", today),
     // Past assignments (any status except declined) used to derive each
     // speaker's effective last_spoke_date so the picker's rotation order
     // is correct even when old assignments were never flipped to confirmed.
     supabase
       .from("speaking_assignments")
-      .select(`speaker_id, programs!inner(meeting_date)`)
+      .select(`speaker_id, programs!inner(unit_id, meeting_date)`)
       .not("speaker_id", "is", null)
       .neq("status", "declined")
+      .eq("programs.unit_id", ctx.unit.id)
       .lt("programs.meeting_date", today),
   ]);
 
@@ -132,16 +133,48 @@ export default async function ProgramPage({ params }: { params: Promise<{ id: st
     futureBySpeaker[k].sort((a, b) => a.meetingDate.localeCompare(b.meetingDate));
   }
 
+  // Adapt unit_members + profiles join into the v1 Profile[] shape the
+  // existing ProgramEditor expects. (We'll port the editor to use the new
+  // ConductorOption[] directly in a follow-up.)
+  type LeaderRow = {
+    user_id: string;
+    position: import("@/lib/supabase/types").LeaderPosition | null;
+    last_conducted_date: string | null;
+    profiles: { full_name: string; email: string } | { full_name: string; email: string }[] | null;
+  };
+  const bishopric: Profile[] = ((leaderRows ?? []) as LeaderRow[]).map((m) => {
+    const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+    return {
+      id: m.user_id,
+      full_name: p?.full_name ?? "",
+      email: p?.email ?? "",
+      active_unit_id: null,
+      created_at: "",
+      role: "leader",
+      bishopric_position: m.position,
+      last_conducted_date: m.last_conducted_date,
+    } as Profile;
+  });
+
+  // Build a v1-style AppSettings shim from the unit so the existing editor
+  // keeps working without a deeper port.
+  const settings: AppSettings = {
+    ...ctx.unit,
+    branch_name: ctx.unit.name,
+    unit_type: ctx.unit.type,
+    ward_business_footer: ctx.unit.unit_business_footer,
+  };
+
   return (
     <ProgramEditor
-      role={profile!.role}
+      role={ctx.role === "leader" ? "bishopric" : "chorister"}
       program={program as Program}
       assignments={(assignments ?? []) as SpeakingAssignment[]}
       speakers={speakersHydrated}
       topics={topicsHydrated}
       hymns={(hymns ?? []) as Hymn[]}
-      bishopric={(bishopric ?? []) as Profile[]}
-      settings={settings as AppSettings}
+      bishopric={bishopric}
+      settings={settings}
       futureBySpeaker={futureBySpeaker}
     />
   );

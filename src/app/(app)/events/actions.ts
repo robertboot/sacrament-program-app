@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { addDays, format, parseISO, subDays } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
+import { loadActiveUnit } from "@/lib/active-unit";
 import { parseIcal } from "@/lib/ical";
 
 type EventInput = {
@@ -15,8 +16,13 @@ type EventInput = {
 };
 
 export async function createEvent(input: EventInput) {
+  const ctx = await loadActiveUnit();
+  if (!ctx) return { error: "No active unit." };
+  if (ctx.role !== "leader") return { error: "Leaders only." };
   const supabase = await createClient();
-  const { error } = await supabase.from("events").insert(input);
+  const { error } = await supabase
+    .from("events")
+    .insert({ ...input, unit_id: ctx.unit.id });
   if (error) return { error: error.message };
   revalidatePath("/events");
   return { error: null };
@@ -57,14 +63,12 @@ export async function toggleBriefReminder(id: string, value: boolean) {
  * display window. Existing user-created events (no external_uid) are untouched.
  */
 export async function syncCalendar() {
+  const ctx = await loadActiveUnit();
+  if (!ctx) return { error: "No active unit.", inserted: 0, updated: 0 };
+  if (ctx.role !== "leader") return { error: "Leaders only.", inserted: 0, updated: 0 };
   const supabase = await createClient();
 
-  const { data: settings } = await supabase
-    .from("app_settings")
-    .select("calendar_ics_url")
-    .eq("id", 1)
-    .single();
-  const url = settings?.calendar_ics_url?.trim();
+  const url = ctx.unit.calendar_ics_url?.trim();
   if (!url) return { error: "No calendar URL set in Settings.", inserted: 0, updated: 0 };
 
   let text: string;
@@ -88,6 +92,7 @@ export async function syncCalendar() {
   const { data: existing } = await supabase
     .from("events")
     .select("external_uid")
+    .eq("unit_id", ctx.unit.id)
     .in("external_uid", uids);
   const existingUids = new Set((existing ?? []).map((r) => r.external_uid));
 
@@ -99,6 +104,7 @@ export async function syncCalendar() {
     } else {
       const eventDate = parseISO(ev.date);
       toInsert.push({
+        unit_id: ctx.unit.id,
         external_uid: ev.uid,
         title: ev.summary,
         description: ev.description,
@@ -127,6 +133,7 @@ export async function syncCalendar() {
         description: ev.description,
         event_date: ev.date,
       })
+      .eq("unit_id", ctx.unit.id)
       .eq("external_uid", ev.uid);
     if (error) continue;
     updated++;

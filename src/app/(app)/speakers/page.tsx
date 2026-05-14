@@ -1,17 +1,16 @@
 import { redirect } from "next/navigation";
 import { addDays, format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
+import { loadActiveUnit } from "@/lib/active-unit";
 import type { Speaker, SpeakerCategory } from "@/lib/supabase/types";
 import { SpeakersClient } from "./speakers-client";
 
 export default async function SpeakersPage() {
+  const ctx = await loadActiveUnit();
+  if (!ctx) redirect("/onboarding");
+  if (ctx.role !== "leader") redirect("/");
+
   const supabase = await createClient();
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", (await supabase.auth.getUser()).data.user!.id)
-    .single();
-  if (profile?.role !== "bishopric") redirect("/");
 
   // Match the planner's visible horizon: today through 91 days out (~3 months).
   // Speakers booked beyond that window aren't flagged "Scheduled" since the
@@ -24,12 +23,14 @@ export default async function SpeakersPage() {
       supabase
         .from("speakers")
         .select(`*, speaker_categories(category)`)
+        .eq("unit_id", ctx.unit.id)
         .order("full_name"),
       supabase
         .from("speaking_assignments")
-        .select("speaker_id, programs!inner(meeting_date)")
+        .select("speaker_id, programs!inner(unit_id, meeting_date)")
         .neq("status", "declined")
         .not("speaker_id", "is", null)
+        .eq("programs.unit_id", ctx.unit.id)
         .gte("programs.meeting_date", today)
         .lte("programs.meeting_date", horizon),
       // Past assignments (any status except declined) — used to derive
@@ -39,9 +40,10 @@ export default async function SpeakersPage() {
       // for everyone carried in from before the app existed.
       supabase
         .from("speaking_assignments")
-        .select("speaker_id, programs!inner(meeting_date)")
+        .select("speaker_id, programs!inner(unit_id, meeting_date)")
         .neq("status", "declined")
         .not("speaker_id", "is", null)
+        .eq("programs.unit_id", ctx.unit.id)
         .lt("programs.meeting_date", today),
     ]);
 

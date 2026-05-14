@@ -1,30 +1,26 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { AppNav } from "@/components/app-nav";
 import { MobileTabBar } from "@/components/mobile-tab-bar";
+import { loadActiveUnit } from "@/lib/active-unit";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const ctx = await loadActiveUnit();
+  // The proxy already routes signed-in users with no active unit to
+  // /onboarding; this is a defensive belt-and-suspenders.
+  if (!ctx) redirect("/onboarding");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) redirect("/login");
+  // Nav components still take the v1 UserRole vocabulary; "leader" is the
+  // v2 equivalent of "bishopric". When we port the nav, we'll switch to
+  // MemberRole directly.
+  const navRole = ctx.role === "leader" ? "bishopric" : "chorister";
 
   return (
     <>
-      <AppNav role={profile.role} fullName={profile.full_name} />
+      <AppNav role={navRole} fullName={ctx.profile.full_name} />
       <main className="flex-1 mx-auto max-w-5xl w-full px-4 py-6 pb-24 md:pb-6">
         {children}
       </main>
-      <MobileTabBar role={profile.role} />
+      <MobileTabBar role={navRole} />
     </>
   );
 }
