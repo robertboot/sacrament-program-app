@@ -257,7 +257,11 @@ export function ProgramEditor({
 
       {/* Meeting type */}
       {isBishopric && (
-        <CollapsibleCard title="Meeting type" contentClassName="space-y-3">
+        <CollapsibleCard
+          title="Meeting type"
+          defaultOpen={false}
+          contentClassName="space-y-3"
+        >
             <div className="grid sm:grid-cols-[1fr_240px] gap-3 items-start">
               <Select
                 value={meetingType}
@@ -312,7 +316,11 @@ export function ProgramEditor({
       {!isNoServices && (<>
 
       {/* Header info: presiding / conducting */}
-      <CollapsibleCard title="Meeting header" contentClassName="space-y-3">
+      <CollapsibleCard
+        title="Meeting header"
+        defaultOpen={false}
+        contentClassName="space-y-3"
+      >
           <div className="grid sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Presiding</Label>
