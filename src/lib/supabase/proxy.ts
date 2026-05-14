@@ -1,6 +1,33 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+/**
+ * Build a redirect response that preserves the auth cookies Supabase may have
+ * just refreshed during getUser(). If we return a fresh NextResponse.redirect
+ * without copying those cookies over, the browser keeps presenting stale
+ * cookies and bounces between authenticated / unauthenticated states (the
+ * classic /home ↔ /login redirect loop).
+ */
+function redirectKeepingCookies(
+  request: NextRequest,
+  authResponse: NextResponse,
+  pathname: string,
+  searchParams?: Record<string, string>,
+) {
+  const url = request.nextUrl.clone();
+  url.pathname = pathname;
+  if (searchParams) {
+    for (const [k, v] of Object.entries(searchParams)) {
+      url.searchParams.set(k, v);
+    }
+  }
+  const redirect = NextResponse.redirect(url);
+  for (const cookie of authResponse.cookies.getAll()) {
+    redirect.cookies.set(cookie);
+  }
+  return redirect;
+}
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -39,16 +66,11 @@ export async function updateSession(request: NextRequest) {
     path === "/favicon.ico";
 
   if (!user && !isAuthRoute && !isPublic) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("next", path);
-    return NextResponse.redirect(url);
+    return redirectKeepingCookies(request, response, "/login", { next: path });
   }
 
   if (user && isAuthRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/home";
-    return NextResponse.redirect(url);
+    return redirectKeepingCookies(request, response, "/home");
   }
 
   // Signed-in but no active unit yet → onboarding. The /onboarding route
@@ -60,9 +82,7 @@ export async function updateSession(request: NextRequest) {
       .eq("id", user.id)
       .maybeSingle();
     if (!profile?.active_unit_id) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/onboarding";
-      return NextResponse.redirect(url);
+      return redirectKeepingCookies(request, response, "/onboarding");
     }
   }
 
