@@ -37,6 +37,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ id: st
     { data: bishopric },
     { data: settings },
     { data: futureRaw },
+    { data: pastForLastSpoke },
   ] = await Promise.all([
     supabase.from("programs").select("*").eq("id", id).single(),
     supabase
@@ -56,16 +57,47 @@ export default async function ProgramPage({ params }: { params: Promise<{ id: st
       .neq("status", "declined")
       .neq("program_id", id)
       .gte("program.meeting_date", today),
+    // Past assignments (any status except declined) used to derive each
+    // speaker's effective last_spoke_date so the picker's rotation order
+    // is correct even when old assignments were never flipped to confirmed.
+    supabase
+      .from("speaking_assignments")
+      .select(`speaker_id, programs!inner(meeting_date)`)
+      .not("speaker_id", "is", null)
+      .neq("status", "declined")
+      .lt("programs.meeting_date", today),
   ]);
 
   if (!program) notFound();
 
-  const speakersHydrated: Speaker[] = (speakers ?? []).map((s) => ({
-    ...s,
-    categories: (s.speaker_categories ?? []).map(
-      (c: { category: SpeakerCategory }) => c.category,
-    ),
-  }));
+  type PastForLast = {
+    speaker_id: string;
+    programs: { meeting_date: string } | { meeting_date: string }[] | null;
+  };
+  const mostRecentPastBySpeaker = new Map<string, string>();
+  for (const r of (pastForLastSpoke ?? []) as PastForLast[]) {
+    const p = Array.isArray(r.programs) ? r.programs[0] : r.programs;
+    if (!p?.meeting_date) continue;
+    const current = mostRecentPastBySpeaker.get(r.speaker_id);
+    if (!current || p.meeting_date > current) {
+      mostRecentPastBySpeaker.set(r.speaker_id, p.meeting_date);
+    }
+  }
+
+  const speakersHydrated: Speaker[] = (speakers ?? []).map((s) => {
+    const fromHistory = mostRecentPastBySpeaker.get(s.id) ?? null;
+    const effectiveLastSpoke =
+      fromHistory && (!s.last_spoke_date || fromHistory > s.last_spoke_date)
+        ? fromHistory
+        : s.last_spoke_date;
+    return {
+      ...s,
+      categories: (s.speaker_categories ?? []).map(
+        (c: { category: SpeakerCategory }) => c.category,
+      ),
+      last_spoke_date: effectiveLastSpoke,
+    };
+  });
 
   const topicsHydrated: Topic[] = (topics ?? []).map((t) => ({
     ...t,

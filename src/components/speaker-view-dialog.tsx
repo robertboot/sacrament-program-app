@@ -65,6 +65,25 @@ export function SpeakerViewDialog({
 
   if (!speaker) return null;
 
+  // The speakers.last_spoke_date column is only refreshed by a DB trigger on
+  // confirmed assignments. For speakers carried in from before the app, the
+  // bishop never went back to flip every old assignment to Confirmed, so the
+  // header label would read "never" even when the history list below shows
+  // real past talks. Fall back to the most recent past entry from the hydrated
+  // history so the two sections agree.
+  const mostRecentPastFromHistory =
+    history
+      .filter((h) => h.kind === "past")
+      .reduce<string | null>(
+        (acc, h) => (acc === null || h.date > acc ? h.date : acc),
+        null,
+      );
+  const effectiveLastSpoke =
+    mostRecentPastFromHistory && (!speaker.last_spoke_date ||
+      mostRecentPastFromHistory > speaker.last_spoke_date)
+      ? mostRecentPastFromHistory
+      : speaker.last_spoke_date;
+
   return (
     <Dialog open={!!speaker} onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
@@ -84,7 +103,7 @@ export function SpeakerViewDialog({
                   .filter(Boolean)
                   .join(" · ") + " speaker"
               : "No categories tagged"}{" "}
-            · Last spoke {weeksSinceLabel(speaker.last_spoke_date).toLowerCase()}
+            · Last spoke {weeksSinceLabel(effectiveLastSpoke).toLowerCase()}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 text-sm">
