@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import { format, parseISO } from "date-fns";
-import { toast } from "sonner";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import { weeksSinceLabel } from "@/lib/dates";
 import type { Speaker, SpeakerCategory } from "@/lib/supabase/types";
-import { deleteSpeaker, getSpeakerHistory } from "@/app/(app)/speakers/actions";
+import { getSpeakerHistory } from "@/app/(app)/speakers/actions";
 
 const CATEGORY_LABEL: Record<SpeakerCategory, string> = {
   first: "5 min",
@@ -27,7 +26,7 @@ const CATEGORY_LABEL: Record<SpeakerCategory, string> = {
 
 /**
  * Speaker detail dialog — info, categories, last-spoke, full speaking
- * history, plus Edit / Close / Delete actions in the footer.
+ * history, plus Edit / Close actions in the footer.
  *
  * `onEdit` is supplied by the caller so the same view can switch into the
  * inline edit dialog on the Speakers page, or navigate to /speakers when
@@ -42,7 +41,6 @@ export function SpeakerViewDialog({
   onClose: () => void;
   onEdit: () => void;
 }) {
-  const [pending, start] = useTransition();
   const [history, setHistory] = useState<
     { date: string; kind: "upcoming" | "past"; topic: string | null }[]
   >([]);
@@ -153,34 +151,10 @@ export function SpeakerViewDialog({
           </div>
         </div>
         <DialogFooter className="gap-2">
-          <Button
-            variant="outline"
-            className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950 mr-auto"
-            disabled={pending}
-            onClick={() => {
-              if (
-                !confirm(
-                  `Delete ${speaker.full_name} permanently? Past programs will show "—" instead of their name. To keep history but pause assignments, edit and uncheck Active instead.`,
-                )
-              )
-                return;
-              start(async () => {
-                const r = await deleteSpeaker(speaker.id);
-                if (r.error) toast.error(r.error);
-                else {
-                  toast.success("Speaker deleted.");
-                  onClose();
-                }
-              });
-            }}
-          >
-            <Trash2 className="w-4 h-4" />
-            Delete
-          </Button>
-          <Button variant="ghost" onClick={onClose} disabled={pending}>
+          <Button variant="ghost" onClick={onClose} >
             Close
           </Button>
-          <Button onClick={onEdit} disabled={pending}>
+          <Button onClick={onEdit} >
             <Pencil className="w-4 h-4" />
             Edit
           </Button>
