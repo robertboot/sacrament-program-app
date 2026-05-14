@@ -111,9 +111,12 @@ async function createMember({
   // the URL itself still signs the user in if pasted.
   let inviteLink: string | null = null;
   if (email?.trim()) {
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ?? "https://sacrament-program-app.vercel.app";
     const { data: linkData } = await admin.auth.admin.generateLink({
       type: "magiclink",
       email: finalEmail,
+      options: { redirectTo: `${siteUrl}/auth/callback?next=/home` },
     });
     inviteLink = linkData?.properties?.action_link ?? null;
   }
@@ -288,9 +291,12 @@ export async function inviteMember(userId: string) {
     };
   }
 
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://sacrament-program-app.vercel.app";
   const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
     type: "magiclink",
     email: u.user.email,
+    options: { redirectTo: `${siteUrl}/auth/callback?next=/home` },
   });
   if (linkErr) return { error: linkErr.message };
   return { error: null, inviteLink: linkData?.properties?.action_link ?? null };
