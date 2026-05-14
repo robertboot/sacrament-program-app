@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { format } from "date-fns";
+import { addDays, format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import type { Speaker, SpeakerCategory } from "@/lib/supabase/types";
 import { SpeakersClient } from "./speakers-client";
@@ -13,7 +13,11 @@ export default async function SpeakersPage() {
     .single();
   if (profile?.role !== "bishopric") redirect("/");
 
+  // Match the planner's visible horizon: today through 91 days out (~3 months).
+  // Speakers booked beyond that window aren't flagged "Scheduled" since the
+  // bishop can't see those programs on the dashboard yet.
   const today = format(new Date(), "yyyy-MM-dd");
+  const horizon = format(addDays(new Date(), 91), "yyyy-MM-dd");
 
   const [{ data: speakers }, { data: futureRows }] = await Promise.all([
     supabase
@@ -25,7 +29,8 @@ export default async function SpeakersPage() {
       .select("speaker_id, programs!inner(meeting_date)")
       .neq("status", "declined")
       .not("speaker_id", "is", null)
-      .gte("programs.meeting_date", today),
+      .gte("programs.meeting_date", today)
+      .lte("programs.meeting_date", horizon),
   ]);
 
   const scheduledSpeakerIds = new Set<string>(
