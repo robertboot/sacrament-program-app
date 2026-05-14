@@ -76,6 +76,13 @@ export type Profile = {
   email: string;
   active_unit_id: string | null;
   created_at: string;
+  // ---- DEPRECATED v1 fields kept for incremental port ----
+  /** @deprecated Read from unit_members in the active unit instead. */
+  role?: MemberRole | "bishopric";
+  /** @deprecated Read unit_members.position in the active unit instead. */
+  bishopric_position?: LeaderPosition | null;
+  /** @deprecated Read unit_members.last_conducted_date instead. */
+  last_conducted_date?: string | null;
 };
 
 // Convenience view used in the planner header + bishopric pickers — joins a
@@ -122,6 +129,21 @@ export type Hymn = {
   id: string;
   number: number;
   title: string;
+  /** @deprecated v1-only — v2 schema is single shared hymnbook. */
+  hymnal?: "1985" | "new";
+};
+
+// ---------------------------------------------------------------------------
+// DEPRECATED v1 compat — single-tenant app_settings is now per-unit. Kept as
+// an alias so the legacy Settings page imports keep compiling while we port.
+// ---------------------------------------------------------------------------
+export type AppSettings = Unit & {
+  /** @deprecated Use unit.name */
+  branch_name: string;
+  /** @deprecated Use unit.type */
+  unit_type: UnitType;
+  /** @deprecated Use unit.unit_business_footer */
+  ward_business_footer: string | null;
 };
 
 // ---------------------------------------------------------------------------

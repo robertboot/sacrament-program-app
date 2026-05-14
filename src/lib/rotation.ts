@@ -38,10 +38,12 @@ export function sortTopics(topics: Topic[]): Topic[] {
 }
 
 export function sortBishopric(profiles: Profile[]): Profile[] {
-  const filtered = profiles.filter((p) => p.role === "bishopric");
-  return sortByLongestGap(
-    filtered.map((p) => ({ ...p, last_date: p.last_conducted_date })),
+  const filtered = profiles.filter(
+    (p) => p.role === "bishopric" || p.role === "leader",
   );
+  return sortByLongestGap(
+    filtered.map((p) => ({ ...p, last_date: p.last_conducted_date ?? null })),
+  ) as Profile[];
 }
 
 // Re-export the ward/branch-aware label helper so existing imports keep working.

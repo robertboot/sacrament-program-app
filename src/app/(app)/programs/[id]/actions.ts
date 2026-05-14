@@ -9,11 +9,11 @@ type ProgramFields = {
   conducting_id?: string | null;
   welcome_text?: string | null;
   brief_reminders?: string | null;
-  opening_hymn_id?: number | null;
-  sacrament_hymn_id?: number | null;
-  intermediate_hymn_id?: number | null;
+  opening_hymn_id?: string | null;
+  sacrament_hymn_id?: string | null;
+  intermediate_hymn_id?: string | null;
   intermediate_hymn_text?: string | null;
-  closing_hymn_id?: number | null;
+  closing_hymn_id?: string | null;
   invocation?: string | null;
   benediction?: string | null;
   chorister?: string | null;

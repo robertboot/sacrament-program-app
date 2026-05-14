@@ -23,8 +23,8 @@ export function HymnPicker({
   disabled,
 }: {
   hymns: Hymn[];
-  value: number | null;
-  onChange: (id: number | null) => void;
+  value: string | null;
+  onChange: (id: string | null) => void;
   placeholder?: string;
   disabled?: boolean;
 }) {

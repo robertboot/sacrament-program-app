@@ -335,7 +335,12 @@ export function ProgramEditor({
               <Label>Conducting</Label>
               {isBishopric ? (
                 <ConductingPicker
-                  bishopric={bishopric}
+                  leaders={bishopric.map((p) => ({
+                    user_id: p.id,
+                    full_name: p.full_name,
+                    position: p.bishopric_position ?? null,
+                    last_conducted_date: p.last_conducted_date ?? null,
+                  }))}
                   value={draft.conducting_id ?? null}
                   onChange={(id) => setDraft((p) => ({ ...p, conducting_id: id }))}
                   unitType={settings.unit_type}

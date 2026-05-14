@@ -1,7 +1,7 @@
 import { formatMeetingDate } from "@/lib/dates";
 import { SLOT_LABELS } from "@/lib/assignments";
 import { bishopricPositionLabel, leaderDisplayName, unitLabels, type UnitType } from "@/lib/labels";
-import type { AssignmentSlot } from "@/lib/supabase/types";
+import type { AssignmentSlot, LeaderPosition } from "@/lib/supabase/types";
 import { SacramentPrayersButton } from "./sacrament-prayers-dialog";
 
 export type WardBusinessItem = { active: boolean; names: string | null };
@@ -107,31 +107,29 @@ export function ProgramRender({
           <tr>
             <td className="font-semibold pr-2">Conducting:</td>
             <td>
-              {data.conducting
-                ? leaderDisplayName(
-                    data.unitType,
-                    data.conducting as {
-                      full_name: string;
-                      bishopric_position:
-                        | "bishop"
-                        | "first_counselor"
-                        | "second_counselor"
-                        | null;
-                    },
-                  )
-                : "—"}
-              {data.conducting?.bishopric_position &&
-                data.conducting.bishopric_position !== "bishop" && (
-                  <span className="text-gray-600 ml-2">
-                    ({bishopricPositionLabel(
-                      data.conducting.bishopric_position as
-                        | "bishop"
-                        | "first_counselor"
-                        | "second_counselor",
-                      data.unitType,
-                    )})
-                  </span>
-                )}
+              {(() => {
+                if (!data.conducting) return "—";
+                // v2 uses .position; v1 used .bishopric_position. Accept both
+                // while we finish porting render callsites.
+                const pos =
+                  (data.conducting as { position?: LeaderPosition | null }).position ??
+                  (data.conducting as { bishopric_position?: LeaderPosition | null })
+                    .bishopric_position ??
+                  null;
+                return (
+                  <>
+                    {leaderDisplayName(data.unitType, {
+                      full_name: data.conducting.full_name,
+                      position: pos,
+                    })}
+                    {pos && pos !== "president" && (
+                      <span className="text-gray-600 ml-2">
+                        ({bishopricPositionLabel(pos, data.unitType)})
+                      </span>
+                    )}
+                  </>
+                );
+              })()}
             </td>
           </tr>
           <tr>

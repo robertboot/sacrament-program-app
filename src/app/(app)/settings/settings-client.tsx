@@ -242,9 +242,10 @@ function BishopricList({
     );
   }
   const order: Record<BishopricPosition, number> = {
-    bishop: 0,
+    president: 0,
     first_counselor: 1,
     second_counselor: 2,
+    clerk: 3,
   };
   const sorted = [...members].sort(
     (a, b) =>
@@ -320,7 +321,7 @@ function BishopricRow({
             {member.email ? <> · {member.email}</> : <> · no email on file</>}
           </div>
           <div className="text-[11px] text-muted-foreground">
-            Last conducted: {weeksSinceLabel(member.last_conducted_date)}
+            Last conducted: {weeksSinceLabel(member.last_conducted_date ?? null)}
           </div>
         </div>
         <Button
@@ -445,7 +446,7 @@ function BishopricEditDialog({
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="bishop">
+                <SelectItem value="president">
                   {unitType === "ward" ? "Bishop" : "Branch President"}
                 </SelectItem>
                 <SelectItem value="first_counselor">1st Counselor</SelectItem>
@@ -488,7 +489,7 @@ function AddBishopricForm({
   const [email, setEmail] = useState("");
   const [position, setPosition] = useState<BishopricPosition | "">("");
   const positions: { value: BishopricPosition; label: string }[] = [
-    { value: "bishop", label: labels.leaderRole },
+    { value: "president", label: labels.leaderRole },
     { value: "first_counselor", label: "1st Counselor" },
     { value: "second_counselor", label: "2nd Counselor" },
   ];
