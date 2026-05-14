@@ -12,12 +12,14 @@ export default async function OnboardingPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // If they already have an active unit, they don't need onboarding.
+  // If they already have an active unit, they don't need onboarding. Use
+  // maybeSingle() so a missing profile row (signup trigger hasn't fired yet)
+  // falls through to the form instead of throwing.
   const { data: profile } = await supabase
     .from("profiles")
     .select("id, full_name, email, active_unit_id")
     .eq("id", user.id)
-    .single<Profile>();
+    .maybeSingle<Profile>();
   if (profile?.active_unit_id) redirect("/home");
 
   return (
