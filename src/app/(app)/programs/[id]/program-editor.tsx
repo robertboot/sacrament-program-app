@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { differenceInDays, format, parseISO, subDays } from "date-fns";
@@ -167,6 +167,19 @@ export function ProgramEditor({
       const r = await updateProgramFields(program.id, draft);
       if (r.error) toast.error(r.error);
       else toast.success("Saved.");
+    });
+  }
+
+  /**
+   * Persist a single (or handful of) program field(s) immediately without
+   * touching anything else in the draft. Used by Ward Business toggles so a
+   * tap of "Releases" saves on the spot instead of waiting for the user to
+   * find the Save button.
+   */
+  function saveFields(fields: Partial<Program>) {
+    start(async () => {
+      const r = await updateProgramFields(program.id, fields);
+      if (r.error) toast.error(r.error);
     });
   }
 
@@ -432,6 +445,7 @@ export function ProgramEditor({
               hint='One per line: "Name — Calling". Prints: "Name has been released as Calling."'
               draft={draft}
               setDraft={setDraft}
+              saveFields={saveFields}
             />
             <WardBusinessRow
               label="Sustainings"
@@ -441,6 +455,7 @@ export function ProgramEditor({
               hint='One per line: "Name — Calling". Prints: "Name has been called to serve as Calling."'
               draft={draft}
               setDraft={setDraft}
+              saveFields={saveFields}
             />
             <WardBusinessRow
               label="New records (move-ins)"
@@ -450,6 +465,7 @@ export function ProgramEditor({
               hint="One per line. Prints under the standard welcome verbiage."
               draft={draft}
               setDraft={setDraft}
+              saveFields={saveFields}
             />
             <WardBusinessRow
               label="Aaronic Priesthood"
@@ -459,6 +475,7 @@ export function ProgramEditor({
               hint='One per line: "Name — Office". Prints: "We propose that Name receive the Aaronic Priesthood and be ordained a Office."'
               draft={draft}
               setDraft={setDraft}
+              saveFields={saveFields}
             />
             <WardBusinessRow
               label="Baptism &amp; Confirmation"
@@ -468,6 +485,7 @@ export function ProgramEditor({
               hint='One per line: "Name — Date". Prints: "Name was baptized and confirmed a member of the Church on Date and we welcome…"'
               draft={draft}
               setDraft={setDraft}
+              saveFields={saveFields}
             />
             <WardBusinessRow
               label="Blessing of a child"
@@ -477,6 +495,7 @@ export function ProgramEditor({
               hint='One per line: "Child name — Person blessing". Prints: "Child name will now be blessed by Person."'
               draft={draft}
               setDraft={setDraft}
+              saveFields={saveFields}
             />
             <div className="space-y-1.5 pt-2 border-t">
               <Label>Stake business</Label>
@@ -634,8 +653,8 @@ export function ProgramEditor({
         </Card>
       )}
 
-      {/* Sticky save bar */}
-      <div className="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur z-20">
+      {/* Sticky save bar — sits above the mobile tab bar (which is z-30, h-16) */}
+      <div className="fixed bottom-16 md:bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur z-40">
         <div className="mx-auto max-w-5xl px-4 py-3 flex flex-wrap items-center gap-2 justify-end">
           {isBishopric && (
             <>
@@ -1226,6 +1245,7 @@ function WardBusinessRow({
   hint,
   draft,
   setDraft,
+  saveFields,
 }: {
   label: string;
   flagKey: keyof Program;
@@ -1234,17 +1254,21 @@ function WardBusinessRow({
   hint?: string;
   draft: Partial<Program>;
   setDraft: React.Dispatch<React.SetStateAction<Partial<Program>>>;
+  saveFields: (fields: Partial<Program>) => void;
 }) {
   const checked = (draft[flagKey] as boolean | undefined) ?? false;
   const text = (draft[textKey] as string | null | undefined) ?? "";
+  const initialTextRef = useRef(text);
   return (
     <div className="space-y-1.5">
       <label className="flex items-center gap-2 cursor-pointer select-none">
         <Checkbox
           checked={checked}
-          onCheckedChange={(v) =>
-            setDraft((p) => ({ ...p, [flagKey]: v === true }))
-          }
+          onCheckedChange={(v) => {
+            const next = v === true;
+            setDraft((p) => ({ ...p, [flagKey]: next }));
+            saveFields({ [flagKey]: next });
+          }}
         />
         <span
           className="text-sm font-medium"
@@ -1260,6 +1284,12 @@ function WardBusinessRow({
             onChange={(e) =>
               setDraft((p) => ({ ...p, [textKey]: e.target.value || null }))
             }
+            onBlur={() => {
+              if (text !== initialTextRef.current) {
+                saveFields({ [textKey]: text || null });
+                initialTextRef.current = text;
+              }
+            }}
           />
           {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
         </>
