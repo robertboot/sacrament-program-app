@@ -272,21 +272,24 @@ function DashboardRowCard({
                         key={slot}
                         className="flex items-start gap-3 px-3 py-3"
                       >
-                        {a.speaker_id ? (
-                          <SpeakerHistoryButton
-                            speakerId={a.speaker_id}
-                            speakerName={a.speaker?.full_name ?? null}
-                          />
-                        ) : (
-                          <div className="w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 flex items-center justify-center shrink-0">
-                            <User className="w-4 h-4" />
-                          </div>
-                        )}
+                        <div className="w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 flex items-center justify-center shrink-0">
+                          <User className="w-4 h-4" />
+                        </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center flex-wrap gap-x-2">
-                            <span className="text-base font-semibold leading-tight">
-                              {speakerName ?? "—"}
-                            </span>
+                            {a.speaker_id && speakerName ? (
+                              <SpeakerHistoryButton
+                                speakerId={a.speaker_id}
+                                speakerName={speakerName}
+                                className="text-base font-semibold leading-tight"
+                              >
+                                {speakerName}
+                              </SpeakerHistoryButton>
+                            ) : (
+                              <span className="text-base font-semibold leading-tight">
+                                {speakerName ?? "—"}
+                              </span>
+                            )}
                             {isStake && (
                               <span className="text-[10px] uppercase tracking-wider text-amber-700">
                                 Stake

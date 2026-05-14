@@ -1,18 +1,18 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Speaker } from "@/lib/supabase/types";
 import { getSpeakerById } from "@/app/(app)/speakers/actions";
 import { SpeakerViewDialog } from "@/components/speaker-view-dialog";
 
 /**
- * Small gray person avatar button used on the planner rows. Clicking it
- * fetches the full speaker by id and opens the same SpeakerViewDialog that
- * the /speakers page shows when you tap a name, so the bishop can pull up
- * a speaker's history from the dashboard without leaving the page.
+ * Inline trigger that fetches a speaker by id and opens the same
+ * SpeakerViewDialog the /speakers page uses, so the bishop can pull up a
+ * speaker's history straight from the planner. Wrap any text/element to make
+ * it the clickable trigger — used on the planner to turn the speaker's name
+ * into a visible link.
  *
  * If the speaker can't be loaded (deleted, RLS, etc.) the click silently
  * no-ops. Edit jumps to /speakers since the planner has no inline edit.
@@ -21,10 +21,12 @@ export function SpeakerHistoryButton({
   speakerId,
   speakerName,
   className,
+  children,
 }: {
   speakerId: string;
   speakerName?: string | null;
   className?: string;
+  children: ReactNode;
 }) {
   const router = useRouter();
   const [speaker, setSpeaker] = useState<Speaker | null>(null);
@@ -45,15 +47,17 @@ export function SpeakerHistoryButton({
       <button
         type="button"
         aria-label={
-          speakerName ? `Open ${speakerName}'s speaking history` : "Open speaker history"
+          speakerName
+            ? `Open ${speakerName}'s speaking history`
+            : "Open speaker history"
         }
         onClick={openDialog}
         className={cn(
-          "w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 flex items-center justify-center shrink-0 hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors",
+          "text-left inline-flex items-center text-blue-600 dark:text-blue-400 underline underline-offset-4 hover:text-blue-700 dark:hover:text-blue-300",
           className,
         )}
       >
-        <User className="w-4 h-4" />
+        {children}
       </button>
       <SpeakerViewDialog
         speaker={speaker}
