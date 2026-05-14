@@ -2,7 +2,7 @@
   "name": "Rameumptom",
   "short_name": "Rameumptom",
   "description": "Plan and share sacrament meeting programs from the high stand.",
-  "start_url": "/",
+  "start_url": "/home",
   "display": "standalone",
   "background_color": "#1e3a5f",
   "theme_color": "#1e3a5f",
