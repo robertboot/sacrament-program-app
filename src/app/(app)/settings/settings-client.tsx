@@ -845,7 +845,7 @@ function defaultInviteMessage(name: string, url: string): string {
     `I'd like to invite you to use Rameumptom — a small tool I'm using to plan our sacrament meetings, manage speaking assignments, and share the printed program with the congregation.`,
     `Tap this link to sign in directly (no account needed up front — you can set a password after you're in):`,
     url,
-    `The link expires in about an hour. Let me know if you have any questions!`,
+    `The link is good for 48 hours. Let me know if you have any questions!`,
   ].join("\n\n");
 }
 
@@ -889,8 +889,8 @@ function InviteLinkDialog({
           <DialogTitle>Invite link for {invite?.name}</DialogTitle>
           <DialogDescription>
             Paste the full message below into a text or email so they know
-            what they&rsquo;re being invited to. The link inside expires in
-            about an hour.
+            what they&rsquo;re being invited to. The link inside is good for
+            48 hours.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 min-w-0">
