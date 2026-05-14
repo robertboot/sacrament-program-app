@@ -12,6 +12,20 @@ function slugify(name: string) {
     .slice(0, 32);
 }
 
+async function requireBishopric() {
+  const supabase = await createClient();
+  const { data: userRes } = await supabase.auth.getUser();
+  if (!userRes.user) return { error: "Not signed in." as const };
+  const { data: callerProfile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", userRes.user.id)
+    .single();
+  if (callerProfile?.role !== "bishopric")
+    return { error: "Bishopric only." as const };
+  return { callerId: userRes.user.id };
+}
+
 type SettingsInput = {
   branch_name: string;
   default_welcome_text: string;
@@ -35,7 +49,6 @@ export async function updateUserRole(
   position: BishopricPosition | null,
 ) {
   const supabase = await createClient();
-  // Clear position if not bishopric.
   const { error } = await supabase
     .from("profiles")
     .update({ role, bishopric_position: role === "bishopric" ? position : null })
@@ -46,35 +59,28 @@ export async function updateUserRole(
 }
 
 /**
- * Create a bishopric member without requiring them to sign up.
- * Bishop fills in name + position; we mint an auth user with a placeholder
- * email (so they can later claim it via password reset / magic link if they
- * want to sign in) and stamp the profile as bishopric.
+ * Create a member by email. Mints an auth user (email_confirm so they're
+ * usable immediately) and promotes the trigger-created profile to the
+ * requested role. Returns a magic link the bishop can share so the new
+ * user can sign in and set a password.
  *
- * If `email` is provided, the user can be invited to sign in normally.
+ * If no email is supplied a placeholder is used — the member won't be
+ * able to sign in until the bishop edits them to add a real email.
  */
-export async function addBishopricMember({
+async function createMember({
   name,
   email,
+  role,
   position,
 }: {
   name: string;
   email: string | null;
-  position: BishopricPosition;
+  role: UserRole;
+  position: BishopricPosition | null;
 }) {
-  // Verify caller is bishopric.
-  const userSupabase = await createClient();
-  const { data: userRes } = await userSupabase.auth.getUser();
-  if (!userRes.user) return { error: "Not signed in." };
-  const { data: callerProfile } = await userSupabase
-    .from("profiles")
-    .select("role")
-    .eq("id", userRes.user.id)
-    .single();
-  if (callerProfile?.role !== "bishopric") return { error: "Bishopric only." };
-
   const finalEmail =
-    email?.trim() || `${slugify(name)}-${Date.now().toString(36)}@bishopric.placeholder.invalid`;
+    email?.trim() ||
+    `${slugify(name)}-${Date.now().toString(36)}@${role}.placeholder.invalid`;
 
   const admin = createServiceClient();
   const { data: created, error: createErr } = await admin.auth.admin.createUser({
@@ -86,43 +92,80 @@ export async function addBishopricMember({
     return { error: createErr?.message ?? "Failed to create user." };
   }
 
-  // The handle_new_auth_user trigger already inserted a chorister profile.
-  // Promote it. If the position slot is taken, this fails on the unique index.
+  // The handle_new_auth_user trigger inserted a chorister profile. Update it.
   const { error: roleErr } = await admin
     .from("profiles")
-    .update({ full_name: name, role: "bishopric", bishopric_position: position })
+    .update({
+      full_name: name,
+      role,
+      bishopric_position: role === "bishopric" ? position : null,
+    })
     .eq("id", created.user.id);
   if (roleErr) {
-    // Roll back the auth user so we don't leave an orphan.
     await admin.auth.admin.deleteUser(created.user.id);
     return { error: roleErr.message };
   }
 
+  // Generate a magic-link the bishop can forward. Only meaningful when
+  // there's a real email — placeholder emails won't actually deliver, but
+  // the URL itself still signs the user in if pasted.
+  let inviteLink: string | null = null;
+  if (email?.trim()) {
+    const { data: linkData } = await admin.auth.admin.generateLink({
+      type: "magiclink",
+      email: finalEmail,
+    });
+    inviteLink = linkData?.properties?.action_link ?? null;
+  }
+
   revalidatePath("/settings");
   revalidatePath("/");
-  return { error: null, id: created.user.id };
+  return { error: null, id: created.user.id, inviteLink };
+}
+
+export async function addBishopricMember({
+  name,
+  email,
+  position,
+}: {
+  name: string;
+  email: string | null;
+  position: BishopricPosition;
+}) {
+  const auth = await requireBishopric();
+  if ("error" in auth) return { error: auth.error };
+  return createMember({ name, email, role: "bishopric", position });
+}
+
+export async function addChoristerMember({
+  name,
+  email,
+}: {
+  name: string;
+  email: string | null;
+}) {
+  const auth = await requireBishopric();
+  if ("error" in auth) return { error: auth.error };
+  return createMember({ name, email, role: "chorister", position: null });
 }
 
 /**
- * Edit a bishopric member's name and/or position.
- * If the new position is already held by a different member, the two are swapped.
+ * Update a bishopric member's name, email, and/or position. If the new
+ * position is already held by a different member, the two are swapped.
  */
 export async function updateBishopricMember(
   userId: string,
-  { full_name, position }: { full_name: string; position: BishopricPosition },
+  {
+    full_name,
+    email,
+    position,
+  }: { full_name: string; email: string | null; position: BishopricPosition },
 ) {
-  const userSupabase = await createClient();
-  const { data: userRes } = await userSupabase.auth.getUser();
-  const { data: callerProfile } = await userSupabase
-    .from("profiles")
-    .select("role")
-    .eq("id", userRes.user!.id)
-    .single();
-  if (callerProfile?.role !== "bishopric") return { error: "Bishopric only." };
+  const auth = await requireBishopric();
+  if ("error" in auth) return { error: auth.error };
 
   const admin = createServiceClient();
 
-  // Current state of the target.
   const { data: target, error: tErr } = await admin
     .from("profiles")
     .select("id, bishopric_position")
@@ -130,7 +173,15 @@ export async function updateBishopricMember(
     .single();
   if (tErr || !target) return { error: tErr?.message ?? "Member not found." };
 
-  // Who currently holds the new position (if anyone, and not the same person)?
+  // Update email on auth.users if supplied.
+  if (email?.trim()) {
+    const { error: emailErr } = await admin.auth.admin.updateUserById(userId, {
+      email: email.trim(),
+      email_confirm: true,
+    });
+    if (emailErr) return { error: emailErr.message };
+  }
+
   const { data: incumbent } = await admin
     .from("profiles")
     .select("id, bishopric_position")
@@ -139,9 +190,6 @@ export async function updateBishopricMember(
     .maybeSingle();
 
   if (incumbent) {
-    // Swap: the profiles check constraint requires (role=bishopric AND position
-    // not null) OR (role=chorister AND position null), so we briefly demote
-    // both to chorister to clear the unique-position index, then restore.
     const { error: e1 } = await admin
       .from("profiles")
       .update({ role: "chorister", bishopric_position: null })
@@ -172,20 +220,78 @@ export async function updateBishopricMember(
   return { error: null };
 }
 
-export async function removeBishopricMember(userId: string) {
-  const userSupabase = await createClient();
-  const { data: userRes } = await userSupabase.auth.getUser();
-  const { data: callerProfile } = await userSupabase
+export async function updateChoristerMember(
+  userId: string,
+  { full_name, email }: { full_name: string; email: string | null },
+) {
+  const auth = await requireBishopric();
+  if ("error" in auth) return { error: auth.error };
+  const admin = createServiceClient();
+
+  if (email?.trim()) {
+    const { error: emailErr } = await admin.auth.admin.updateUserById(userId, {
+      email: email.trim(),
+      email_confirm: true,
+    });
+    if (emailErr) return { error: emailErr.message };
+  }
+
+  const { error } = await admin
     .from("profiles")
-    .select("role")
-    .eq("id", userRes.user!.id)
-    .single();
-  if (callerProfile?.role !== "bishopric") return { error: "Bishopric only." };
-  if (userId === userRes.user!.id) return { error: "You can't remove yourself." };
+    .update({ full_name })
+    .eq("id", userId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/settings");
+  return { error: null };
+}
+
+/**
+ * Delete a user entirely — revokes their auth access and removes their
+ * profile via FK cascade. Used when replacing a bishopric or chorister
+ * member so the previous person can no longer sign in.
+ */
+export async function removeMember(userId: string) {
+  const auth = await requireBishopric();
+  if ("error" in auth) return { error: auth.error };
+  if (userId === auth.callerId) return { error: "You can't remove yourself." };
 
   const admin = createServiceClient();
   const { error } = await admin.auth.admin.deleteUser(userId);
   if (error) return { error: error.message };
   revalidatePath("/settings");
   return { error: null };
+}
+
+// Backwards-compat alias for the old function name used elsewhere.
+export const removeBishopricMember = removeMember;
+
+/**
+ * Generate a fresh magic-link sign-in URL for an existing member so the
+ * bishop can re-share it (the previous one may have expired or never
+ * been forwarded). The link signs the user in directly; from there they
+ * can set a password via the auth page if desired.
+ */
+export async function inviteMember(userId: string) {
+  const auth = await requireBishopric();
+  if ("error" in auth) return { error: auth.error };
+
+  const admin = createServiceClient();
+  const { data: u, error: uErr } = await admin.auth.admin.getUserById(userId);
+  if (uErr || !u?.user?.email) {
+    return { error: uErr?.message ?? "No email on file for this user." };
+  }
+  if (u.user.email.endsWith(".placeholder.invalid")) {
+    return {
+      error:
+        "No real email on file. Edit the member and add their email first.",
+    };
+  }
+
+  const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
+    type: "magiclink",
+    email: u.user.email,
+  });
+  if (linkErr) return { error: linkErr.message };
+  return { error: null, inviteLink: linkData?.properties?.action_link ?? null };
 }

@@ -21,6 +21,9 @@ export type Profile = {
   bishopric_position: BishopricPosition | null;
   last_conducted_date: string | null;
   created_at: string;
+  /** Hydrated from auth.users by the settings page; null if no real email
+   *  is on file (placeholder accounts that haven't been claimed yet). */
+  email?: string | null;
 };
 
 export type Speaker = {
