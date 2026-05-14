@@ -1,6 +1,6 @@
-import type { BishopricPosition } from "./supabase/types";
+import type { LeaderPosition, UnitType } from "./supabase/types";
 
-export type UnitType = "ward" | "branch";
+export type { UnitType };
 
 /**
  * Centralized ward/branch wording so swapping unit type doesn't require a
@@ -25,29 +25,33 @@ export function unitLabels(unitType: UnitType) {
       };
 }
 
-/** Display name for a bishopric position, ward/branch-aware. */
-export function bishopricPositionLabel(
-  position: BishopricPosition | null | undefined,
+/** Display name for a leader position, ward/branch-aware. */
+export function leaderPositionLabel(
+  position: LeaderPosition | null | undefined,
   unitType: UnitType = "branch",
 ): string {
   if (!position) return "";
-  if (position === "bishop") return unitLabels(unitType).leaderRole;
+  if (position === "president") return unitLabels(unitType).leaderRole;
   if (position === "first_counselor") return "1st Counselor";
   if (position === "second_counselor") return "2nd Counselor";
+  if (position === "clerk") return "Clerk";
   return "";
 }
 
+// Back-compat alias for v1 call sites still using "bishopricPositionLabel".
+export const bishopricPositionLabel = leaderPositionLabel;
+
 /**
- * "Bishop Smith" (ward) or "President Smith" (branch) for someone in the senior
- * bishopric slot. Counselors fall back to their full name as-is — they're
- * usually referred to by full name in the printed program.
+ * "Bishop Smith" (ward) or "President Smith" (branch) for the senior leader
+ * (`position === 'president'`). Counselors and clerks fall back to their
+ * full name as-is.
  */
 export function leaderDisplayName(
   unitType: UnitType,
-  person: { full_name: string; bishopric_position: BishopricPosition | null } | null,
+  person: { full_name: string; position: LeaderPosition | null } | null,
 ): string {
   if (!person) return "—";
-  if (person.bishopric_position === "bishop") {
+  if (person.position === "president") {
     const { leaderTitle } = unitLabels(unitType);
     const parts = person.full_name.trim().split(/\s+/);
     const last = parts[parts.length - 1];

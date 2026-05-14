@@ -1,9 +1,16 @@
-// Hand-written types mirroring supabase/migrations/*.sql.
-// Regenerate with `supabase gen types typescript` once you have the CLI linked
-// to your project — until then, this keeps the app strongly typed.
+// Hand-written types mirroring supabase/migrations/v2/00_schema.sql.
+// Regenerate with `supabase gen types typescript` once linked to the project.
 
-export type UserRole = "bishopric" | "chorister";
-export type BishopricPosition = "bishop" | "first_counselor" | "second_counselor";
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+export type UnitType = "ward" | "branch";
+export type MemberRole = "leader" | "chorister";
+export type LeaderPosition =
+  | "president"
+  | "first_counselor"
+  | "second_counselor"
+  | "clerk";
 export type SpeakerCategory = "first" | "second" | "concluding";
 export type AssignmentSlot = "first" | "second" | "concluding";
 export type AssignmentStatus =
@@ -14,31 +21,84 @@ export type AssignmentStatus =
 export type ProgramStatus = "draft" | "published";
 export type MeetingType = "regular" | "fast_sunday" | "no_services";
 
+// Compatibility alias for code that still references the v1 vocabulary.
+// Internally maps to `leader` for full-access checks. Will be removed once
+// every call site moves to MemberRole.
+export type UserRole = MemberRole | "bishopric";
+export type BishopricPosition = LeaderPosition;
+
+// ---------------------------------------------------------------------------
+// Unit (the tenant)
+// ---------------------------------------------------------------------------
+export type Unit = {
+  id: string;
+  name: string;
+  type: UnitType;
+  owner_id: string;
+  created_at: string;
+  updated_at: string;
+  default_welcome_text: string;
+  assignment_paper_template: string;
+  unit_business_footer: string | null;
+  calendar_ics_url: string | null;
+};
+
+export type UnitMember = {
+  unit_id: string;
+  user_id: string;
+  role: MemberRole;
+  position: LeaderPosition | null;
+  last_conducted_date: string | null;
+  created_at: string;
+  // Hydrated from profiles join (typically full_name + email)
+  profile?: { full_name: string; email: string } | null;
+};
+
+export type UnitInvite = {
+  id: string;
+  unit_id: string;
+  email: string;
+  role: MemberRole;
+  position: LeaderPosition | null;
+  invited_by: string;
+  token: string;
+  accepted_at: string | null;
+  expires_at: string;
+  created_at: string;
+};
+
+// ---------------------------------------------------------------------------
+// Profile (extends auth.users)
+// ---------------------------------------------------------------------------
 export type Profile = {
   id: string;
   full_name: string;
-  role: UserRole;
-  bishopric_position: BishopricPosition | null;
-  last_conducted_date: string | null;
+  email: string;
+  active_unit_id: string | null;
   created_at: string;
-  /** Hydrated from auth.users by the settings page; null if no real email
-   *  is on file (placeholder accounts that haven't been claimed yet). */
-  email?: string | null;
 };
 
+// Convenience view used in the planner header + bishopric pickers — joins a
+// profile with the user's role/position in the currently active unit.
+export type ProfileWithMembership = Profile & {
+  membership: Pick<UnitMember, "role" | "position" | "last_conducted_date"> | null;
+};
+
+// ---------------------------------------------------------------------------
+// Speakers, topics, hymns
+// ---------------------------------------------------------------------------
 export type Speaker = {
   id: string;
+  unit_id: string;
   full_name: string;
   phone: string | null;
   email: string | null;
   notes: string | null;
   is_active: boolean;
   last_spoke_date: string | null;
-  /** Manual backfill of dates from before this app existed. */
   historical_dates?: string[];
   created_at: string;
-  categories?: SpeakerCategory[]; // hydrated from speaker_categories join
-  /** True if this speaker has any upcoming (non-declined) speaking assignment. */
+  categories?: SpeakerCategory[];
   scheduled?: boolean;
 };
 
@@ -49,33 +109,37 @@ export type SpeakerCategoryRow = {
 
 export type Topic = {
   id: string;
+  unit_id: string;
   title: string;
   description: string | null;
   last_used_date: string | null;
   is_active: boolean;
   created_at: string;
-  categories?: SpeakerCategory[]; // hydrated from topic_categories join
+  categories?: SpeakerCategory[];
 };
 
 export type Hymn = {
-  id: number;
+  id: string;
   number: number;
   title: string;
-  hymnal: "1985" | "new";
 };
 
+// ---------------------------------------------------------------------------
+// Programs + assignments
+// ---------------------------------------------------------------------------
 export type Program = {
   id: string;
+  unit_id: string;
   meeting_date: string;
   presiding: string | null;
   conducting_id: string | null;
   welcome_text: string | null;
   brief_reminders: string | null;
-  opening_hymn_id: number | null;
-  sacrament_hymn_id: number | null;
-  intermediate_hymn_id: number | null;
+  opening_hymn_id: string | null;
+  sacrament_hymn_id: string | null;
+  intermediate_hymn_id: string | null;
   intermediate_hymn_text: string | null;
-  closing_hymn_id: number | null;
+  closing_hymn_id: string | null;
   invocation: string | null;
   benediction: string | null;
   chorister: string | null;
@@ -115,13 +179,22 @@ export type SpeakingAssignment = {
   asked_by: string | null;
   confirmed_at: string | null;
   declined_at: string | null;
+  invited_at: string | null;
+  reminded_at: string | null;
+  last_response: "confirmed" | "declined" | null;
+  responded_at: string | null;
+  confirmation_source: "self" | "manual" | null;
+  confirm_token: string;
   notes: string | null;
   created_at: string;
-  updated_at: string;
 };
 
+// ---------------------------------------------------------------------------
+// Events
+// ---------------------------------------------------------------------------
 export type SacramentEvent = {
   id: string;
+  unit_id: string;
   title: string;
   description: string | null;
   event_date: string | null;
@@ -130,15 +203,4 @@ export type SacramentEvent = {
   external_uid: string | null;
   as_brief_reminder: boolean;
   created_at: string;
-};
-
-export type AppSettings = {
-  id: 1;
-  default_welcome_text: string;
-  assignment_paper_template: string;
-  branch_name: string;
-  calendar_ics_url: string | null;
-  unit_type: "ward" | "branch";
-  ward_business_footer: string;
-  updated_at: string;
 };

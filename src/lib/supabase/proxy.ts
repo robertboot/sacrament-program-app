@@ -51,5 +51,20 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Signed-in but no active unit yet → onboarding. The /onboarding route
+  // itself is exempt to avoid a redirect loop.
+  if (user && !isAuthRoute && !isPublic && path !== "/onboarding") {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("active_unit_id")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (!profile?.active_unit_id) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/onboarding";
+      return NextResponse.redirect(url);
+    }
+  }
+
   return response;
 }
