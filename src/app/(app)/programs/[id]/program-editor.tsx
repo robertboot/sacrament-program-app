@@ -27,7 +27,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { CollapsibleCard } from "@/components/collapsible-card";
 import {
   Select,
   SelectContent,
@@ -246,11 +247,7 @@ export function ProgramEditor({
 
       {/* Meeting type */}
       {isBishopric && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Meeting type</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
+        <CollapsibleCard title="Meeting type" contentClassName="space-y-3">
             <div className="grid sm:grid-cols-[1fr_240px] gap-3 items-start">
               <Select
                 value={meetingType}
@@ -298,19 +295,14 @@ export function ProgramEditor({
                   ? "No sacrament meeting at the unit today. The printed program will show only the banner you typed."
                   : "Regular sacrament meeting with three speakers and an intermediate hymn."}
             </p>
-          </CardContent>
-        </Card>
+        </CollapsibleCard>
       )}
 
       {/* Everything except the meeting type itself is hidden on no_services days. */}
       {!isNoServices && (<>
 
       {/* Header info: presiding / conducting */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Meeting header</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      <CollapsibleCard title="Meeting header" contentClassName="space-y-3">
           <div className="grid sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Presiding</Label>
@@ -361,15 +353,10 @@ export function ProgramEditor({
               placeholder="Reminders to read at the pulpit (optional)…"
             />
           </div>
-        </CardContent>
-      </Card>
+      </CollapsibleCard>
 
       {/* Hymns */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Hymns</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      <CollapsibleCard title="Hymns" contentClassName="space-y-3">
           <div className="space-y-1.5">
             <Label>Opening hymn</Label>
             <HymnPicker
@@ -422,21 +409,21 @@ export function ProgramEditor({
               onChange={(id) => setDraft((p) => ({ ...p, closing_hymn_id: id }))}
             />
           </div>
-        </CardContent>
-      </Card>
+      </CollapsibleCard>
 
       {/* Ward/Branch business */}
       {isBishopric && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{labels.unit} business</CardTitle>
-            <p className="text-xs text-muted-foreground">
+        <CollapsibleCard
+          title={`${labels.unit} business`}
+          description={
+            <>
               Check the categories that apply this week. Unchecked categories are skipped on
               the printed program. If none are checked, the program prints &quot;There is no{" "}
               {labels.unitLower} business this week.&quot;
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-3">
+            </>
+          }
+          contentClassName="space-y-3"
+        >
             <WardBusinessRow
               label="Releases"
               flagKey="ward_business_releases"
@@ -504,17 +491,15 @@ export function ProgramEditor({
                 Stake-level announcements — printed separately from ward business.
               </p>
             </div>
-          </CardContent>
-        </Card>
+        </CollapsibleCard>
       )}
 
       {/* Speaking assignments — hidden on fast Sundays (testimony meeting). */}
       {isBishopric && !isFast && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Balance of program</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <CollapsibleCard
+          title="Balance of program"
+          contentClassName="space-y-4"
+        >
             {assignments.length === 0 ? (
               <div className="text-center py-6 space-y-3">
                 <p className="text-sm text-muted-foreground">
@@ -556,17 +541,15 @@ export function ProgramEditor({
                 );
               })
             )}
-          </CardContent>
-        </Card>
+        </CollapsibleCard>
       )}
 
       {/* Read-only assignments view for chorister */}
       {!isBishopric && !isFast && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Balance of program</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
+        <CollapsibleCard
+          title="Balance of program"
+          contentClassName="space-y-2 text-sm"
+        >
             {SLOT_ORDER.map((slot) => {
               const a = assignments.find((x) => x.slot === slot);
               if (!a) return null;
@@ -582,17 +565,15 @@ export function ProgramEditor({
                 </div>
               );
             })}
-          </CardContent>
-        </Card>
+        </CollapsibleCard>
       )}
 
       {/* Day-of fields */}
       {isBishopric && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Sunday-morning fill-in</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
+        <CollapsibleCard
+          title="Sunday-morning fill-in"
+          contentClassName="space-y-3"
+        >
             <div className="grid sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Invocation</Label>
@@ -631,8 +612,7 @@ export function ProgramEditor({
                 />
               </div>
             </div>
-          </CardContent>
-        </Card>
+        </CollapsibleCard>
       )}
       {/* end of "not no_services" block */}
       </>)}
