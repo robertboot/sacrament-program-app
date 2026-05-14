@@ -59,11 +59,23 @@ export function SpeakerHistoryButton({
       >
         {children}
       </button>
-      <SpeakerViewDialog
-        speaker={speaker}
-        onClose={() => setSpeaker(null)}
-        onEdit={() => router.push("/speakers")}
-      />
+      {/*
+        Catch clicks inside the dialog so they don't bubble up through React's
+        event tree to the parent <Link> wrapping the planner row. (The dialog
+        DOM is portaled to document.body, but React events still propagate
+        along the JSX hierarchy.) Without this, tapping the X to close the
+        dialog also navigates to /view.
+      */}
+      <span
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        <SpeakerViewDialog
+          speaker={speaker}
+          onClose={() => setSpeaker(null)}
+          onEdit={() => router.push("/speakers")}
+        />
+      </span>
     </>
   );
 }
