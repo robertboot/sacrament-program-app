@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { DashboardStatusPill } from "@/components/dashboard-status-pill";
 import { DashboardInviteAction } from "@/components/dashboard-invite-action";
 import { DashboardLegend } from "@/components/dashboard-legend";
+import { DashboardMonthGroup } from "@/components/dashboard-month-group";
 import { SpeakerHistoryButton } from "@/components/speaker-history-button";
 import { GenerateButton } from "./generate-button";
 import { SLOT_LABELS } from "@/lib/assignments";
@@ -169,18 +170,18 @@ function DashboardGroupedByMonth({
     g.rows.push(p);
   }
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {groups.map((g) => (
-        <section key={g.label}>
-          <div className="sticky top-14 z-10 -mx-4 px-4 py-2 bg-background/95 backdrop-blur border-b text-xs uppercase tracking-widest font-semibold text-muted-foreground">
-            {g.label}
-          </div>
-          <div className="mt-3 space-y-3">
-            {g.rows.map((p) => (
-              <DashboardRowCard key={p.id} row={p} canEdit={canEdit} />
-            ))}
-          </div>
-        </section>
+        <DashboardMonthGroup
+          key={g.label}
+          label={g.label}
+          count={g.rows.length}
+          defaultOpen={false}
+        >
+          {g.rows.map((p) => (
+            <DashboardRowCard key={p.id} row={p} canEdit={canEdit} />
+          ))}
+        </DashboardMonthGroup>
       ))}
     </div>
   );
