@@ -889,20 +889,23 @@ function AssignmentCard({
 
   function assignKeepingFuture() {
     if (!conflict) return;
+    const name = conflict.speakerName;
     saveSpeakerTopic({
       speaker_id: conflict.newSpeakerId,
       custom_speaker_name: null,
     });
+    toast.success(`${name} is now scheduled on both dates.`);
     setConflict(null);
   }
 
   function assignReplacingFuture() {
     if (!conflict) return;
     const newId = conflict.newSpeakerId;
+    const name = conflict.speakerName;
     const rows = conflict.rows;
     start(async () => {
-      // Clear them from each future slot — keep topic for not_yet_asked, fully
-      // reset locked slots.
+      // Clear them from each future slot — keep topic for not_yet_asked so the
+      // rotation can refill that slot, fully reset locked slots.
       let cleared = 0;
       for (const r of rows) {
         const res =
@@ -920,7 +923,12 @@ function AssignmentCard({
         custom_topic_text: assignment.custom_topic_text,
       });
       if (r2.error) toast.error(r2.error);
-      else toast.success(`Moved here. Cleared ${cleared} future slot${cleared === 1 ? "" : "s"}.`);
+      else
+        toast.success(
+          `${name} rescheduled here · ${cleared} prior slot${
+            cleared === 1 ? "" : "s"
+          } returned to the rotation.`,
+        );
       setConflict(null);
     });
   }
@@ -1101,10 +1109,13 @@ function AssignmentCard({
       <Dialog open={conflict !== null} onOpenChange={(o) => !o && setConflict(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Already scheduled</DialogTitle>
+            <DialogTitle>
+              Reschedule {conflict?.speakerName} or keep both dates?
+            </DialogTitle>
             <DialogDescription>
-              {conflict?.speakerName} is already on the upcoming schedule. Keep both
-              assignments, or move them to this date instead?
+              {conflict?.speakerName} is already on the upcoming schedule.
+              Choose whether to add this date in addition to their existing
+              assignment, or move them so they only speak on this date.
             </DialogDescription>
           </DialogHeader>
           <ul className="space-y-1.5 text-sm border rounded-md p-3 bg-muted/40">
@@ -1127,15 +1138,17 @@ function AssignmentCard({
           </ul>
           {conflict?.rows.some((r) => r.status !== "not_yet_asked") && (
             <p className="text-xs text-amber-700 dark:text-amber-400">
-              Note: some of those slots are already past <em>not yet asked</em> — moving here
-              will reset them back to <em>not yet asked</em> (the topic stays put).
+              Note: some of those slots are already past <em>not yet asked</em> — rescheduling
+              resets them back to <em>not yet asked</em> so the rotation can refill them
+              (the topic stays put).
             </p>
           )}
-          <DialogFooter className="gap-2">
+          <DialogFooter className="gap-2 flex-col sm:flex-row">
             <Button
               variant="ghost"
               onClick={() => setConflict(null)}
               disabled={pending}
+              className="sm:mr-auto"
             >
               Cancel
             </Button>
@@ -1144,10 +1157,10 @@ function AssignmentCard({
               onClick={assignKeepingFuture}
               disabled={pending}
             >
-              Speak at all
+              Keep both dates
             </Button>
             <Button onClick={assignReplacingFuture} disabled={pending}>
-              Move to this date only
+              Reschedule to this date
             </Button>
           </DialogFooter>
         </DialogContent>
