@@ -80,7 +80,7 @@ const SORTS: { value: SortBy; label: string; shortLabel: string }[] = [
 export function SpeakersClient({ initialSpeakers }: { initialSpeakers: Speaker[] }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
-  const [sortBy, setSortBy] = useState<SortBy>("name");
+  const [sortBy, setSortBy] = useState<SortBy>("last_spoke");
   const [viewing, setViewing] = useState<Speaker | null>(null);
   const [editing, setEditing] = useState<Speaker | null>(null);
   const [showAdd, setShowAdd] = useState(false);
