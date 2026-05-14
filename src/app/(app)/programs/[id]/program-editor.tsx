@@ -12,7 +12,6 @@ import {
   Globe,
   Globe2,
   RotateCcw,
-  Trash2,
   Link2,
   CheckCircle2,
   XCircle,
@@ -75,7 +74,6 @@ export type FutureAssignment = {
 };
 import {
   clearAssignmentSpeaker,
-  deleteProgram,
   ensureProgramSlots,
   regenerateShareToken,
   resetAssignmentSlot,
@@ -123,7 +121,6 @@ export function ProgramEditor({
   );
   const labels = unitLabels(settings.unit_type);
   const [pending, start] = useTransition();
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
 
   // Local "dirty buffer" for text/hymn fields so we can save in one shot.
@@ -655,7 +652,10 @@ export function ProgramEditor({
 
       {/* Sticky save bar — sits above the mobile tab bar (which is z-30, h-16) */}
       <div className="fixed bottom-16 md:bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur z-40">
-        <div className="mx-auto max-w-5xl px-4 py-3 flex flex-wrap items-center gap-2 justify-end">
+        <div className="mx-auto max-w-5xl px-4 py-3 flex flex-wrap items-center gap-2 justify-center">
+          <Button onClick={saveAll} disabled={pending}>
+            <Save className="w-4 h-4" /> Save
+          </Button>
           {isBishopric && (
             <>
               {program.status === "draft" ? (
@@ -700,19 +700,8 @@ export function ProgramEditor({
                   <Globe2 className="w-4 h-4" /> Unpublish
                 </Button>
               )}
-              <Button
-                variant="outline"
-                className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
-                onClick={() => setConfirmDelete(true)}
-                disabled={pending}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
             </>
           )}
-          <Button onClick={saveAll} disabled={pending}>
-            <Save className="w-4 h-4" /> Save
-          </Button>
         </div>
       </div>
 
@@ -788,41 +777,6 @@ export function ProgramEditor({
               </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete confirm */}
-      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete this program?</DialogTitle>
-            <DialogDescription>
-              This deletes the program and all three speaking assignments. Use this if the meeting
-              was cancelled or duplicated; otherwise just leave it as a draft.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmDelete(false)} disabled={pending}>
-              Cancel
-            </Button>
-            <Button
-              variant="outline"
-              className="text-red-600"
-              onClick={() =>
-                start(async () => {
-                  const r = await deleteProgram(program.id);
-                  if (r.error) toast.error(r.error);
-                  else {
-                    toast.success("Program deleted.");
-                    router.replace("/");
-                  }
-                })
-              }
-              disabled={pending}
-            >
-              Delete
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
