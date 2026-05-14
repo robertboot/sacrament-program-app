@@ -35,6 +35,8 @@ export type Speaker = {
   historical_dates?: string[];
   created_at: string;
   categories?: SpeakerCategory[]; // hydrated from speaker_categories join
+  /** True if this speaker has any upcoming (non-declined) speaking assignment. */
+  scheduled?: boolean;
 };
 
 export type SpeakerCategoryRow = {

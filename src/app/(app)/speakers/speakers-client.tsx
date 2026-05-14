@@ -257,8 +257,17 @@ function SpeakerRow({ speaker, onClick }: { speaker: Speaker; onClick: () => voi
     >
       <CardContent className="p-3 flex items-center gap-3">
         <div className="flex-1 min-w-0">
-          <div className="font-medium truncate flex items-center gap-2">
+          <div className="font-medium truncate flex items-center gap-2 flex-wrap">
             {speaker.full_name}
+            {speaker.scheduled && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 ring-1 ring-emerald-200 dark:ring-emerald-900 rounded-full px-1.5 py-0.5">
+                <span
+                  aria-hidden
+                  className="w-1.5 h-1.5 rounded-full bg-emerald-500"
+                />
+                Scheduled
+              </span>
+            )}
             {!speaker.is_active && (
               <Badge variant="outline" className="text-[10px]">
                 inactive
