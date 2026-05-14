@@ -839,6 +839,17 @@ function AddChoristerForm({
 
 // ───────────────────────── Invite link dialog ─────────────────────────
 
+function defaultInviteMessage(name: string, url: string): string {
+  const firstName = name.trim().split(/\s+/)[0] || name;
+  return [
+    `Hi ${firstName},`,
+    `I'd like to invite you to use Rameumptom — a small tool I'm using to plan our sacrament meetings, manage speaking assignments, and share the printed program with the congregation.`,
+    `Tap this link to sign in directly (no account needed up front — you can set a password after you're in):`,
+    url,
+    `The link expires in about an hour. Let me know if you have any questions!`,
+  ].join("\n\n");
+}
+
 function InviteLinkDialog({
   invite,
   onClose,
@@ -846,14 +857,21 @@ function InviteLinkDialog({
   invite: { name: string; url: string } | null;
   onClose: () => void;
 }) {
-  const [copied, setCopied] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<"message" | "link" | null>(null);
+  const [message, setMessage] = useState("");
+  const [trackedUrl, setTrackedUrl] = useState<string | null>(null);
 
-  function copy() {
-    if (!invite) return;
-    navigator.clipboard.writeText(invite.url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      toast.success("Link copied.");
+  // Re-init the message whenever the dialog opens for a fresh invite.
+  if (invite && invite.url !== trackedUrl) {
+    setTrackedUrl(invite.url);
+    setMessage(defaultInviteMessage(invite.name, invite.url));
+  }
+
+  function copyText(text: string, key: "message" | "link") {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 2000);
+      toast.success(key === "message" ? "Message copied." : "Link copied.");
     });
   }
 
@@ -862,7 +880,7 @@ function InviteLinkDialog({
       open={!!invite}
       onOpenChange={(o) => {
         if (!o) {
-          setCopied(false);
+          setCopiedKey(null);
           onClose();
         }
       }}
@@ -871,25 +889,58 @@ function InviteLinkDialog({
         <DialogHeader>
           <DialogTitle>Invite link for {invite?.name}</DialogTitle>
           <DialogDescription>
-            Forward this link via email or text. Clicking it signs them in to
-            Rameumptom directly — they can set a password from there. The link
-            expires after about an hour.
+            Paste the full message below into a text or email so they know
+            what they&rsquo;re being invited to. The link inside expires in
+            about an hour.
           </DialogDescription>
         </DialogHeader>
-        <div className="rounded-md border bg-muted/40 p-2 text-xs break-all font-mono">
-          {invite?.url}
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="invite-message" className="text-xs uppercase tracking-wider text-muted-foreground">
+              Message to send
+            </Label>
+            <Textarea
+              id="invite-message"
+              rows={9}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className="text-sm"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Tweak the wording if you&rsquo;d like — the link must stay in the body for the recipient to click through.
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">
+              Link only
+            </div>
+            <div className="rounded-md border bg-muted/40 p-2 text-xs break-all font-mono">
+              {invite?.url}
+            </div>
+          </div>
         </div>
-        <DialogFooter className="gap-2">
-          <Button variant="ghost" onClick={onClose}>
+        <DialogFooter className="gap-2 flex-wrap">
+          <Button variant="ghost" onClick={onClose} className="mr-auto">
             Close
           </Button>
-          <Button onClick={copy}>
-            {copied ? (
+          <Button
+            variant="outline"
+            onClick={() => invite && copyText(invite.url, "link")}
+          >
+            {copiedKey === "link" ? (
               <Check className="w-4 h-4" />
             ) : (
               <Copy className="w-4 h-4" />
             )}
-            {copied ? "Copied" : "Copy link"}
+            {copiedKey === "link" ? "Copied" : "Copy link"}
+          </Button>
+          <Button onClick={() => copyText(message, "message")}>
+            {copiedKey === "message" ? (
+              <Check className="w-4 h-4" />
+            ) : (
+              <Copy className="w-4 h-4" />
+            )}
+            {copiedKey === "message" ? "Copied" : "Copy message"}
           </Button>
         </DialogFooter>
       </DialogContent>
