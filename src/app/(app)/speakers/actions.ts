@@ -147,7 +147,11 @@ export async function getSpeakerHistory(speakerId: string) {
       if (!upcomingByDate.has(p.meeting_date) || topic) {
         upcomingByDate.set(p.meeting_date, topic);
       }
-    } else if (r.status === "confirmed") {
+    } else {
+      // Past meeting — count as history regardless of workflow status
+      // (declined is already filtered out at the query level above). Bishops
+      // rarely flip every old assignment to "confirmed", so requiring that
+      // dropped real past talks from the history.
       if (!pastByDate.has(p.meeting_date) || topic) {
         pastByDate.set(p.meeting_date, topic);
       }
