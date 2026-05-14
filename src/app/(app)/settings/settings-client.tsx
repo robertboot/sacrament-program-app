@@ -894,8 +894,8 @@ function InviteLinkDialog({
             about an hour.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
-          <div className="space-y-1.5">
+        <div className="space-y-3 min-w-0">
+          <div className="space-y-1.5 min-w-0">
             <Label htmlFor="invite-message" className="text-xs uppercase tracking-wider text-muted-foreground">
               Message to send
             </Label>
@@ -904,17 +904,23 @@ function InviteLinkDialog({
               rows={9}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              className="text-sm"
+              // Override the Textarea component's field-sizing-content, which
+              // would otherwise expand the box to fit a long, unbreakable URL
+              // and drag the entire dialog out past the viewport. wrap=hard
+              // forces hard newlines on overflow; break-all + min-w-0 let
+              // mid-URL wraps render properly.
+              wrap="hard"
+              className="text-sm w-full max-w-full min-w-0 break-all [field-sizing:fixed] resize-none"
             />
             <p className="text-[11px] text-muted-foreground">
               Tweak the wording if you&rsquo;d like — the link must stay in the body for the recipient to click through.
             </p>
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 min-w-0">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">
               Link only
             </div>
-            <div className="rounded-md border bg-muted/40 p-2 text-xs break-all font-mono">
+            <div className="rounded-md border bg-muted/40 p-2 text-[11px] break-all font-mono max-w-full min-w-0 overflow-hidden">
               {invite?.url}
             </div>
           </div>
