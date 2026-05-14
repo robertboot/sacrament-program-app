@@ -321,7 +321,7 @@ function SpeakerDialog({
   const [cats, setCats] = useState<SpeakerCategory[]>(speaker?.categories ?? []);
   const [lastSpoke, setLastSpoke] = useState(speaker?.last_spoke_date ?? "");
   const [history, setHistory] = useState<
-    { date: string; kind: "upcoming" | "past" }[]
+    { date: string; kind: "upcoming" | "past"; topic: string | null }[]
   >([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
@@ -459,19 +459,26 @@ function SpeakerDialog({
                   )}
                 </p>
               ) : (
-                <div className="max-h-40 overflow-y-auto border rounded-md p-2 text-xs space-y-0.5">
+                <div className="max-h-40 overflow-y-auto border rounded-md p-2 text-xs space-y-1">
                   {history.map((e) => (
                     <div
                       key={`${e.kind}-${e.date}`}
                       className={cn(
-                        "flex items-center gap-2",
+                        "flex items-baseline gap-2 flex-wrap",
                         e.kind === "upcoming" &&
-                          "text-emerald-700 dark:text-emerald-400 font-medium",
+                          "text-emerald-700 dark:text-emerald-400",
                       )}
                     >
-                      <span>{format(parseISO(e.date), "EEE, MMM d, yyyy")}</span>
+                      <span className="font-medium">
+                        {format(parseISO(e.date), "EEE, MMM d, yyyy")}
+                      </span>
+                      {e.topic && (
+                        <span className="text-muted-foreground italic">
+                          — {e.topic}
+                        </span>
+                      )}
                       {e.kind === "upcoming" && (
-                        <span className="text-[10px] uppercase tracking-wider">
+                        <span className="text-[10px] uppercase tracking-wider ml-auto">
                           Upcoming
                         </span>
                       )}
