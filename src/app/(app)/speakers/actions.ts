@@ -74,6 +74,8 @@ export async function updateSpeaker(id: string, input: SpeakerInput) {
 export type SpeakerHistoryEntry = {
   date: string; // ISO YYYY-MM-DD
   kind: "upcoming" | "past";
+  /** The talk topic that day, if any. Null for manual historical_dates. */
+  topic: string | null;
 };
 
 /**
@@ -110,7 +112,9 @@ export async function getSpeakerHistory(speakerId: string) {
   const [assignmentsRes, speakerRes] = await Promise.all([
     supabase
       .from("speaking_assignments")
-      .select(`status, program:programs!inner(meeting_date)`)
+      .select(
+        `status, custom_topic_text, program:programs!inner(meeting_date), topic:topics(title)`,
+      )
       .eq("speaker_id", speakerId)
       .neq("status", "declined"),
     // historical_dates may not exist yet on older databases — request it,
@@ -126,18 +130,27 @@ export async function getSpeakerHistory(speakerId: string) {
 
   type Row = {
     status: string;
+    custom_topic_text: string | null;
     program: { meeting_date: string } | { meeting_date: string }[] | null;
+    topic: { title: string } | { title: string }[] | null;
   };
 
-  const upcomingDates = new Set<string>();
-  const pastDates = new Set<string>();
+  const upcomingByDate = new Map<string, string | null>();
+  const pastByDate = new Map<string, string | null>();
   for (const r of (assignmentsRes.data ?? []) as Row[]) {
     const p = Array.isArray(r.program) ? r.program[0] : r.program;
     if (!p?.meeting_date) continue;
+    const t = Array.isArray(r.topic) ? r.topic[0] : r.topic;
+    const topic = t?.title ?? r.custom_topic_text ?? null;
     if (p.meeting_date >= today) {
-      upcomingDates.add(p.meeting_date);
+      // Keep the most specific topic if the same date appears twice.
+      if (!upcomingByDate.has(p.meeting_date) || topic) {
+        upcomingByDate.set(p.meeting_date, topic);
+      }
     } else if (r.status === "confirmed") {
-      pastDates.add(p.meeting_date);
+      if (!pastByDate.has(p.meeting_date) || topic) {
+        pastByDate.set(p.meeting_date, topic);
+      }
     }
   }
 
@@ -145,12 +158,20 @@ export async function getSpeakerHistory(speakerId: string) {
     (speakerRes.data as { historical_dates?: string[] } | null)?.historical_dates ?? [];
   for (const d of historical) {
     // Historical entries are by definition past — but skip if it sneaks in as today/future.
-    if (d < today) pastDates.add(d);
+    if (d < today && !pastByDate.has(d)) pastByDate.set(d, null);
   }
 
   const entries: SpeakerHistoryEntry[] = [
-    ...[...upcomingDates].map((d) => ({ date: d, kind: "upcoming" as const })),
-    ...[...pastDates].map((d) => ({ date: d, kind: "past" as const })),
+    ...[...upcomingByDate.entries()].map(([date, topic]) => ({
+      date,
+      kind: "upcoming" as const,
+      topic,
+    })),
+    ...[...pastByDate.entries()].map(([date, topic]) => ({
+      date,
+      kind: "past" as const,
+      topic,
+    })),
   ].sort((a, b) => b.date.localeCompare(a.date)); // newest first
 
   return { error: null, entries };
