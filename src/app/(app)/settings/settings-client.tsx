@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CollapsibleCard } from "@/components/collapsible-card";
 import {
   Select,
   SelectContent,
@@ -72,11 +72,11 @@ export function SettingsClient({
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Unit</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      <CollapsibleCard
+        title="Unit"
+        defaultOpen={false}
+        contentClassName="space-y-3"
+      >
           <div className="space-y-1.5">
             <Label>Unit type</Label>
             <Select value={unitType} onValueChange={(v) => setUnitType(v as UnitType)}>
@@ -153,19 +153,20 @@ export function SettingsClient({
               <Save className="w-4 h-4" /> Save
             </Button>
           </div>
-        </CardContent>
-      </Card>
+      </CollapsibleCard>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{labels.leadership}</CardTitle>
-          <CardDescription>
-            Add {labels.leadership.toLowerCase()} members so they show up in the conducting
-            picker and the rotation. They don&apos;t need to sign up first — the{" "}
-            {labels.leaderRole.toLowerCase()} manages everything for them.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <CollapsibleCard
+        title={labels.leadership}
+        description={
+          <>
+            Add {labels.leadership.toLowerCase()} members so they show up in the
+            conducting picker and the rotation. They don&apos;t need to sign up
+            first — the {labels.leaderRole.toLowerCase()} manages everything for
+            them.
+          </>
+        }
+        contentClassName="space-y-4"
+      >
           <BishopricList
             members={profiles.filter((p) => p.role === "bishopric")}
             unitType={unitType}
@@ -181,28 +182,28 @@ export function SettingsClient({
             pending={pending}
             start={start}
           />
-        </CardContent>
-      </Card>
+      </CollapsibleCard>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Other users</CardTitle>
-          <CardDescription>
-            Anyone who signs up appears here. Choristers can edit hymns; promote to bishopric
-            from above if you need to move someone in/out of the rotation.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="divide-y">
-          {profiles.filter((p) => p.role === "chorister").length === 0 && (
-            <p className="text-sm text-muted-foreground py-2">No chorister users yet.</p>
-          )}
-          {profiles
-            .filter((p) => p.role === "chorister")
-            .map((p) => (
-              <UserRow key={p.id} profile={p} pending={pending} start={start} />
-            ))}
-        </CardContent>
-      </Card>
+      <CollapsibleCard
+        title="Other users"
+        description={
+          <>
+            Anyone who signs up appears here. Choristers can edit hymns; promote
+            to bishopric from above if you need to move someone in/out of the
+            rotation.
+          </>
+        }
+        contentClassName="divide-y"
+      >
+        {profiles.filter((p) => p.role === "chorister").length === 0 && (
+          <p className="text-sm text-muted-foreground py-2">No chorister users yet.</p>
+        )}
+        {profiles
+          .filter((p) => p.role === "chorister")
+          .map((p) => (
+            <UserRow key={p.id} profile={p} pending={pending} start={start} />
+          ))}
+      </CollapsibleCard>
     </div>
   );
 }
