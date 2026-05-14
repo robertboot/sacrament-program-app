@@ -202,6 +202,19 @@ export async function deleteSpeaker(id: string) {
  * Categories accept "first"/"5", "second"/"10", "concluding"/"15".
  * The defaults passed in apply to rows that don't specify inline categories.
  * isActive is applied to all imported speakers.
+ *
+ * Note: bulk-imported speakers are inserted without a last_spoke_date — that
+ * column is filled by the recompute_speaker_last_spoke DB trigger only on
+ * confirmed assignments. For real rotation order they rely on either:
+ *   1. The bishop opening the speaker and setting Last spoke manually
+ *      (the Edit dialog has a date field), or
+ *   2. The read-side hydration in src/app/(app)/speakers/page.tsx and
+ *      src/app/(app)/programs/[id]/page.tsx, which derives an effective
+ *      last_spoke_date from any past assignment (not just confirmed).
+ *
+ * That hydration means a freshly imported speaker still appears with no
+ * history until they're assigned to a program — there's no "Last spoke"
+ * data to surface until then.
  */
 export async function bulkImportSpeakers(
   rawText: string,
