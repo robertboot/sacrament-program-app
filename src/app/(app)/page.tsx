@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { DashboardStatusPill } from "@/components/dashboard-status-pill";
 import { DashboardInviteAction } from "@/components/dashboard-invite-action";
 import { DashboardLegend } from "@/components/dashboard-legend";
+import { SpeakerHistoryButton } from "@/components/speaker-history-button";
 import { GenerateButton } from "./generate-button";
 import { SLOT_LABELS } from "@/lib/assignments";
 import type { AssignmentStatus, ProgramStatus, AssignmentSlot } from "@/lib/supabase/types";
@@ -271,9 +272,16 @@ function DashboardRowCard({
                         key={slot}
                         className="flex items-start gap-3 px-3 py-3"
                       >
-                        <div className="w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 flex items-center justify-center shrink-0">
-                          <User className="w-4 h-4" />
-                        </div>
+                        {a.speaker_id ? (
+                          <SpeakerHistoryButton
+                            speakerId={a.speaker_id}
+                            speakerName={a.speaker?.full_name ?? null}
+                          />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 flex items-center justify-center shrink-0">
+                            <User className="w-4 h-4" />
+                          </div>
+                        )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center flex-wrap gap-x-2">
                             <span className="text-base font-semibold leading-tight">

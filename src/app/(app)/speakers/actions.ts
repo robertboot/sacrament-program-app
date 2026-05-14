@@ -77,6 +77,28 @@ export type SpeakerHistoryEntry = {
 };
 
 /**
+ * Fetch a single speaker by id with categories hydrated. Used by the planner
+ * person-avatar to open the same detail dialog as the Speakers page without
+ * carrying the entire speakers table in the dashboard payload.
+ */
+export async function getSpeakerById(id: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("speakers")
+    .select("*, speaker_categories(category)")
+    .eq("id", id)
+    .single();
+  if (error || !data) return { speaker: null as null };
+  const speaker = {
+    ...data,
+    categories: (data.speaker_categories ?? []).map(
+      (c: { category: SpeakerCategory }) => c.category,
+    ),
+  };
+  return { speaker };
+}
+
+/**
  * Returns every speaking date for this speaker, tagged as `past` (confirmed
  * past assignments + manual historical_dates) or `upcoming` (any future
  * assignment that isn't declined). Newest first across both buckets so the
