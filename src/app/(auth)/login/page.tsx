@@ -35,7 +35,7 @@ function LoginForm() {
       toast.error(error.message);
       return;
     }
-    router.replace(search.get("next") || "/");
+    router.replace(search.get("next") || "/home");
     router.refresh();
   }
 

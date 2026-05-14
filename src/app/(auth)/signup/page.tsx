@@ -32,7 +32,7 @@ export default function SignupPage() {
       return;
     }
     toast.success("Account created. Check your email if confirmation is required.");
-    router.replace("/");
+    router.replace("/home");
     router.refresh();
   }
 
