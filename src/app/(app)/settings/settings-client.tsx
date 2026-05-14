@@ -840,9 +840,8 @@ function AddChoristerForm({
 // ───────────────────────── Invite link dialog ─────────────────────────
 
 function defaultInviteMessage(name: string, url: string): string {
-  const firstName = name.trim().split(/\s+/)[0] || name;
   return [
-    `Hi ${firstName},`,
+    `Hi ${name.trim()},`,
     `I'd like to invite you to use Rameumptom — a small tool I'm using to plan our sacrament meetings, manage speaking assignments, and share the printed program with the congregation.`,
     `Tap this link to sign in directly (no account needed up front — you can set a password after you're in):`,
     url,
