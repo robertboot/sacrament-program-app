@@ -459,28 +459,27 @@ function SpeakerDialog({
                   )}
                 </p>
               ) : (
-                <div className="max-h-40 overflow-y-auto border rounded-md p-2 text-xs space-y-1">
+                <div className="max-h-40 overflow-y-auto border rounded-md p-2 text-xs space-y-2">
                   {history.map((e) => (
                     <div
                       key={`${e.kind}-${e.date}`}
                       className={cn(
-                        "flex items-baseline gap-2 flex-wrap",
                         e.kind === "upcoming" &&
                           "text-emerald-700 dark:text-emerald-400",
                       )}
                     >
-                      <span className="font-medium">
-                        {format(parseISO(e.date), "EEE, MMM d, yyyy")}
-                      </span>
-                      {e.topic && (
-                        <span className="text-muted-foreground italic">
-                          — {e.topic}
-                        </span>
-                      )}
                       {e.kind === "upcoming" && (
-                        <span className="text-[10px] uppercase tracking-wider ml-auto">
+                        <div className="text-[10px] uppercase tracking-wider font-semibold">
                           Upcoming
-                        </span>
+                        </div>
+                      )}
+                      <div className="font-medium">
+                        {format(parseISO(e.date), "EEE, MMM d, yyyy")}
+                      </div>
+                      {e.topic && (
+                        <div className="text-muted-foreground italic">
+                          {e.topic}
+                        </div>
                       )}
                     </div>
                   ))}
