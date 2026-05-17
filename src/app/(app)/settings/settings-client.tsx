@@ -842,7 +842,7 @@ function AddChoristerForm({
 function defaultInviteMessage(name: string, url: string): string {
   return [
     `Hi ${name.trim()},`,
-    `I'd like to invite you to use Rameumptom — a small tool I'm using to plan our sacrament meetings, manage speaking assignments, and share the printed program with the congregation.`,
+    `I'd like to invite you to use Rota — a small tool I'm using to plan our sacrament meetings, manage speaking assignments, and share the printed program with the congregation.`,
     `Tap this link to sign in directly (no account needed up front — you can set a password after you're in):`,
     url,
     `The link is good for 48 hours. Let me know if you have any questions!`,

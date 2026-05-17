@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ChevronDown, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const STORAGE_KEY = "rameumptom.legend.collapsed";
+const STORAGE_KEY = "rota.legend.collapsed";
 
 /**
  * Status-pill color legend. Collapsible — the user's preference is persisted

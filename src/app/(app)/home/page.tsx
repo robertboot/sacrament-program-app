@@ -6,7 +6,7 @@ import { BrandStack } from "@/components/brand-mark";
 import { InstallPrompt } from "@/components/install-prompt";
 import { APP_VERSION } from "@/lib/version";
 
-export const metadata = { title: "Home — Rameumptom" };
+export const metadata = { title: "Home — Rota" };
 
 export default async function HomePage() {
   const supabase = await createClient();
