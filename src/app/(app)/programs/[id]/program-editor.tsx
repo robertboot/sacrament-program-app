@@ -138,6 +138,10 @@ export function ProgramEditor({
     intermediate_hymn_id: program.intermediate_hymn_id,
     intermediate_hymn_text: program.intermediate_hymn_text,
     closing_hymn_id: program.closing_hymn_id,
+    opening_hymn_verse_note: program.opening_hymn_verse_note ?? false,
+    sacrament_hymn_verse_note: program.sacrament_hymn_verse_note ?? false,
+    intermediate_hymn_verse_note: program.intermediate_hymn_verse_note ?? false,
+    closing_hymn_verse_note: program.closing_hymn_verse_note ?? false,
     invocation: program.invocation ?? "By Invitation",
     benediction: program.benediction ?? "By Invitation",
     chorister: program.chorister,
@@ -386,6 +390,15 @@ export function ProgramEditor({
               value={draft.opening_hymn_id ?? null}
               onChange={(id) => setDraft((p) => ({ ...p, opening_hymn_id: id }))}
             />
+            <HymnVerseToggle
+              hymns={hymns}
+              hymnId={draft.opening_hymn_id ?? null}
+              checked={!!draft.opening_hymn_verse_note}
+              onChange={(v) => {
+                setDraft((p) => ({ ...p, opening_hymn_verse_note: v }));
+                saveFields({ opening_hymn_verse_note: v });
+              }}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Sacrament hymn</Label>
@@ -393,6 +406,15 @@ export function ProgramEditor({
               hymns={hymns}
               value={draft.sacrament_hymn_id ?? null}
               onChange={(id) => setDraft((p) => ({ ...p, sacrament_hymn_id: id }))}
+            />
+            <HymnVerseToggle
+              hymns={hymns}
+              hymnId={draft.sacrament_hymn_id ?? null}
+              checked={!!draft.sacrament_hymn_verse_note}
+              onChange={(v) => {
+                setDraft((p) => ({ ...p, sacrament_hymn_verse_note: v }));
+                saveFields({ sacrament_hymn_verse_note: v });
+              }}
             />
           </div>
           {!isFast && (
@@ -409,6 +431,15 @@ export function ProgramEditor({
                   }))
                 }
                 placeholder="Pick a hymn, or use the text field below…"
+              />
+              <HymnVerseToggle
+                hymns={hymns}
+                hymnId={draft.intermediate_hymn_id ?? null}
+                checked={!!draft.intermediate_hymn_verse_note}
+                onChange={(v) => {
+                  setDraft((p) => ({ ...p, intermediate_hymn_verse_note: v }));
+                  saveFields({ intermediate_hymn_verse_note: v });
+                }}
               />
               <Input
                 disabled={!!draft.intermediate_hymn_id}
@@ -429,6 +460,15 @@ export function ProgramEditor({
               hymns={hymns}
               value={draft.closing_hymn_id ?? null}
               onChange={(id) => setDraft((p) => ({ ...p, closing_hymn_id: id }))}
+            />
+            <HymnVerseToggle
+              hymns={hymns}
+              hymnId={draft.closing_hymn_id ?? null}
+              checked={!!draft.closing_hymn_verse_note}
+              onChange={(v) => {
+                setDraft((p) => ({ ...p, closing_hymn_verse_note: v }));
+                saveFields({ closing_hymn_verse_note: v });
+              }}
             />
           </div>
       </CollapsibleCard>
@@ -1296,6 +1336,34 @@ function AssignmentCard({
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+/**
+ * Opt-in checkbox shown only when the picked hymn carries a verse note.
+ * Controls whether "(Verses 1, 3, 5, 6)" prints on this week's program.
+ */
+function HymnVerseToggle({
+  hymns,
+  hymnId,
+  checked,
+  onChange,
+}: {
+  hymns: Hymn[];
+  hymnId: number | null;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  const hymn = hymnId ? hymns.find((h) => h.id === hymnId) : null;
+  if (!hymn?.verse_note) return null;
+  return (
+    <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none pt-0.5">
+      <Checkbox
+        checked={checked}
+        onCheckedChange={(v) => onChange(v === true)}
+      />
+      Print &ldquo;{hymn.verse_note}&rdquo; on the program
+    </label>
   );
 }
 

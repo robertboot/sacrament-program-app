@@ -57,11 +57,34 @@ export type Topic = {
   categories?: SpeakerCategory[]; // hydrated from topic_categories join
 };
 
+export type HymnUsageTag =
+  | "sacrament"
+  | "funeral"
+  | "baptism"
+  | "stake_conference"
+  | "christmas"
+  | "easter"
+  | "palm_sunday"
+  | "fourth_of_july";
+
+export const HYMN_USAGE_LABELS: Record<HymnUsageTag, string> = {
+  sacrament: "Sacrament only",
+  funeral: "Funeral",
+  baptism: "Baptism",
+  stake_conference: "Stake conference",
+  christmas: "Christmas",
+  easter: "Easter",
+  palm_sunday: "Palm Sunday",
+  fourth_of_july: "Fourth of July",
+};
+
 export type Hymn = {
   id: number;
   number: number;
   title: string;
   hymnal: "1985" | "new";
+  usage_tags: string[];
+  verse_note: string | null;
 };
 
 export type Program = {
@@ -76,6 +99,10 @@ export type Program = {
   intermediate_hymn_id: number | null;
   intermediate_hymn_text: string | null;
   closing_hymn_id: number | null;
+  opening_hymn_verse_note: boolean;
+  sacrament_hymn_verse_note: boolean;
+  intermediate_hymn_verse_note: boolean;
+  closing_hymn_verse_note: boolean;
   invocation: string | null;
   benediction: string | null;
   chorister: string | null;
