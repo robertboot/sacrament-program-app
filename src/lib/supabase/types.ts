@@ -111,6 +111,10 @@ export type SpeakingAssignment = {
   slot: AssignmentSlot;
   length_minutes: number;
   status: AssignmentStatus;
+  /** Bishop has reviewed the (possibly auto-generated) pick and finalized
+   *  this slot. Until true the slot is a draft suggestion and the invite
+   *  workflow is hidden. */
+  slot_confirmed: boolean;
   asked_at: string | null;
   asked_by: string | null;
   confirmed_at: string | null;

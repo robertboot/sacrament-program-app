@@ -19,6 +19,8 @@ import {
   MessageSquare,
   UserPlus,
   ArrowLeft,
+  Sparkles,
+  CircleCheck,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -73,7 +75,9 @@ export type FutureAssignment = {
   status: AssignmentStatus;
 };
 import {
+  autoGenerateProgram,
   clearAssignmentSpeaker,
+  confirmAssignmentSlot,
   ensureProgramSlots,
   regenerateShareToken,
   resetAssignmentSlot,
@@ -548,22 +552,51 @@ export function ProgramEditor({
                 </Button>
               </div>
             ) : (
-              SLOT_ORDER.map((slot) => {
-                const a = assignments.find((x) => x.slot === slot);
-                if (!a) return null;
-                return (
-                  <AssignmentCard
-                    key={a.id}
-                    assignment={a}
-                    speakers={speakers}
-                    topics={topics}
-                    isPast={isPast}
-                    pending={pending}
-                    start={start}
-                    futureBySpeaker={futureBySpeaker}
-                  />
-                );
-              })
+              <>
+                {!isPast && (
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        start(async () => {
+                          const r = await autoGenerateProgram(program.id);
+                          if (r.error) toast.error(r.error);
+                          else {
+                            toast.success(
+                              r.filled
+                                ? `Filled ${r.filled} slot${r.filled === 1 ? "" : "s"} — review and confirm each.`
+                                : "Nothing to fill — all slots already have picks.",
+                            );
+                            router.refresh();
+                          }
+                        })
+                      }
+                      disabled={pending}
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      Auto generate
+                    </Button>
+                  </div>
+                )}
+                {SLOT_ORDER.map((slot) => {
+                  const a = assignments.find((x) => x.slot === slot);
+                  if (!a) return null;
+                  return (
+                    <AssignmentCard
+                      key={a.id}
+                      assignment={a}
+                      speakers={speakers}
+                      topics={topics}
+                      isPast={isPast}
+                      pending={pending}
+                      start={start}
+                      futureBySpeaker={futureBySpeaker}
+                    />
+                  );
+                })}
+              </>
             )}
         </CollapsibleCard>
       )}
@@ -1008,67 +1041,91 @@ function AssignmentCard({
 
       {!isPast && (
         <div className="flex flex-wrap gap-2">
-          {assignment.status === "not_yet_asked" && assignment.speaker_id && (
-            <>
-              {(() => {
-                const sp = speakers.find((s) => s.id === assignment.speaker_id);
-                if (!sp?.phone) return null;
-                return (
-                  <Button
-                    size="sm"
-                    onClick={() =>
-                      start(async () => {
-                        const r = await sendAssignmentInvite(assignment.id);
-                        if (r.error) toast.error(r.error);
-                        else toast.success(`Text sent to ${sp.full_name}.`);
-                      })
-                    }
-                    disabled={pending}
-                  >
-                    <MessageSquare className="w-4 h-4" /> Send text invite
-                  </Button>
-                );
-              })()}
+          {/* Draft suggestion: bishop reviews, then confirms the slot before
+              the invite workflow opens. */}
+          {assignment.slot_confirmed === false &&
+            (assignment.speaker_id || assignment.custom_speaker_name) && (
               <Button
                 size="sm"
-                variant="outline"
-                onClick={() => changeStatus("awaiting_confirmation")}
+                onClick={() =>
+                  start(async () => {
+                    const r = await confirmAssignmentSlot(assignment.id);
+                    if (r.error) toast.error(r.error);
+                    else toast.success("Slot confirmed.");
+                  })
+                }
                 disabled={pending}
               >
-                <Send className="w-4 h-4" /> Mark as asked
+                <CircleCheck className="w-4 h-4" /> Confirm slot
               </Button>
-            </>
-          )}
-          {assignment.status === "awaiting_confirmation" && (
-            <>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => changeStatus("confirmed")}
-                disabled={pending}
-              >
-                <CheckCircle2 className="w-4 h-4" /> Confirmed
-              </Button>
+            )}
+          {assignment.slot_confirmed !== false &&
+            assignment.status === "not_yet_asked" &&
+            assignment.speaker_id && (
+              <>
+                {(() => {
+                  const sp = speakers.find(
+                    (s) => s.id === assignment.speaker_id,
+                  );
+                  if (!sp?.phone) return null;
+                  return (
+                    <Button
+                      size="sm"
+                      onClick={() =>
+                        start(async () => {
+                          const r = await sendAssignmentInvite(assignment.id);
+                          if (r.error) toast.error(r.error);
+                          else toast.success(`Text sent to ${sp.full_name}.`);
+                        })
+                      }
+                      disabled={pending}
+                    >
+                      <MessageSquare className="w-4 h-4" /> Send text invite
+                    </Button>
+                  );
+                })()}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => changeStatus("awaiting_confirmation")}
+                  disabled={pending}
+                >
+                  <Send className="w-4 h-4" /> Mark as asked
+                </Button>
+              </>
+            )}
+          {assignment.slot_confirmed !== false &&
+            assignment.status === "awaiting_confirmation" && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => changeStatus("confirmed")}
+                  disabled={pending}
+                >
+                  <CheckCircle2 className="w-4 h-4" /> Confirmed
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => changeStatus("declined")}
+                  disabled={pending}
+                >
+                  <XCircle className="w-4 h-4" /> Declined
+                </Button>
+              </>
+            )}
+          {assignment.slot_confirmed !== false &&
+            assignment.status === "confirmed" && (
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => changeStatus("declined")}
                 disabled={pending}
               >
-                <XCircle className="w-4 h-4" /> Declined
+                <XCircle className="w-4 h-4" /> Mark declined
               </Button>
-            </>
-          )}
-          {assignment.status === "confirmed" && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => changeStatus("declined")}
-              disabled={pending}
-            >
-              <XCircle className="w-4 h-4" /> Mark declined
-            </Button>
-          )}
+            )}
           {(locked ||
             !!assignment.custom_speaker_name ||
             !!assignment.speaker_id) && (
