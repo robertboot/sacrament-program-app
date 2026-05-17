@@ -6,6 +6,7 @@ import { Save, Plus, Trash2, Pencil, Mail, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { CollapsibleCard } from "@/components/collapsible-card";
 import {
@@ -25,10 +26,13 @@ import {
 } from "@/components/ui/dialog";
 import { weeksSinceLabel } from "@/lib/dates";
 import { bishopricPositionLabel, unitLabels, type UnitType } from "@/lib/labels";
-import type {
-  AppSettings,
-  BishopricPosition,
-  Profile,
+import {
+  HYMN_USAGE_LABELS,
+  type AppSettings,
+  type BishopricPosition,
+  type Hymn,
+  type HymnUsageTag,
+  type Profile,
 } from "@/lib/supabase/types";
 import {
   addBishopricMember,
@@ -37,15 +41,18 @@ import {
   removeMember,
   updateBishopricMember,
   updateChoristerMember,
+  updateHymnMeta,
   updateSettings,
 } from "./actions";
 
 export function SettingsClient({
   settings,
   profiles,
+  hymns,
 }: {
   settings: AppSettings;
   profiles: Profile[];
+  hymns: Hymn[];
 }) {
   const [pending, start] = useTransition();
   const [branchName, setBranchName] = useState(settings.branch_name);
@@ -208,6 +215,22 @@ export function SettingsClient({
           start={start}
           onInvite={setInviteUrl}
         />
+      </CollapsibleCard>
+
+      <CollapsibleCard
+        title="Hymn notes & tags"
+        defaultOpen={false}
+        description={
+          <>
+            Flag hymns that are only for certain occasions (funeral,
+            baptism, holidays, sacrament prep) and record verse notes.
+            Tagged hymns show a warning in the picker; verse notes can be
+            printed on a program.
+          </>
+        }
+        contentClassName="space-y-3"
+      >
+        <HymnTagEditor hymns={hymns} pending={pending} start={start} />
       </CollapsibleCard>
 
       <InviteLinkDialog
@@ -847,6 +870,186 @@ function defaultInviteMessage(name: string, url: string): string {
     url,
     `The link is good for 48 hours. Let me know if you have any questions!`,
   ].join("\n\n");
+}
+
+// ───────────────────────── Hymn tags ─────────────────────────
+
+const USAGE_ORDER: HymnUsageTag[] = [
+  "sacrament",
+  "funeral",
+  "baptism",
+  "stake_conference",
+  "christmas",
+  "easter",
+  "palm_sunday",
+  "fourth_of_july",
+];
+
+function HymnTagEditor({
+  hymns,
+  pending,
+  start,
+}: {
+  hymns: Hymn[];
+  pending: boolean;
+  start: (cb: () => void | Promise<void>) => void;
+}) {
+  const [q, setQ] = useState("");
+  const [editing, setEditing] = useState<Hymn | null>(null);
+
+  const query = q.trim().toLowerCase();
+  const tagged = hymns.filter(
+    (h) => (h.usage_tags?.length ?? 0) > 0 || h.verse_note,
+  );
+  const matches = query
+    ? hymns
+        .filter(
+          (h) =>
+            `${h.number}`.includes(query) ||
+            h.title.toLowerCase().includes(query),
+        )
+        .slice(0, 25)
+    : tagged;
+
+  return (
+    <>
+      <Input
+        placeholder="Search hymns by number or title…"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+      />
+      {!query && (
+        <p className="text-xs text-muted-foreground">
+          Showing {tagged.length} already-tagged hymn
+          {tagged.length === 1 ? "" : "s"}. Search to tag others.
+        </p>
+      )}
+      <div className="divide-y rounded-md border">
+        {matches.length === 0 && (
+          <p className="text-sm text-muted-foreground p-3">
+            {query ? "No hymns match." : "No hymns tagged yet."}
+          </p>
+        )}
+        {matches.map((h) => (
+          <button
+            key={h.id}
+            type="button"
+            onClick={() => setEditing(h)}
+            className="w-full text-left p-3 hover:bg-accent transition-colors"
+          >
+            <div className="font-medium text-sm">
+              #{h.number} — {h.title}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {h.usage_tags?.length
+                ? h.usage_tags
+                    .map(
+                      (t) =>
+                        HYMN_USAGE_LABELS[t as HymnUsageTag] ?? t,
+                    )
+                    .join(", ")
+                : "No tags"}
+              {h.verse_note ? ` · ${h.verse_note}` : ""}
+            </div>
+          </button>
+        ))}
+      </div>
+      {editing && (
+        <HymnTagDialog
+          hymn={editing}
+          pending={pending}
+          start={start}
+          onClose={() => setEditing(null)}
+        />
+      )}
+    </>
+  );
+}
+
+function HymnTagDialog({
+  hymn,
+  pending,
+  start,
+  onClose,
+}: {
+  hymn: Hymn;
+  pending: boolean;
+  start: (cb: () => void | Promise<void>) => void;
+  onClose: () => void;
+}) {
+  const [tags, setTags] = useState<string[]>(hymn.usage_tags ?? []);
+  const [verseNote, setVerseNote] = useState(hymn.verse_note ?? "");
+
+  function toggle(tag: HymnUsageTag) {
+    setTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+    );
+  }
+
+  function save() {
+    start(async () => {
+      const r = await updateHymnMeta(hymn.id, {
+        usage_tags: tags,
+        verse_note: verseNote.trim() || null,
+      });
+      if (r.error) toast.error(r.error);
+      else {
+        toast.success("Hymn updated.");
+        onClose();
+      }
+    });
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            #{hymn.number} — {hymn.title}
+          </DialogTitle>
+          <DialogDescription>
+            Tags show a warning in the hymn picker. The verse note can be
+            printed on a program via a per-slot checkbox in the editor.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label>Intended for</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {USAGE_ORDER.map((tag) => (
+                <label
+                  key={tag}
+                  className="flex items-center gap-2 text-sm cursor-pointer select-none"
+                >
+                  <Checkbox
+                    checked={tags.includes(tag)}
+                    onCheckedChange={() => toggle(tag)}
+                  />
+                  {HYMN_USAGE_LABELS[tag]}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Verse note</Label>
+            <Input
+              placeholder="e.g. Verses 1, 3, 5, 6"
+              value={verseNote}
+              onChange={(e) => setVerseNote(e.target.value)}
+            />
+          </div>
+        </div>
+        <DialogFooter className="gap-2">
+          <Button variant="ghost" onClick={onClose} disabled={pending}>
+            Cancel
+          </Button>
+          <Button onClick={save} disabled={pending}>
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 function InviteLinkDialog({

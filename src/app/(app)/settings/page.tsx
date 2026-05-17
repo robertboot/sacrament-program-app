@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import type { AppSettings, Profile } from "@/lib/supabase/types";
+import type { AppSettings, Hymn, Profile } from "@/lib/supabase/types";
 import { SettingsClient } from "./settings-client";
 
 export default async function SettingsPage() {
@@ -12,10 +12,15 @@ export default async function SettingsPage() {
     .single();
   if (profile?.role !== "bishopric") redirect("/");
 
-  const [{ data: settings }, { data: profiles }] = await Promise.all([
-    supabase.from("app_settings").select("*").eq("id", 1).single(),
-    supabase.from("profiles").select("*").order("full_name"),
-  ]);
+  const [{ data: settings }, { data: profiles }, { data: hymns }] =
+    await Promise.all([
+      supabase.from("app_settings").select("*").eq("id", 1).single(),
+      supabase.from("profiles").select("*").order("full_name"),
+      supabase
+        .from("hymns")
+        .select("id, number, title, hymnal, usage_tags, verse_note")
+        .order("number"),
+    ]);
 
   // Hydrate each profile's email from auth.users via the service client so
   // the settings UI can show + edit emails. Placeholder addresses ending in
@@ -44,6 +49,7 @@ export default async function SettingsPage() {
     <SettingsClient
       settings={settings as AppSettings}
       profiles={hydrated}
+      hymns={(hymns ?? []) as Hymn[]}
     />
   );
 }

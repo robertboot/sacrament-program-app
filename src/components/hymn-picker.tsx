@@ -11,9 +11,13 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { buttonVariants } from "@/components/ui/button";
-import { Music, X, ChevronDown } from "lucide-react";
+import { Music, X, ChevronDown, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Hymn } from "@/lib/supabase/types";
+import {
+  HYMN_USAGE_LABELS,
+  type Hymn,
+  type HymnUsageTag,
+} from "@/lib/supabase/types";
 
 export function HymnPicker({
   hymns,
@@ -30,8 +34,11 @@ export function HymnPicker({
 }) {
   const [open, setOpen] = useState(false);
   const selected = value ? hymns.find((h) => h.id === value) : null;
+  const usageTags = (selected?.usage_tags ?? []) as HymnUsageTag[];
+  const verseNote = selected?.verse_note ?? null;
 
   return (
+    <div className="space-y-1.5">
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         disabled={disabled}
@@ -98,5 +105,30 @@ export function HymnPicker({
         </Command>
       </PopoverContent>
     </Popover>
+    {(usageTags.length > 0 || verseNote) && (
+      <div className="rounded-md bg-amber-50 dark:bg-amber-950/40 ring-1 ring-amber-200 dark:ring-amber-900 px-2.5 py-1.5 text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2">
+        <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+        <span>
+          {usageTags.length > 0 && (
+            <>
+              Intended for:{" "}
+              <strong>
+                {usageTags
+                  .map((t) => HYMN_USAGE_LABELS[t] ?? t)
+                  .join(", ")}
+              </strong>
+              .
+            </>
+          )}
+          {verseNote && (
+            <>
+              {usageTags.length > 0 ? " " : ""}
+              Verse note: <strong>{verseNote}</strong>.
+            </>
+          )}
+        </span>
+      </div>
+    )}
+    </div>
   );
 }

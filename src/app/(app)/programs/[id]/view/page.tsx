@@ -26,14 +26,16 @@ export default async function ViewProgramPage({
          releases, sustainings, move_in_welcomes, aaronic_sustainings, baptism_confirmation,
          baby_blessing, stake_business, chorister, organist, status, intermediate_hymn_text,
          meeting_type, meeting_type_label,
+         opening_hymn_verse_note, sacrament_hymn_verse_note,
+         intermediate_hymn_verse_note, closing_hymn_verse_note,
          ward_business_releases, ward_business_sustainings, ward_business_move_in_welcomes,
          ward_business_aaronic_sustainings, ward_business_baptism_confirmation,
          ward_business_baby_blessing,
          conducting:profiles!programs_conducting_id_fkey(full_name, bishopric_position),
-         opening_hymn:hymns!programs_opening_hymn_id_fkey(number, title),
-         sacrament_hymn:hymns!programs_sacrament_hymn_id_fkey(number, title),
-         intermediate_hymn:hymns!programs_intermediate_hymn_id_fkey(number, title),
-         closing_hymn:hymns!programs_closing_hymn_id_fkey(number, title),
+         opening_hymn:hymns!programs_opening_hymn_id_fkey(number, title, verse_note),
+         sacrament_hymn:hymns!programs_sacrament_hymn_id_fkey(number, title, verse_note),
+         intermediate_hymn:hymns!programs_intermediate_hymn_id_fkey(number, title, verse_note),
+         closing_hymn:hymns!programs_closing_hymn_id_fkey(number, title, verse_note),
          assignments:speaking_assignments(slot, length_minutes, custom_topic_text, custom_speaker_name,
             speaker:speakers(full_name),
             topic:topics(title))`,
@@ -89,6 +91,26 @@ export default async function ViewProgramPage({
     return Array.isArray(v) ? (v[0] ?? null) : v;
   };
 
+  // Append the verse note to the hymn title when the bishop opted in for
+  // that slot, so the conductor view matches the public bulletin.
+  const withVerse = (
+    raw: unknown,
+    showNote: boolean | null | undefined,
+  ): { number: number; title: string } | null => {
+    const h = oneOf(
+      raw as
+        | { number: number; title: string; verse_note: string | null }
+        | { number: number; title: string; verse_note: string | null }[]
+        | null,
+    );
+    if (!h) return null;
+    return {
+      number: h.number,
+      title:
+        showNote && h.verse_note ? `${h.title} (${h.verse_note})` : h.title,
+    };
+  };
+
   const data: ProgramRenderData = {
     branchName: settings?.branch_name ?? "Branch",
     unitType: (settings?.unit_type as "ward" | "branch") ?? "branch",
@@ -100,7 +122,7 @@ export default async function ViewProgramPage({
     conducting: oneOf(program.conducting as unknown as ProgramRenderData["conducting"] | ProgramRenderData["conducting"][]),
     welcomeText: program.welcome_text,
     briefReminders: program.brief_reminders,
-    openingHymn: oneOf(program.opening_hymn as unknown as ProgramRenderData["openingHymn"] | ProgramRenderData["openingHymn"][]),
+    openingHymn: withVerse(program.opening_hymn, program.opening_hymn_verse_note),
     invocation: program.invocation,
     wardBusiness: {
       releases: { active: !!program.ward_business_releases, names: program.releases },
@@ -123,10 +145,10 @@ export default async function ViewProgramPage({
       },
     },
     stakeBusiness: program.stake_business,
-    sacramentHymn: oneOf(program.sacrament_hymn as unknown as ProgramRenderData["sacramentHymn"] | ProgramRenderData["sacramentHymn"][]),
-    intermediateHymn: oneOf(program.intermediate_hymn as unknown as ProgramRenderData["intermediateHymn"] | ProgramRenderData["intermediateHymn"][]),
+    sacramentHymn: withVerse(program.sacrament_hymn, program.sacrament_hymn_verse_note),
+    intermediateHymn: withVerse(program.intermediate_hymn, program.intermediate_hymn_verse_note),
     intermediateHymnText: program.intermediate_hymn_text,
-    closingHymn: oneOf(program.closing_hymn as unknown as ProgramRenderData["closingHymn"] | ProgramRenderData["closingHymn"][]),
+    closingHymn: withVerse(program.closing_hymn, program.closing_hymn_verse_note),
     benediction: program.benediction,
     chorister: program.chorister,
     organist: program.organist,

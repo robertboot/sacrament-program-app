@@ -301,3 +301,25 @@ export async function inviteMember(userId: string) {
   if (linkErr) return { error: linkErr.message };
   return { error: null, inviteLink: linkData?.properties?.action_link ?? null };
 }
+
+/**
+ * Update a hymn's usage tags + verse note. Bishopric-only. Used by the
+ * Settings hymn-tag editor to flag funeral/baptism/holiday hymns and
+ * record verse-restriction notes that can print on the program.
+ */
+export async function updateHymnMeta(
+  hymnId: number,
+  { usage_tags, verse_note }: { usage_tags: string[]; verse_note: string | null },
+) {
+  const auth = await requireBishopric();
+  if ("error" in auth) return { error: auth.error };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("hymns")
+    .update({ usage_tags, verse_note: verse_note?.trim() || null })
+    .eq("id", hymnId);
+  if (error) return { error: error.message };
+  revalidatePath("/settings");
+  revalidatePath("/");
+  return { error: null };
+}
