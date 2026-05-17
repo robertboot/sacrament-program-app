@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { addDays, addMonths, format, parseISO, differenceInDays } from "date-fns";
+import { format, parseISO, differenceInDays } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { DashboardStatusPill } from "@/components/dashboard-status-pill";
@@ -7,7 +7,7 @@ import { DashboardInviteAction } from "@/components/dashboard-invite-action";
 import { DashboardLegend } from "@/components/dashboard-legend";
 import { DashboardMonthGroup } from "@/components/dashboard-month-group";
 import { SpeakerHistoryButton } from "@/components/speaker-history-button";
-import { GenerateButton } from "./generate-button";
+import { PlanNextButton } from "@/components/plan-next-button";
 import { SLOT_LABELS } from "@/lib/assignments";
 import type { AssignmentStatus, ProgramStatus, AssignmentSlot } from "@/lib/supabase/types";
 import {
@@ -58,7 +58,6 @@ type DashboardRow = {
 export default async function DashboardPage() {
   const supabase = await createClient();
   const today = format(new Date(), "yyyy-MM-dd");
-  const horizon = format(addDays(new Date(), 91), "yyyy-MM-dd");
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -67,6 +66,8 @@ export default async function DashboardPage() {
     .single();
   const isBishopric = profile?.role === "bishopric";
 
+  // Every started (existing) program from today forward — no horizon cap.
+  // A program record means the bishop has started planning that Sunday.
   const { data: programs } = await supabase
     .from("programs")
     .select(
@@ -82,51 +83,33 @@ export default async function DashboardPage() {
          topic:topics(title))`,
     )
     .gte("meeting_date", today)
-    .lte("meeting_date", horizon)
     .order("meeting_date", { ascending: true })
     .returns<DashboardRow[]>();
 
-  // Absolute latest program date (any future date) so we can lock the Generate
-  // button until we're within 3 months of running out of scheduled meetings.
-  const { data: lastProgram } = await supabase
-    .from("programs")
-    .select("meeting_date")
-    .order("meeting_date", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  const latestMeetingDate = lastProgram?.meeting_date ?? null;
-  const generateUnlockThreshold = format(addMonths(new Date(), 3), "yyyy-MM-dd");
-  const generateUnlockDate =
-    latestMeetingDate && latestMeetingDate > generateUnlockThreshold
-      ? format(addMonths(parseISO(latestMeetingDate), -3), "yyyy-MM-dd")
-      : null;
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Planner</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Upcoming meetings and schedules
+          Every Sunday you&rsquo;ve started planning
         </p>
       </div>
-
-      {isBishopric && (
-        <GenerateButton
-          unlockDate={generateUnlockDate}
-          latestMeetingDate={latestMeetingDate}
-        />
-      )}
 
       <DashboardLegend canEdit={isBishopric} />
 
       {programs && programs.length === 0 ? (
         <Card>
-          <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            No programs yet.{" "}
-            {isBishopric ? (
-              <>Tap <strong>Generate</strong> to scaffold the next 3 months of drafts.</>
-            ) : (
-              <>Ask a bishopric member to generate the schedule.</>
+          <CardContent className="py-10 text-center text-sm text-muted-foreground space-y-4">
+            <p>
+              No programs yet.{" "}
+              {isBishopric
+                ? "Plan the first Sunday to get started."
+                : "Ask a bishopric member to start the schedule."}
+            </p>
+            {isBishopric && (
+              <div className="max-w-xs mx-auto">
+                <PlanNextButton variant="bar" />
+              </div>
             )}
           </CardContent>
         </Card>
@@ -144,8 +127,15 @@ export default async function DashboardPage() {
           {programs && programs.length > 1 && (
             <DashboardGroupedByMonth programs={programs.slice(1)} canEdit={isBishopric} />
           )}
+          {isBishopric && programs && programs.length > 0 && (
+            <div className="pt-2">
+              <PlanNextButton variant="bar" />
+            </div>
+          )}
         </>
       )}
+
+      {isBishopric && <PlanNextButton variant="fab" />}
     </div>
   );
 }
