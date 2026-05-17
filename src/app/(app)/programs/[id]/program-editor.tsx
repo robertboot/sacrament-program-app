@@ -858,6 +858,11 @@ function AssignmentCard({
   }>(null);
   const [stakeOpen, setStakeOpen] = useState(false);
   const [stakeName, setStakeName] = useState(assignment.custom_speaker_name ?? "");
+  // When the topic is a typed one-off, offer to also save it to the topic
+  // library (tagged with this slot's length) at confirm time.
+  const hasOneOffTopic =
+    !assignment.topic_id && !!assignment.custom_topic_text?.trim();
+  const [promoteTopic, setPromoteTopic] = useState(true);
 
   function saveSpeakerTopic(next: {
     speaker_id?: string | null;
@@ -1054,19 +1059,35 @@ function AssignmentCard({
               the invite workflow opens. */}
           {assignment.slot_confirmed === false &&
             (assignment.speaker_id || assignment.custom_speaker_name) && (
-              <Button
-                size="sm"
-                onClick={() =>
-                  start(async () => {
-                    const r = await confirmAssignmentSlot(assignment.id);
-                    if (r.error) toast.error(r.error);
-                    else toast.success("Slot confirmed.");
-                  })
-                }
-                disabled={pending}
-              >
-                <CircleCheck className="w-4 h-4" /> Confirm slot
-              </Button>
+              <div className="flex flex-col gap-2">
+                {hasOneOffTopic && (
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+                    <Checkbox
+                      checked={promoteTopic}
+                      onCheckedChange={(v) => setPromoteTopic(v === true)}
+                    />
+                    Also save &ldquo;{assignment.custom_topic_text}&rdquo; as a
+                    reusable {SLOT_LABELS[slot]} topic
+                  </label>
+                )}
+                <Button
+                  size="sm"
+                  className="self-start"
+                  onClick={() =>
+                    start(async () => {
+                      const r = await confirmAssignmentSlot(
+                        assignment.id,
+                        hasOneOffTopic && promoteTopic,
+                      );
+                      if (r.error) toast.error(r.error);
+                      else toast.success("Slot confirmed.");
+                    })
+                  }
+                  disabled={pending}
+                >
+                  <CircleCheck className="w-4 h-4" /> Confirm slot
+                </Button>
+              </div>
             )}
           {assignment.slot_confirmed !== false &&
             assignment.status === "not_yet_asked" &&

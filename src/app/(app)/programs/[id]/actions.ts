@@ -122,9 +122,50 @@ export async function resetAssignmentSlot(assignmentId: string) {
 /**
  * Mark a slot as reviewed + finalized by the bishop. Only after this does
  * the invite workflow (text invite / mark asked / confirm / decline) open.
+ *
+ * If `promoteCustomTopic` is set and the slot has a typed one-off topic
+ * (custom_topic_text, no topic_id), that text is also saved into the
+ * topics table tagged with this slot's talk length so it's reusable
+ * later, and the assignment is repointed at the new topic row.
  */
-export async function confirmAssignmentSlot(assignmentId: string) {
+export async function confirmAssignmentSlot(
+  assignmentId: string,
+  promoteCustomTopic = false,
+) {
   const supabase = await createClient();
+
+  if (promoteCustomTopic) {
+    const { data: a } = await supabase
+      .from("speaking_assignments")
+      .select("slot, topic_id, custom_topic_text")
+      .eq("id", assignmentId)
+      .single();
+    const text = a?.custom_topic_text?.trim();
+    if (a && !a.topic_id && text) {
+      const category =
+        a.slot === "first"
+          ? "first"
+          : a.slot === "concluding"
+            ? "concluding"
+            : "second";
+      const { data: topic, error: tErr } = await supabase
+        .from("topics")
+        .insert({ title: text, is_active: true })
+        .select("id")
+        .single();
+      if (tErr) return { error: tErr.message };
+      const { error: tcErr } = await supabase
+        .from("topic_categories")
+        .insert({ topic_id: topic!.id, category });
+      if (tcErr) return { error: tcErr.message };
+      const { error: aErr } = await supabase
+        .from("speaking_assignments")
+        .update({ topic_id: topic!.id, custom_topic_text: null })
+        .eq("id", assignmentId);
+      if (aErr) return { error: aErr.message };
+    }
+  }
+
   const { data, error } = await supabase
     .from("speaking_assignments")
     .update({ slot_confirmed: true })
@@ -133,6 +174,7 @@ export async function confirmAssignmentSlot(assignmentId: string) {
     .single();
   if (error) return { error: error.message };
   revalidatePath(`/programs/${data!.program_id}`);
+  revalidatePath("/topics");
   revalidatePath("/");
   return { error: null };
 }
