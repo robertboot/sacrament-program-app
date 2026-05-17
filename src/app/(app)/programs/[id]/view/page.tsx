@@ -26,16 +26,15 @@ export default async function ViewProgramPage({
          releases, sustainings, move_in_welcomes, aaronic_sustainings, baptism_confirmation,
          baby_blessing, stake_business, chorister, organist, status, intermediate_hymn_text,
          meeting_type, meeting_type_label,
-         opening_hymn_verse_note, sacrament_hymn_verse_note,
-         intermediate_hymn_verse_note, closing_hymn_verse_note,
+         opening_hymn_id, sacrament_hymn_id, intermediate_hymn_id, closing_hymn_id,
          ward_business_releases, ward_business_sustainings, ward_business_move_in_welcomes,
          ward_business_aaronic_sustainings, ward_business_baptism_confirmation,
          ward_business_baby_blessing,
          conducting:profiles!programs_conducting_id_fkey(full_name, bishopric_position),
-         opening_hymn:hymns!programs_opening_hymn_id_fkey(number, title, verse_note),
-         sacrament_hymn:hymns!programs_sacrament_hymn_id_fkey(number, title, verse_note),
-         intermediate_hymn:hymns!programs_intermediate_hymn_id_fkey(number, title, verse_note),
-         closing_hymn:hymns!programs_closing_hymn_id_fkey(number, title, verse_note),
+         opening_hymn:hymns!programs_opening_hymn_id_fkey(number, title),
+         sacrament_hymn:hymns!programs_sacrament_hymn_id_fkey(number, title),
+         intermediate_hymn:hymns!programs_intermediate_hymn_id_fkey(number, title),
+         closing_hymn:hymns!programs_closing_hymn_id_fkey(number, title),
          assignments:speaking_assignments(slot, length_minutes, custom_topic_text, custom_speaker_name,
             speaker:speakers(full_name),
             topic:topics(title))`,
@@ -60,6 +59,39 @@ export default async function ViewProgramPage({
     (footerRow as { ward_business_footer?: string | null } | null)?.ward_business_footer ??
     null;
   if (!program) notFound();
+
+  // Verse-note columns (hymns.verse_note + programs.*_hymn_verse_note) only
+  // exist after the hymn-alerts migration. Fetch them defensively so the
+  // page still works before the migration is applied.
+  const { data: verseFlagsRow } = await supabase
+    .from("programs")
+    .select(
+      "opening_hymn_verse_note, sacrament_hymn_verse_note, intermediate_hymn_verse_note, closing_hymn_verse_note",
+    )
+    .eq("id", id)
+    .maybeSingle();
+  const verseFlags = (verseFlagsRow ?? {}) as {
+    opening_hymn_verse_note?: boolean;
+    sacrament_hymn_verse_note?: boolean;
+    intermediate_hymn_verse_note?: boolean;
+    closing_hymn_verse_note?: boolean;
+  };
+  const hymnIds = [
+    program.opening_hymn_id,
+    program.sacrament_hymn_id,
+    program.intermediate_hymn_id,
+    program.closing_hymn_id,
+  ].filter((x): x is number => x != null);
+  const verseNoteById = new Map<number, string | null>();
+  if (hymnIds.length > 0) {
+    const { data: vn } = await supabase
+      .from("hymns")
+      .select("id, verse_note")
+      .in("id", hymnIds);
+    for (const h of (vn ?? []) as { id: number; verse_note: string | null }[]) {
+      verseNoteById.set(h.id, h.verse_note);
+    }
+  }
 
   // Only print events whose event_date is within 6 weeks of this meeting
   // (undated events still print as long as the display window matches).
@@ -92,22 +124,24 @@ export default async function ViewProgramPage({
   };
 
   // Append the verse note to the hymn title when the bishop opted in for
-  // that slot, so the conductor view matches the public bulletin.
+  // that slot, so the conductor view matches the public bulletin. The note
+  // comes from the defensive verseNoteById lookup (empty pre-migration).
   const withVerse = (
     raw: unknown,
+    hymnId: number | null,
     showNote: boolean | null | undefined,
   ): { number: number; title: string } | null => {
     const h = oneOf(
       raw as
-        | { number: number; title: string; verse_note: string | null }
-        | { number: number; title: string; verse_note: string | null }[]
+        | { number: number; title: string }
+        | { number: number; title: string }[]
         | null,
     );
     if (!h) return null;
+    const note = hymnId != null ? verseNoteById.get(hymnId) : null;
     return {
       number: h.number,
-      title:
-        showNote && h.verse_note ? `${h.title} (${h.verse_note})` : h.title,
+      title: showNote && note ? `${h.title} (${note})` : h.title,
     };
   };
 
@@ -122,7 +156,7 @@ export default async function ViewProgramPage({
     conducting: oneOf(program.conducting as unknown as ProgramRenderData["conducting"] | ProgramRenderData["conducting"][]),
     welcomeText: program.welcome_text,
     briefReminders: program.brief_reminders,
-    openingHymn: withVerse(program.opening_hymn, program.opening_hymn_verse_note),
+    openingHymn: withVerse(program.opening_hymn, program.opening_hymn_id, verseFlags.opening_hymn_verse_note),
     invocation: program.invocation,
     wardBusiness: {
       releases: { active: !!program.ward_business_releases, names: program.releases },
@@ -145,10 +179,10 @@ export default async function ViewProgramPage({
       },
     },
     stakeBusiness: program.stake_business,
-    sacramentHymn: withVerse(program.sacrament_hymn, program.sacrament_hymn_verse_note),
-    intermediateHymn: withVerse(program.intermediate_hymn, program.intermediate_hymn_verse_note),
+    sacramentHymn: withVerse(program.sacrament_hymn, program.sacrament_hymn_id, verseFlags.sacrament_hymn_verse_note),
+    intermediateHymn: withVerse(program.intermediate_hymn, program.intermediate_hymn_id, verseFlags.intermediate_hymn_verse_note),
     intermediateHymnText: program.intermediate_hymn_text,
-    closingHymn: withVerse(program.closing_hymn, program.closing_hymn_verse_note),
+    closingHymn: withVerse(program.closing_hymn, program.closing_hymn_id, verseFlags.closing_hymn_verse_note),
     benediction: program.benediction,
     chorister: program.chorister,
     organist: program.organist,
