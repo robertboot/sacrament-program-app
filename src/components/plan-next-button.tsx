@@ -7,13 +7,10 @@ import { Loader2, Plus } from "lucide-react";
 import { planNextSunday } from "@/app/(app)/actions";
 
 /**
- * Creates the next un-started Sunday program and jumps into its editor.
- * Two presentations:
- *  - variant="bar": full-width button under the planner list
- *  - variant="fab": floating action button pinned bottom-right while on
- *    the planner (sits above the mobile tab bar)
+ * Full-width button under the planner list that creates the next
+ * un-started Sunday program and jumps straight into its editor.
  */
-export function PlanNextButton({ variant }: { variant: "bar" | "fab" }) {
+export function PlanNextButton() {
   const router = useRouter();
   const [pending, start] = useTransition();
 
@@ -26,24 +23,6 @@ export function PlanNextButton({ variant }: { variant: "bar" | "fab" }) {
       }
       if (r.id) router.push(`/programs/${r.id}`);
     });
-  }
-
-  if (variant === "fab") {
-    return (
-      <button
-        type="button"
-        onClick={go}
-        disabled={pending}
-        aria-label="Plan the next program"
-        className="fixed bottom-20 md:bottom-6 right-5 z-40 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:opacity-90 active:scale-95 transition disabled:opacity-60"
-      >
-        {pending ? (
-          <Loader2 className="w-6 h-6 animate-spin" />
-        ) : (
-          <Plus className="w-6 h-6" />
-        )}
-      </button>
-    );
   }
 
   return (

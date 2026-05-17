@@ -593,7 +593,15 @@ export function ProgramEditor({
               </div>
             ) : (
               <>
-                {!isPast && (
+                {!isPast &&
+                  !assignments.some(
+                    (a) =>
+                      a.speaker_id ||
+                      a.custom_speaker_name ||
+                      a.topic_id ||
+                      a.custom_topic_text ||
+                      a.slot_confirmed === true,
+                  ) && (
                   <div className="flex justify-end">
                     <Button
                       type="button"
@@ -619,7 +627,7 @@ export function ProgramEditor({
                       Auto generate
                     </Button>
                   </div>
-                )}
+                  )}
                 {SLOT_ORDER.map((slot) => {
                   const a = assignments.find((x) => x.slot === slot);
                   if (!a) return null;

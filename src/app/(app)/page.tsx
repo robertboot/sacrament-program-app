@@ -108,7 +108,7 @@ export default async function DashboardPage() {
             </p>
             {isBishopric && (
               <div className="max-w-xs mx-auto">
-                <PlanNextButton variant="bar" />
+                <PlanNextButton />
               </div>
             )}
           </CardContent>
@@ -129,13 +129,11 @@ export default async function DashboardPage() {
           )}
           {isBishopric && programs && programs.length > 0 && (
             <div className="pt-2">
-              <PlanNextButton variant="bar" />
+              <PlanNextButton />
             </div>
           )}
         </>
       )}
-
-      {isBishopric && <PlanNextButton variant="fab" />}
     </div>
   );
 }
