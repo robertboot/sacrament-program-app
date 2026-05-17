@@ -843,6 +843,14 @@ function AssignmentCard({
 }) {
   const locked = assignment.status !== "not_yet_asked";
   const slot = assignment.slot;
+  // speaker_id → upcoming meeting dates they're already booked on, so the
+  // picker can flag a double-booking before it happens.
+  const upcomingBySpeaker = Object.fromEntries(
+    Object.entries(futureBySpeaker).map(([id, rows]) => [
+      id,
+      rows.map((r) => r.meetingDate).sort(),
+    ]),
+  );
   const [conflict, setConflict] = useState<null | {
     newSpeakerId: string;
     speakerName: string;
@@ -1016,6 +1024,7 @@ function AssignmentCard({
             value={assignment.speaker_id}
             customValue={assignment.custom_speaker_name}
             onChange={handleSpeakerChange}
+            upcomingBySpeaker={upcomingBySpeaker}
             disabled={isPast}
           />
         </div>

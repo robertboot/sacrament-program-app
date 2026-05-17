@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { format, parseISO } from "date-fns";
 import {
   Command,
   CommandEmpty,
@@ -24,6 +25,15 @@ export type SpeakerPickerChange = {
   custom_speaker_name: string | null;
 };
 
+function gapSort(a: Speaker, b: Speaker) {
+  const ad = a.last_spoke_date;
+  const bd = b.last_spoke_date;
+  if (ad === null && bd === null) return a.full_name.localeCompare(b.full_name);
+  if (ad === null) return -1;
+  if (bd === null) return 1;
+  return ad.localeCompare(bd);
+}
+
 export function SpeakerPicker({
   speakers,
   category,
@@ -31,6 +41,7 @@ export function SpeakerPicker({
   customValue,
   onChange,
   disabled,
+  upcomingBySpeaker = {},
   placeholder = "Pick a speaker…",
 }: {
   speakers: Speaker[];
@@ -39,14 +50,69 @@ export function SpeakerPicker({
   customValue: string | null;
   onChange: (next: SpeakerPickerChange) => void;
   disabled?: boolean;
+  /** speaker_id → sorted list of upcoming meeting dates (YYYY-MM-DD) they're
+   *  already booked on, so the picker can warn before double-booking. */
+  upcomingBySpeaker?: Record<string, string[]>;
   placeholder?: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [viewing, setViewing] = useState<Speaker | null>(null);
-  const sorted = useMemo(() => sortSpeakers(speakers, category), [speakers, category]);
+  // Speakers tagged for this slot's length come first (the real rotation
+  // suggestion). Everyone else active is still selectable below so a bishop
+  // can assign anyone regardless of their length tag.
+  const { preferred, others } = useMemo(() => {
+    const pref = sortSpeakers(speakers, category);
+    const prefIds = new Set(pref.map((s) => s.id));
+    const rest = speakers
+      .filter((s) => s.is_active && !prefIds.has(s.id))
+      .sort(gapSort);
+    return { preferred: pref, others: rest };
+  }, [speakers, category]);
   const selected = value ? speakers.find((s) => s.id === value) : null;
   const isCustom = !selected && !!customValue;
+
+  function upcomingLabel(id: string): string | null {
+    const dates = upcomingBySpeaker[id];
+    if (!dates || dates.length === 0) return null;
+    const next = dates[0];
+    const extra = dates.length > 1 ? ` +${dates.length - 1}` : "";
+    return `Scheduled ${format(parseISO(next), "MMM d")}${extra}`;
+  }
+
+  function renderItem(s: Speaker) {
+    const tier = rotationTier(s.last_spoke_date);
+    const upcoming = upcomingLabel(s.id);
+    return (
+      <CommandItem
+        key={s.id}
+        value={s.full_name}
+        onSelect={() => {
+          onChange({ speaker_id: s.id, custom_speaker_name: null });
+          setOpen(false);
+        }}
+      >
+        <div className="flex-1 min-w-0">
+          <div className="truncate">{s.full_name}</div>
+          {upcoming && (
+            <div className="text-[11px] text-emerald-700 dark:text-emerald-400">
+              {upcoming}
+            </div>
+          )}
+        </div>
+        <span
+          className={cn(
+            "text-xs shrink-0",
+            tier === "stale" && "text-red-600",
+            tier === "caution" && "text-yellow-700",
+            tier === "fresh" && "text-muted-foreground",
+          )}
+        >
+          {weeksSinceLabel(s.last_spoke_date)}
+        </span>
+      </CommandItem>
+    );
+  }
 
   return (
     <div className="space-y-1.5">
@@ -91,33 +157,16 @@ export function SpeakerPicker({
               <CommandInput placeholder="Search speakers…" />
               <CommandList>
                 <CommandEmpty>No matching speakers.</CommandEmpty>
-                <CommandGroup heading="Longest gap first">
-                  {sorted.map((s) => {
-                    const tier = rotationTier(s.last_spoke_date);
-                    return (
-                      <CommandItem
-                        key={s.id}
-                        value={s.full_name}
-                        onSelect={() => {
-                          onChange({ speaker_id: s.id, custom_speaker_name: null });
-                          setOpen(false);
-                        }}
-                      >
-                        <span className="flex-1">{s.full_name}</span>
-                        <span
-                          className={cn(
-                            "text-xs",
-                            tier === "stale" && "text-red-600",
-                            tier === "caution" && "text-yellow-700",
-                            tier === "fresh" && "text-muted-foreground",
-                          )}
-                        >
-                          {weeksSinceLabel(s.last_spoke_date)}
-                        </span>
-                      </CommandItem>
-                    );
-                  })}
-                </CommandGroup>
+                {preferred.length > 0 && (
+                  <CommandGroup heading="For this slot · longest gap first">
+                    {preferred.map(renderItem)}
+                  </CommandGroup>
+                )}
+                {others.length > 0 && (
+                  <CommandGroup heading="Other speakers">
+                    {others.map(renderItem)}
+                  </CommandGroup>
+                )}
               </CommandList>
             </Command>
           </PopoverContent>
