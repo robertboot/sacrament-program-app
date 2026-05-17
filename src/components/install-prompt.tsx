@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Calendar, ChevronRight, Share } from "lucide-react";
+import { Share } from "lucide-react";
 
 type Mode =
   | "loading"
@@ -65,22 +65,10 @@ export function InstallPrompt() {
       window.removeEventListener("beforeinstallprompt", onBeforeInstall);
   }, []);
 
-  if (mode === "loading") return null;
-
-  if (mode === "installed") {
-    return (
-      <a
-        href="/p/now"
-        target="_blank"
-        rel="noreferrer"
-        className="grid grid-cols-[auto_1fr_auto] items-center gap-3 w-full px-5 py-4 rounded-xl bg-primary text-primary-foreground text-base font-semibold shadow-sm hover:opacity-90 transition"
-      >
-        <Calendar className="w-5 h-5 shrink-0" />
-        <span className="text-left">View this Sunday&rsquo;s Program</span>
-        <ChevronRight className="w-5 h-5 shrink-0 opacity-80" />
-      </a>
-    );
-  }
+  // While detecting, or once installed, render nothing — the Home page owns
+  // the Public / Conductor buttons now. This component only nudges users who
+  // haven't added the app to their home screen yet.
+  if (mode === "loading" || mode === "installed") return null;
 
   if (mode === "ios-safari") {
     return (

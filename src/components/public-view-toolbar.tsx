@@ -52,19 +52,29 @@ export function PublicViewToolbar({ title }: { title: string }) {
   }
 
   return (
-    <div className="grid grid-cols-3 gap-2 max-w-[7.5in] mx-auto px-4 mb-4 no-print">
-      <Button variant="outline" size="sm" onClick={close}>
-        <ArrowLeft className="w-4 h-4" />
-        Close
-      </Button>
-      <Button size="sm" onClick={() => window.print()}>
-        <Printer className="w-4 h-4" />
-        Print
-      </Button>
-      <Button variant="outline" size="sm" onClick={share} disabled={pending}>
-        <Share2 className="w-4 h-4" />
-        Share
-      </Button>
+    <div className="max-w-[7.5in] mx-auto px-4 mb-4 no-print">
+      <div className="mb-2">
+        <h1 className="text-xs uppercase tracking-widest font-bold text-muted-foreground">
+          Public Program
+        </h1>
+        <p className="text-[11px] text-muted-foreground">
+          The congregation-facing bulletin shared via the public link
+        </p>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <Button variant="outline" size="sm" onClick={close}>
+          <ArrowLeft className="w-4 h-4" />
+          Close
+        </Button>
+        <Button size="sm" onClick={() => window.print()}>
+          <Printer className="w-4 h-4" />
+          Print
+        </Button>
+        <Button variant="outline" size="sm" onClick={share} disabled={pending}>
+          <Share2 className="w-4 h-4" />
+          Share
+        </Button>
+      </div>
     </div>
   );
 }
