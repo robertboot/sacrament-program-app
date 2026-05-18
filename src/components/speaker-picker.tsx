@@ -3,15 +3,13 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format, parseISO } from "date-fns";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { buttonVariants } from "@/components/ui/button";
 import { User, X, ChevronDown, AlertTriangle, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -117,44 +115,60 @@ export function SpeakerPicker({
   return (
     <div className="space-y-1.5">
       <div className="relative">
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger
-            type="button"
-            disabled={disabled}
-            className={cn(
-              buttonVariants({ variant: "outline" }),
-              "w-full justify-between font-normal",
-              !selected && !isCustom && "text-muted-foreground",
-              (selected || isCustom) && !disabled && "pr-9",
-            )}
-          >
-            <span className="inline-flex items-center gap-2 min-w-0">
-              <User className="w-4 h-4 shrink-0" />
-              <span className="truncate">
-                {selected
-                  ? selected.full_name
-                  : isCustom
-                    ? customValue
-                    : placeholder}
-              </span>
-              {isCustom && (
-                <span className="text-[10px] uppercase tracking-wider text-amber-700 bg-amber-50 dark:bg-amber-950 dark:text-amber-300 px-1.5 py-0.5 rounded">
-                  Stake
-                </span>
-              )}
-              {selected && rotationTier(selected.last_spoke_date) === "stale" && (
-                <span className="inline-flex items-center gap-1 text-[10px] text-red-700 bg-red-50 dark:bg-red-950 dark:text-red-300 px-1.5 py-0.5 rounded">
-                  <AlertTriangle className="w-3 h-3" />
-                  {weeksSinceLabel(selected.last_spoke_date)}
-                </span>
-              )}
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => setOpen(true)}
+          className={cn(
+            buttonVariants({ variant: "outline" }),
+            "w-full justify-between font-normal",
+            !selected && !isCustom && "text-muted-foreground",
+            (selected || isCustom) && !disabled && "pr-9",
+          )}
+        >
+          <span className="inline-flex items-center gap-2 min-w-0">
+            <User className="w-4 h-4 shrink-0" />
+            <span className="truncate">
+              {selected
+                ? selected.full_name
+                : isCustom
+                  ? customValue
+                  : placeholder}
             </span>
-            <ChevronDown className="w-4 h-4 opacity-50 shrink-0" />
-          </PopoverTrigger>
-          <PopoverContent className="p-0 w-[min(420px,90vw)]" align="start">
-            <Command>
+            {isCustom && (
+              <span className="text-[10px] uppercase tracking-wider text-amber-700 bg-amber-50 dark:bg-amber-950 dark:text-amber-300 px-1.5 py-0.5 rounded">
+                Stake
+              </span>
+            )}
+            {selected && rotationTier(selected.last_spoke_date) === "stale" && (
+              <span className="inline-flex items-center gap-1 text-[10px] text-red-700 bg-red-50 dark:bg-red-950 dark:text-red-300 px-1.5 py-0.5 rounded">
+                <AlertTriangle className="w-3 h-3" />
+                {weeksSinceLabel(selected.last_spoke_date)}
+              </span>
+            )}
+          </span>
+          <ChevronDown className="w-4 h-4 opacity-50 shrink-0" />
+        </button>
+        {(selected || isCustom) && !disabled && (
+          <button
+            type="button"
+            aria-label="Clear speaker"
+            onClick={() =>
+              onChange({ speaker_id: null, custom_speaker_name: null })
+            }
+            className="absolute right-7 top-1/2 -translate-y-1/2 hover:bg-accent rounded-sm p-1"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent className="p-0 gap-0 sm:max-w-md">
+            <DialogHeader className="px-4 pt-4">
+              <DialogTitle className="text-sm">Pick a speaker</DialogTitle>
+            </DialogHeader>
+            <Command className="rounded-none">
               <CommandInput placeholder="Search speakers…" />
-              <CommandList>
+              <CommandList className="max-h-[60vh]">
                 <CommandEmpty>No matching speakers.</CommandEmpty>
                 {preferred.length > 0 && (
                   <CommandGroup heading="For this slot · longest gap first">
@@ -168,22 +182,8 @@ export function SpeakerPicker({
                 )}
               </CommandList>
             </Command>
-          </PopoverContent>
-        </Popover>
-        {(selected || isCustom) && !disabled && (
-          <button
-            type="button"
-            aria-label="Clear speaker"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onChange({ speaker_id: null, custom_speaker_name: null });
-            }}
-            className="absolute right-7 top-1/2 -translate-y-1/2 hover:bg-accent rounded-sm p-1"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        )}
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Tiny "View details" link, only when a real speaker is selected */}

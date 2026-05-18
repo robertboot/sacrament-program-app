@@ -9,7 +9,12 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { buttonVariants } from "@/components/ui/button";
 import { Music, X, ChevronDown, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -39,100 +44,100 @@ export function HymnPicker({
 
   return (
     <div className="space-y-1.5">
-    <div className="relative">
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        type="button"
-        disabled={disabled}
-        className={cn(
-          buttonVariants({ variant: "outline" }),
-          "w-full justify-between font-normal",
-          !selected && "text-muted-foreground",
-          selected && !disabled && "pr-9",
-        )}
-      >
-        <span className="inline-flex items-center gap-2 min-w-0">
-          <Music className="w-4 h-4 shrink-0" />
-          <span className="truncate">
-            {selected ? `#${selected.number} — ${selected.title}` : placeholder}
-          </span>
-        </span>
-        <ChevronDown className="w-4 h-4 opacity-50 shrink-0" />
-      </PopoverTrigger>
-      <PopoverContent className="p-0 w-[min(420px,90vw)]" align="start">
-        <Command
-          filter={(value, search) => {
-            const q = search.toLowerCase();
-            const v = value.toLowerCase();
-            return v.includes(q) ? 1 : 0;
-          }}
+      <div className="relative">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => setOpen(true)}
+          className={cn(
+            buttonVariants({ variant: "outline" }),
+            "w-full justify-between font-normal",
+            !selected && "text-muted-foreground",
+            selected && !disabled && "pr-9",
+          )}
         >
-          <CommandInput placeholder="Search by number or title…" />
-          <CommandList>
-            <CommandEmpty>No hymns found.</CommandEmpty>
-            <CommandGroup>
-              {hymns.map((h) => (
-                <CommandItem
-                  key={h.id}
-                  value={`${h.number} ${h.title}`}
-                  onSelect={() => {
-                    onChange(h.id);
-                    setOpen(false);
-                  }}
-                >
-                  <span className="text-muted-foreground w-10 tabular-nums">#{h.number}</span>
-                  <span className="flex-1">{h.title}</span>
-                  {h.hymnal === "new" && (
-                    <span className="text-[10px] uppercase tracking-wider text-emerald-600">
-                      new
-                    </span>
-                  )}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-    {selected && !disabled && (
-      <button
-        type="button"
-        aria-label="Clear hymn"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onChange(null);
-        }}
-        className="absolute right-7 top-1/2 -translate-y-1/2 hover:bg-accent rounded-sm p-1"
-      >
-        <X className="w-3.5 h-3.5" />
-      </button>
-    )}
-    </div>
-    {(usageTags.length > 0 || verseNote) && (
-      <div className="rounded-md bg-amber-50 dark:bg-amber-950/40 ring-1 ring-amber-200 dark:ring-amber-900 px-2.5 py-1.5 text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2">
-        <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-        <span>
-          {usageTags.length > 0 && (
-            <>
-              Intended for:{" "}
-              <strong>
-                {usageTags
-                  .map((t) => HYMN_USAGE_LABELS[t] ?? t)
-                  .join(", ")}
-              </strong>
-              .
-            </>
-          )}
-          {verseNote && (
-            <>
-              {usageTags.length > 0 ? " " : ""}
-              Verse note: <strong>{verseNote}</strong>.
-            </>
-          )}
-        </span>
+          <span className="inline-flex items-center gap-2 min-w-0">
+            <Music className="w-4 h-4 shrink-0" />
+            <span className="truncate">
+              {selected ? `#${selected.number} — ${selected.title}` : placeholder}
+            </span>
+          </span>
+          <ChevronDown className="w-4 h-4 opacity-50 shrink-0" />
+        </button>
+        {selected && !disabled && (
+          <button
+            type="button"
+            aria-label="Clear hymn"
+            onClick={() => onChange(null)}
+            className="absolute right-7 top-1/2 -translate-y-1/2 hover:bg-accent rounded-sm p-1"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent className="p-0 gap-0 sm:max-w-md">
+            <DialogHeader className="px-4 pt-4">
+              <DialogTitle className="text-sm">Pick a hymn</DialogTitle>
+            </DialogHeader>
+            <Command
+              className="rounded-none"
+              filter={(value, search) => {
+                const q = search.toLowerCase();
+                return value.toLowerCase().includes(q) ? 1 : 0;
+              }}
+            >
+              <CommandInput placeholder="Search by number or title…" />
+              <CommandList className="max-h-[60vh]">
+                <CommandEmpty>No hymns found.</CommandEmpty>
+                <CommandGroup>
+                  {hymns.map((h) => (
+                    <CommandItem
+                      key={h.id}
+                      value={`${h.number} ${h.title}`}
+                      onSelect={() => {
+                        onChange(h.id);
+                        setOpen(false);
+                      }}
+                    >
+                      <span className="text-muted-foreground w-10 tabular-nums">
+                        #{h.number}
+                      </span>
+                      <span className="flex-1">{h.title}</span>
+                      {h.hymnal === "new" && (
+                        <span className="text-[10px] uppercase tracking-wider text-emerald-600">
+                          new
+                        </span>
+                      )}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </DialogContent>
+        </Dialog>
       </div>
-    )}
+      {(usageTags.length > 0 || verseNote) && (
+        <div className="rounded-md bg-amber-50 dark:bg-amber-950/40 ring-1 ring-amber-200 dark:ring-amber-900 px-2.5 py-1.5 text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+          <span>
+            {usageTags.length > 0 && (
+              <>
+                Intended for:{" "}
+                <strong>
+                  {usageTags.map((t) => HYMN_USAGE_LABELS[t] ?? t).join(", ")}
+                </strong>
+                .
+              </>
+            )}
+            {verseNote && (
+              <>
+                {usageTags.length > 0 ? " " : ""}
+                Verse note: <strong>{verseNote}</strong>.
+              </>
+            )}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
