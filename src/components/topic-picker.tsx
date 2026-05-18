@@ -9,7 +9,12 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { buttonVariants } from "@/components/ui/button";
 import { BookOpen, X, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -46,25 +51,41 @@ export function TopicPicker({
 
   return (
     <div className="relative">
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen(true)}
+        className={cn(
+          buttonVariants({ variant: "outline" }),
+          "w-full justify-between font-normal text-left",
+          !display && "text-muted-foreground",
+          (value || customValue) && !disabled && "pr-9",
+        )}
+      >
+        <span className="inline-flex items-center gap-2 min-w-0">
+          <BookOpen className="w-4 h-4 shrink-0" />
+          <span className="truncate">{display || "Pick a topic…"}</span>
+        </span>
+        <ChevronDown className="w-4 h-4 opacity-50 shrink-0" />
+      </button>
+
+      {(value || customValue) && !disabled && (
+        <button
           type="button"
-          disabled={disabled}
-          className={cn(
-            buttonVariants({ variant: "outline" }),
-            "w-full justify-between font-normal text-left",
-            !display && "text-muted-foreground",
-            (value || customValue) && !disabled && "pr-9",
-          )}
+          aria-label="Clear topic"
+          onClick={() => onChange({ topic_id: null, custom_topic_text: null })}
+          className="absolute right-7 top-1/2 -translate-y-1/2 hover:bg-accent rounded-sm p-1"
         >
-          <span className="inline-flex items-center gap-2 min-w-0">
-            <BookOpen className="w-4 h-4 shrink-0" />
-            <span className="truncate">{display || "Pick a topic…"}</span>
-          </span>
-          <ChevronDown className="w-4 h-4 opacity-50 shrink-0" />
-        </PopoverTrigger>
-        <PopoverContent className="p-0 w-[min(500px,90vw)]" align="start">
-          <Command>
+          <X className="w-3.5 h-3.5" />
+        </button>
+      )}
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="p-0 gap-0 sm:max-w-md">
+          <DialogHeader className="px-4 pt-4">
+            <DialogTitle className="text-sm">Pick a topic</DialogTitle>
+          </DialogHeader>
+          <Command className="rounded-none">
             <CommandInput
               placeholder="Search or type a one-off topic, press Enter…"
               onKeyDown={(e) => {
@@ -78,7 +99,7 @@ export function TopicPicker({
                 }
               }}
             />
-            <CommandList>
+            <CommandList className="max-h-[60vh]">
               <CommandEmpty>
                 <div className="text-sm text-muted-foreground py-3">
                   Press Enter to use as a one-off topic.
@@ -110,22 +131,8 @@ export function TopicPicker({
               </CommandGroup>
             </CommandList>
           </Command>
-        </PopoverContent>
-      </Popover>
-      {(value || customValue) && !disabled && (
-        <button
-          type="button"
-          aria-label="Clear topic"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onChange({ topic_id: null, custom_topic_text: null });
-          }}
-          className="absolute right-7 top-1/2 -translate-y-1/2 hover:bg-accent rounded-sm p-1"
-        >
-          <X className="w-3.5 h-3.5" />
-        </button>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
