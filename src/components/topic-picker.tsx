@@ -81,11 +81,11 @@ export function TopicPicker({
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="p-0 gap-0 sm:max-w-md">
-          <DialogHeader className="px-4 pt-4">
+        <DialogContent className="p-0 gap-0 sm:max-w-md flex flex-col max-h-[85vh]">
+          <DialogHeader className="px-4 pt-4 shrink-0">
             <DialogTitle className="text-sm">Pick a topic</DialogTitle>
           </DialogHeader>
-          <Command className="rounded-none">
+          <Command className="rounded-none flex-1 min-h-0">
             <CommandInput
               placeholder="Search or type a one-off topic, press Enter…"
               onKeyDown={(e) => {
@@ -99,7 +99,7 @@ export function TopicPicker({
                 }
               }}
             />
-            <CommandList className="max-h-[60vh]">
+            <CommandList className="flex-1 min-h-0 max-h-none overscroll-contain">
               <CommandEmpty>
                 <div className="text-sm text-muted-foreground py-3">
                   Press Enter to use as a one-off topic.
