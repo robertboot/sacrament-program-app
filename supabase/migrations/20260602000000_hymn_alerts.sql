@@ -10,17 +10,20 @@ alter table hymns
   add column if not exists usage_tags text[] not null default '{}',
   add column if not exists verse_note text;
 
--- Seed the well-known fixed sections of the 1985 English hymnbook. The other
--- usages (funeral, baptism, stake conference, Palm Sunday, July 4) are
--- conventions rather than hymnal sections — tag those via Settings.
+-- Seed the well-known fixed sections of the 1985 English hymnbook by number
+-- range. (Some databases predate the hymns.hymnal column, so we don't filter
+-- on it — these number ranges are unambiguous 1985-hymnbook numbers and the
+-- 2024+ hymns are numbered outside them.) The other usages (funeral, baptism,
+-- stake conference, Palm Sunday, July 4) are conventions rather than hymnal
+-- sections — tag those via Settings.
 update hymns set usage_tags = array_append(usage_tags, 'sacrament')
-  where hymnal = '1985' and number between 169 and 196
+  where number between 169 and 196
     and not ('sacrament' = any(usage_tags));
 update hymns set usage_tags = array_append(usage_tags, 'easter')
-  where hymnal = '1985' and number between 197 and 200
+  where number between 197 and 200
     and not ('easter' = any(usage_tags));
 update hymns set usage_tags = array_append(usage_tags, 'christmas')
-  where hymnal = '1985' and number between 201 and 214
+  where number between 201 and 214
     and not ('christmas' = any(usage_tags));
 
 alter table programs
