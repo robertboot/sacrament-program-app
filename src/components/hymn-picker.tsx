@@ -39,13 +39,16 @@ export function HymnPicker({
 
   return (
     <div className="space-y-1.5">
+    <div className="relative">
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
+        type="button"
         disabled={disabled}
         className={cn(
           buttonVariants({ variant: "outline" }),
           "w-full justify-between font-normal",
           !selected && "text-muted-foreground",
+          selected && !disabled && "pr-9",
         )}
       >
         <span className="inline-flex items-center gap-2 min-w-0">
@@ -54,21 +57,7 @@ export function HymnPicker({
             {selected ? `#${selected.number} — ${selected.title}` : placeholder}
           </span>
         </span>
-        <span className="flex items-center gap-1 shrink-0">
-          {selected && !disabled && (
-            <span
-              role="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onChange(null);
-              }}
-              className="hover:bg-accent rounded-sm p-0.5"
-            >
-              <X className="w-3.5 h-3.5" />
-            </span>
-          )}
-          <ChevronDown className="w-4 h-4 opacity-50" />
-        </span>
+        <ChevronDown className="w-4 h-4 opacity-50 shrink-0" />
       </PopoverTrigger>
       <PopoverContent className="p-0 w-[min(420px,90vw)]" align="start">
         <Command
@@ -105,6 +94,21 @@ export function HymnPicker({
         </Command>
       </PopoverContent>
     </Popover>
+    {selected && !disabled && (
+      <button
+        type="button"
+        aria-label="Clear hymn"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onChange(null);
+        }}
+        className="absolute right-7 top-1/2 -translate-y-1/2 hover:bg-accent rounded-sm p-1"
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
+    )}
+    </div>
     {(usageTags.length > 0 || verseNote) && (
       <div className="rounded-md bg-amber-50 dark:bg-amber-950/40 ring-1 ring-amber-200 dark:ring-amber-900 px-2.5 py-1.5 text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2">
         <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
