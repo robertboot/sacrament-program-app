@@ -121,7 +121,6 @@ export function SpeakerPicker({
           <PopoverTrigger
             type="button"
             disabled={disabled}
-            onClick={(e) => e.stopPropagation()}
             className={cn(
               buttonVariants({ variant: "outline" }),
               "w-full justify-between font-normal",

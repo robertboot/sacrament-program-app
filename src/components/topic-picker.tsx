@@ -50,11 +50,6 @@ export function TopicPicker({
         <PopoverTrigger
           type="button"
           disabled={disabled}
-          onClick={(e) => {
-            // Stop any ancestor (e.g. a Card link, or a stray form) from
-            // intercepting and scrolling the page when the trigger is tapped.
-            e.stopPropagation();
-          }}
           className={cn(
             buttonVariants({ variant: "outline" }),
             "w-full justify-between font-normal text-left",
