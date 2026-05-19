@@ -194,6 +194,24 @@ Status: design agreed, **not yet implemented**. ~weeks out.
 1. Read this whole file.
 2. Confirm the right Supabase DB with the §4 query before any SQL.
 3. Use the §6 deploy workflow; verify the deployed version string changes.
-4. Continue outstanding test items: #7 verse note in Conductor + public
-   views; Public/Conductor differentiation; Home upcoming Sunday; install
-   note; Settings user invite/revoke.
+4. Status of the test checklist:
+   - **DONE & verified:** #7 hymn usage alerts + verse notes — picker
+     badge, per-slot verse-note toggle saving, Conductor view, and public
+     bulletin (`get_published_program` RPC) all confirmed on
+     "robertboot's Project".
+   - **Still to verify:** Public vs Conductor differentiation; Home shows
+     the upcoming Sunday; install prompt only when not installed; Settings
+     user invite/revoke.
+   - **In progress:** branding refresh — owner has new logos (app icon,
+     favicon, PWA icons, in-app wordmark). See §12.
+
+---
+
+## 12. Branding assets (logo refresh in progress)
+
+Owner is supplying new logos. Asset locations to replace/regenerate:
+- `public/` icons + favicon, the PWA `manifest`/icons, and the in-app
+  `BrandStack` component (the wordmark/logo shown on Home and auth).
+Keep the existing icon style unless told otherwise; "Rota" is the name.
+When new files are provided, replace all icon sizes consistently and
+verify the installed-PWA icon + browser favicon both update.
