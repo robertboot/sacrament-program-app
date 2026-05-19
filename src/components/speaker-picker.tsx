@@ -162,13 +162,13 @@ export function SpeakerPicker({
           </button>
         )}
         <Dialog open={open} onOpenChange={setOpen} modal={false}>
-          <DialogContent className="p-0 gap-0 sm:max-w-md overflow-hidden">
+          <DialogContent className="p-0 gap-0 sm:max-w-md [max-height:85svh] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
             <DialogHeader className="px-4 pt-4">
               <DialogTitle className="text-sm">Pick a speaker</DialogTitle>
             </DialogHeader>
-            <Command className="rounded-none">
+            <Command className="rounded-none overflow-visible h-auto!">
               <CommandInput placeholder="Search speakers…" />
-              <CommandList className="max-h-[55vh] overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
+              <CommandList className="max-h-none overflow-y-visible">
                 <CommandEmpty>No matching speakers.</CommandEmpty>
                 {preferred.length > 0 && (
                   <CommandGroup heading="For this slot · longest gap first">

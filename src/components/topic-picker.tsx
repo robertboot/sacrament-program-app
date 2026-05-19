@@ -81,11 +81,11 @@ export function TopicPicker({
       )}
 
       <Dialog open={open} onOpenChange={setOpen} modal={false}>
-        <DialogContent className="p-0 gap-0 sm:max-w-md overflow-hidden">
+        <DialogContent className="p-0 gap-0 sm:max-w-md [max-height:85svh] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
           <DialogHeader className="px-4 pt-4">
             <DialogTitle className="text-sm">Pick a topic</DialogTitle>
           </DialogHeader>
-          <Command className="rounded-none">
+          <Command className="rounded-none overflow-visible h-auto!">
             <CommandInput
               placeholder="Search or type a one-off topic, press Enter…"
               onKeyDown={(e) => {
@@ -99,7 +99,7 @@ export function TopicPicker({
                 }
               }}
             />
-            <CommandList className="max-h-[55vh] overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
+            <CommandList className="max-h-none overflow-y-visible">
               <CommandEmpty>
                 <div className="text-sm text-muted-foreground py-3">
                   Press Enter to use as a one-off topic.

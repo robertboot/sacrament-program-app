@@ -75,19 +75,19 @@ export function HymnPicker({
           </button>
         )}
         <Dialog open={open} onOpenChange={setOpen} modal={false}>
-          <DialogContent className="p-0 gap-0 sm:max-w-md overflow-hidden">
+          <DialogContent className="p-0 gap-0 sm:max-w-md [max-height:85svh] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
             <DialogHeader className="px-4 pt-4">
               <DialogTitle className="text-sm">Pick a hymn</DialogTitle>
             </DialogHeader>
             <Command
-              className="rounded-none"
+              className="rounded-none overflow-visible h-auto!"
               filter={(value, search) => {
                 const q = search.toLowerCase();
                 return value.toLowerCase().includes(q) ? 1 : 0;
               }}
             >
               <CommandInput placeholder="Search by number or title…" />
-              <CommandList className="max-h-[55vh] overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
+              <CommandList className="max-h-none overflow-y-visible">
                 <CommandEmpty>No hymns found.</CommandEmpty>
                 <CommandGroup>
                   {hymns.map((h) => (
