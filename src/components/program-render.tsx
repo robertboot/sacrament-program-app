@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Music2, HeartHandshake, User, BookOpen } from "lucide-react";
+import { Music2, HeartHandshake, User, BookOpen, CalendarPlus } from "lucide-react";
 import { formatMeetingDate } from "@/lib/dates";
 import { SLOT_LABELS } from "@/lib/assignments";
 import { bishopricPositionLabel, leaderDisplayName, unitLabels, type UnitType } from "@/lib/labels";
@@ -51,6 +51,40 @@ export type ProgramRenderData = {
     event_date: string | null;
   }[];
 };
+
+/** Escape a string for safe inclusion in an ICS property value. */
+function icsEscape(s: string) {
+  return s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
+}
+
+/** Build a `data:` URI with an all-day VCALENDAR for one event. */
+function eventToIcsHref(
+  title: string,
+  eventDate: string,
+  description: string | null,
+): string {
+  const startYmd = eventDate.replaceAll("-", "");
+  const d = new Date(`${eventDate}T00:00:00Z`);
+  const next = new Date(d.getTime() + 24 * 60 * 60 * 1000);
+  const endYmd = next.toISOString().slice(0, 10).replaceAll("-", "");
+  const uid = `${startYmd}-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 24)}@rota`;
+  const stamp = `${startYmd}T000000Z`;
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Rota//EN",
+    "CALSCALE:GREGORIAN",
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `DTSTAMP:${stamp}`,
+    `DTSTART;VALUE=DATE:${startYmd}`,
+    `DTEND;VALUE=DATE:${endYmd}`,
+    `SUMMARY:${icsEscape(title)}`,
+  ];
+  if (description) lines.push(`DESCRIPTION:${icsEscape(description)}`);
+  lines.push("END:VEVENT", "END:VCALENDAR");
+  return `data:text/calendar;charset=utf-8,${encodeURIComponent(lines.join("\r\n"))}`;
+}
 
 /** Thin ornamental rule with a center diamond — used under the title. */
 function Ornament() {
@@ -208,11 +242,11 @@ export function ProgramRender({
           <SectionHeading>Upcoming Events</SectionHeading>
           <div className="text-sm space-y-1">
             {data.briefReminderEvents.map((e, i) => (
-              <div key={`ev-${i}`} className="flex gap-2">
-                <span className="text-[var(--brand-gold)] print:text-black select-none" aria-hidden="true">
+              <div key={`ev-${i}`} className="flex items-start gap-2">
+                <span className="text-[var(--brand-gold)] print:text-black select-none mt-0.5" aria-hidden="true">
                   •
                 </span>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <span className="font-medium">{e.title}</span>
                   {e.event_date && (
                     <span className="text-gray-600 print:text-black ml-2">
@@ -223,6 +257,17 @@ export function ProgramRender({
                     <div className="text-gray-700 print:text-black text-xs">{e.description}</div>
                   )}
                 </div>
+                {e.event_date && (
+                  <a
+                    href={eventToIcsHref(e.title, e.event_date, e.description)}
+                    download={`${e.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.ics`}
+                    aria-label={`Add ${e.title} to your calendar`}
+                    title="Add to calendar"
+                    className="no-print shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-full border border-[var(--brand-gold)]/50 text-[var(--brand-gold)] hover:bg-[var(--brand-gold)]/10"
+                  >
+                    <CalendarPlus className="w-3.5 h-3.5" />
+                  </a>
+                )}
               </div>
             ))}
           </div>
