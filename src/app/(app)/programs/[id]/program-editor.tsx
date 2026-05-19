@@ -1242,7 +1242,7 @@ function AssignmentCard({
       </div>
 
       <Dialog open={conflict !== null} onOpenChange={(o) => !o && setConflict(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
               Reschedule {conflict?.speakerName} or keep both dates?
