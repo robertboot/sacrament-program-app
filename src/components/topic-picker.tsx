@@ -80,7 +80,7 @@ export function TopicPicker({
         </button>
       )}
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={setOpen} modal={false}>
         <DialogContent className="p-0 gap-0 sm:max-w-md overflow-hidden">
           <DialogHeader className="px-4 pt-4">
             <DialogTitle className="text-sm">Pick a topic</DialogTitle>
