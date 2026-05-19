@@ -93,7 +93,7 @@ function SectionHeading({
   return (
     <div className="flex items-center gap-3 my-3 print:my-2 print-avoid-break">
       <span className={`h-px flex-1 ${line}`} />
-      <h2 className={`text-[0.7rem] font-semibold uppercase tracking-[0.2em] ${text} text-center`}>
+      <h2 className={`text-[0.7rem] font-bold uppercase tracking-[0.2em] ${text} text-center`}>
         {children}
       </h2>
       <span className={`h-px flex-1 ${line}`} />
