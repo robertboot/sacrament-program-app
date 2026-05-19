@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 /**
@@ -55,12 +56,14 @@ export function BrandMark({
  */
 export function BrandStack({ className }: { className?: string }) {
   return (
-    <div className={cn("inline-flex flex-col items-center gap-5", className)}>
-      <BrandMark className="w-24 h-24 text-current" />
-      <span className="font-semibold tracking-tight text-5xl leading-none">
-        R<span className="text-[var(--brand-gold)]">o</span>ta
-      </span>
-    </div>
+    <Image
+      src="/splash-page-logo.png"
+      alt="Rota — Plan. Organize. Inspire."
+      width={724}
+      height={628}
+      priority
+      className={cn("h-auto w-auto max-w-[15rem]", className)}
+    />
   );
 }
 
