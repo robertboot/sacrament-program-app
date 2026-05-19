@@ -55,7 +55,7 @@ export type ProgramRenderData = {
 /** Thin ornamental rule with a center diamond — used under the title. */
 function Ornament() {
   return (
-    <div className="flex items-center justify-center gap-3 my-4 text-[var(--brand-gold)] print:text-black">
+    <div className="flex items-center justify-center gap-3 my-3 print:my-1.5 text-[var(--brand-gold)] print:text-black">
       <span className="h-px w-16 bg-current opacity-40" />
       <span className="text-[0.6rem] leading-none">◆</span>
       <span className="h-px w-16 bg-current opacity-40" />
@@ -66,7 +66,7 @@ function Ornament() {
 /** Centered gold section label flanked by hairlines. */
 function SectionHeading({ children }: { children: ReactNode }) {
   return (
-    <div className="flex items-center gap-3 my-5 print-avoid-break">
+    <div className="flex items-center gap-3 my-3 print:my-2 print-avoid-break">
       <span className="h-px flex-1 bg-[var(--brand-gold)]/40 print:bg-black/30" />
       <h2 className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-[var(--brand-gold)] print:text-black text-center">
         {children}
@@ -102,9 +102,9 @@ export function ProgramRender({
 
   return (
     <>
-    <article className="mx-auto max-w-[7.5in] bg-white text-black text-[14px] leading-relaxed p-8 sm:p-12 ring-1 ring-black/10 print:ring-0 print:p-0">
+    <article className="mx-auto max-w-[7.5in] bg-white text-black text-[14px] leading-snug p-6 sm:p-10 print:py-2 print:px-0 ring-1 ring-black/10 print:ring-0">
       <header className="text-center">
-        <h1 className="font-serif text-[2.4rem] leading-tight tracking-tight">
+        <h1 className="font-serif text-[2.2rem] print:text-[1.8rem] leading-tight tracking-tight">
           {data.branchName}
         </h1>
         <p className="uppercase tracking-[0.28em] text-xs text-[var(--brand-gold)] print:text-black mt-1.5">
@@ -113,7 +113,7 @@ export function ProgramRender({
         <Ornament />
       </header>
 
-      <p className="font-serif italic text-center text-[0.95rem] leading-relaxed text-gray-700 print:text-black max-w-xl mx-auto mb-6">
+      <p className="font-serif italic text-center text-[0.95rem] leading-snug text-gray-700 print:text-black max-w-xl mx-auto mb-4 print:mb-2">
         {data.welcomeText ?? "Welcome to sacrament meeting. We're glad you're here."}
       </p>
 
@@ -123,7 +123,7 @@ export function ProgramRender({
         </p>
       )}
 
-      <div className="grid grid-cols-3 gap-4 text-center border-y border-black/10 print:border-black/30 py-4 mb-2">
+      <div className="grid grid-cols-3 gap-4 text-center border-y border-black/10 print:border-black/30 py-3 print:py-2 mb-1">
         <div className="px-2">
           <div className="text-[0.62rem] uppercase tracking-[0.18em] text-[var(--brand-gold)] print:text-black mb-1">
             Presiding
@@ -171,7 +171,7 @@ export function ProgramRender({
       </div>
 
       {data.briefReminders && (
-        <section className="mb-2 print-avoid-break">
+        <section className="mb-1 print-avoid-break">
           <SectionHeading>Brief Reminders</SectionHeading>
           <div className="text-sm space-y-1">
             {data.briefReminders
@@ -191,7 +191,7 @@ export function ProgramRender({
       )}
 
       {data.briefReminderEvents.length > 0 && (
-        <section className="mb-2 print-avoid-break">
+        <section className="mb-1 print-avoid-break">
           <SectionHeading>Upcoming Events</SectionHeading>
           <div className="text-sm space-y-1">
             {data.briefReminderEvents.map((e, i) => (
@@ -229,7 +229,7 @@ export function ProgramRender({
             footer={data.wardBusinessFooter}
           />
           {data.stakeBusiness && (
-            <section className="my-3 print-avoid-break">
+            <section className="my-2 print:my-1 print-avoid-break">
               <SectionHeading>Stake Business</SectionHeading>
               <div className="whitespace-pre-wrap text-sm">{data.stakeBusiness}</div>
             </section>
@@ -237,7 +237,7 @@ export function ProgramRender({
         </>
       )}
 
-      <section className="my-3 print-avoid-break">
+      <section className="my-2 print:my-1 print-avoid-break">
         <div className="flex items-center gap-3">
           <div className="flex-1">
             <SectionHeading>Blessing and Passing of the Sacrament</SectionHeading>
@@ -257,7 +257,7 @@ export function ProgramRender({
         )}
       </section>
 
-      <section className="my-3 print-avoid-break">
+      <section className="my-2 print:my-1 print-avoid-break">
         <SectionHeading>{isFast ? "Bearing of Testimonies" : "Balance of Program"}</SectionHeading>
         {isFast ? (
           <p className="text-sm text-center italic">
@@ -271,6 +271,7 @@ export function ProgramRender({
             {second && (
               <Row icon={<User />} label={SLOT_LABELS.second} value={speakerLine(second)} />
             )}
+            <hr className="my-1 border-black/15 print:border-black/40" />
             <Row
               icon={<Music2 />}
               label="Intermediate Hymn"
@@ -287,6 +288,7 @@ export function ProgramRender({
         )}
       </section>
 
+      <hr className="my-1 border-black/15 print:border-black/40" />
       <Row icon={<Music2 />} label="Closing Hymn" value={hymnLine(data.closingHymn)} />
       <Row icon={<HeartHandshake />} label="Benediction" value={data.benediction?.trim() || "By Invitation"} />
 
@@ -311,7 +313,7 @@ function Row({
   compact?: boolean;
 }) {
   return (
-    <div className={`flex items-center gap-4 ${compact ? "py-1.5" : "py-2.5"}`}>
+    <div className={`flex items-center gap-4 ${compact ? "py-1 print:py-0.5" : "py-2 print:py-1"}`}>
       {icon && (
         <span className="shrink-0 w-10 h-10 rounded-full border border-[var(--brand-gold)]/50 print:border-black/40 flex items-center justify-center text-[var(--brand-gold)] print:text-black [&_svg]:w-[1.05rem] [&_svg]:h-[1.05rem]">
           {icon}
@@ -363,7 +365,7 @@ function StructuredBlock({
   outro?: string;
 }) {
   return (
-    <div className="space-y-1 text-sm py-3 border-b border-black/15 print:border-black/30 last:border-b-0 last:pb-0">
+    <div className="space-y-0.5 text-sm py-2 print:py-1 border-b border-black/15 print:border-black/30 last:border-b-0 last:pb-0">
       <div className="font-semibold text-xs uppercase tracking-[0.14em]">{heading}</div>
       {intro && <p className="italic text-gray-700 print:text-black">{intro}</p>}
       {lines.map((l, i) => (
@@ -426,7 +428,7 @@ function WardBusinessSection({
   });
 
   return (
-    <section className="my-3">
+    <section className="my-2 print:my-1">
       <SectionHeading>{labels.unit} Business</SectionHeading>
       {!anyActive ? (
         <p className="italic text-sm text-center text-gray-700 print:text-black">
