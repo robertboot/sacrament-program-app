@@ -216,8 +216,10 @@ export function ProgramRender({
         </section>
       )}
 
-      <Row icon={<Music2 />} label="Opening Hymn" value={hymnLine(data.openingHymn)} />
-      <Row icon={<HeartHandshake />} label="Invocation" value={data.invocation?.trim() || "By Invitation"} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-x-6">
+        <Row icon={<Music2 />} label="Opening Hymn" value={hymnLine(data.openingHymn)} />
+        <Row icon={<HeartHandshake />} label="Invocation" value={data.invocation?.trim() || "By Invitation"} />
+      </div>
 
       {isPublic ? (
         <SectionHeading>{unitLabels(data.unitType).unit} and Stake Business</SectionHeading>
@@ -289,8 +291,10 @@ export function ProgramRender({
       </section>
 
       <hr className="my-1 border-black/15 print:border-black/40" />
-      <Row icon={<Music2 />} label="Closing Hymn" value={hymnLine(data.closingHymn)} />
-      <Row icon={<HeartHandshake />} label="Benediction" value={data.benediction?.trim() || "By Invitation"} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-x-6">
+        <Row icon={<Music2 />} label="Closing Hymn" value={hymnLine(data.closingHymn)} />
+        <Row icon={<HeartHandshake />} label="Benediction" value={data.benediction?.trim() || "By Invitation"} />
+      </div>
 
       <Ornament />
       <section className="text-center text-xs text-gray-600 print:text-black">
