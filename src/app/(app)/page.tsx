@@ -2,6 +2,8 @@ import Link from "next/link";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { DashboardStatusPill } from "@/components/dashboard-status-pill";
 import { DashboardInviteAction } from "@/components/dashboard-invite-action";
 import { DashboardLegend } from "@/components/dashboard-legend";
@@ -16,6 +18,8 @@ import {
   CheckCircle2,
   CircleAlert,
   Clock,
+  Eye,
+  Globe,
   Music2,
   Pencil,
   RefreshCw,
@@ -28,6 +32,7 @@ type DashboardRow = {
   id: string;
   meeting_date: string;
   status: ProgramStatus;
+  share_token: string;
   meeting_type: "regular" | "fast_sunday" | "no_services";
   meeting_type_label: string | null;
   conducting: { full_name: string } | null;
@@ -71,7 +76,7 @@ export default async function DashboardPage() {
   const { data: programs } = await supabase
     .from("programs")
     .select(
-      `id, meeting_date, status, meeting_type, meeting_type_label, intermediate_hymn_text,
+      `id, meeting_date, status, share_token, meeting_type, meeting_type_label, intermediate_hymn_text,
        opening_hymn_id, sacrament_hymn_id, intermediate_hymn_id, closing_hymn_id,
        conducting:profiles!programs_conducting_id_fkey(full_name),
        opening_hymn:hymns!programs_opening_hymn_id_fkey(number, title),
@@ -190,8 +195,7 @@ function DashboardRowCard({
 
   return (
     <div className="relative">
-      <Link href={`/programs/${row.id}/view`} className="block">
-        <Card className="py-0 rounded-2xl shadow-sm ring-1 ring-foreground/10 transition-all hover:bg-accent hover:shadow-md hover:-translate-y-px">
+      <Card className="py-0 rounded-2xl shadow-sm ring-1 ring-foreground/10">
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-center gap-2 mb-3">
               {row.status === "published" ? (
@@ -335,19 +339,32 @@ function DashboardRowCard({
               ))}
             </div>
           )}
+            <div className="mt-4 pt-3 border-t flex flex-wrap gap-2">
+              <Link
+                href={`/programs/${row.id}/view`}
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+              >
+                <Eye className="w-4 h-4" /> View conductor&rsquo;s version
+              </Link>
+              {row.status === "published" && (
+                <Link
+                  href={`/p/${row.share_token}`}
+                  className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                >
+                  <Globe className="w-4 h-4" /> View public version
+                </Link>
+              )}
+              {canEdit && (
+                <Link
+                  href={`/programs/${row.id}`}
+                  className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                >
+                  <Pencil className="w-4 h-4" /> Edit
+                </Link>
+              )}
+            </div>
           </CardContent>
         </Card>
-      </Link>
-      {canEdit && (
-        <Link
-          href={`/programs/${row.id}`}
-          aria-label="Edit program"
-          className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-md bg-background/95 px-2 py-1 text-xs font-medium text-foreground ring-1 ring-foreground/10 shadow-sm hover:bg-accent hover:text-foreground transition-colors"
-        >
-          <Pencil className="w-3.5 h-3.5" />
-          Edit
-        </Link>
-      )}
     </div>
   );
 }
