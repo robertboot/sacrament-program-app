@@ -52,38 +52,16 @@ export type ProgramRenderData = {
   }[];
 };
 
-/** Escape a string for safe inclusion in an ICS property value. */
-function icsEscape(s: string) {
-  return s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
-}
-
-/** Build a `data:` URI with an all-day VCALENDAR for one event. */
-function eventToIcsHref(
+/** Build the `/ics` URL for a single event so iOS Safari treats it as a
+ *  real, shareable calendar file (data: URIs choke in the share sheet). */
+function eventIcsHref(
   title: string,
   eventDate: string,
   description: string | null,
 ): string {
-  const startYmd = eventDate.replaceAll("-", "");
-  const d = new Date(`${eventDate}T00:00:00Z`);
-  const next = new Date(d.getTime() + 24 * 60 * 60 * 1000);
-  const endYmd = next.toISOString().slice(0, 10).replaceAll("-", "");
-  const uid = `${startYmd}-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 24)}@rota`;
-  const stamp = `${startYmd}T000000Z`;
-  const lines = [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//Rota//EN",
-    "CALSCALE:GREGORIAN",
-    "BEGIN:VEVENT",
-    `UID:${uid}`,
-    `DTSTAMP:${stamp}`,
-    `DTSTART;VALUE=DATE:${startYmd}`,
-    `DTEND;VALUE=DATE:${endYmd}`,
-    `SUMMARY:${icsEscape(title)}`,
-  ];
-  if (description) lines.push(`DESCRIPTION:${icsEscape(description)}`);
-  lines.push("END:VEVENT", "END:VCALENDAR");
-  return `data:text/calendar;charset=utf-8,${encodeURIComponent(lines.join("\r\n"))}`;
+  const params = new URLSearchParams({ title, date: eventDate });
+  if (description) params.set("description", description);
+  return `/ics?${params.toString()}`;
 }
 
 /** Thin ornamental rule with a center diamond — used under the title. */
@@ -259,8 +237,7 @@ export function ProgramRender({
                 </div>
                 {e.event_date && (
                   <a
-                    href={eventToIcsHref(e.title, e.event_date, e.description)}
-                    download={`${e.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.ics`}
+                    href={eventIcsHref(e.title, e.event_date, e.description)}
                     aria-label={`Add ${e.title} to your calendar`}
                     title="Add to calendar"
                     className="no-print shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-full border border-[var(--brand-gold)]/50 text-[var(--brand-gold)] hover:bg-[var(--brand-gold)]/10"
