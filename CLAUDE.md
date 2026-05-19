@@ -1,0 +1,199 @@
+# CLAUDE.md — Project memory & recovery guide
+
+> This file is auto-loaded by every Claude Code session. It is also the
+> **recovery document**: if a chat feed is lost or corrupted, a fresh
+> session reads this and is immediately oriented. Keep it current.
+>
+> **No secrets in this file.** It records *where* credentials live and how
+> to identify the right systems — never the actual keys/passwords.
+
+---
+
+## 1. What this app is
+
+"Rota" (formerly "Rameumptom") — a sacrament-meeting planning web app for
+LDS bishoprics. Plan programs one Sunday at a time, manage speakers/topics/
+hymns with rotation suggestions, invite speakers, publish a public bulletin
+and a conductor view.
+
+**Stack:** Next.js (App Router, server components + server actions) ·
+Supabase (Postgres + RLS + RPC) · Tailwind + Base UI (`@base-ui/react`) +
+cmdk · deployed on Vercel.
+
+---
+
+## 2. Repo, branch, local path
+
+- GitHub repo: **`robertboot/sacrament-program-app`**
+- Local working dir: **`/home/user/sacrament-program-app`**
+- Active development branch: **`claude/fix-bookmark-update-phone-I4E1D`**
+- All work is developed on that branch and squash-merged to `main`.
+
+---
+
+## 3. The TWO Vercel apps (critical — source of much past confusion)
+
+Both deploy from the **same repo**, branch **`main`**:
+
+| Vercel project | Domain | Purpose |
+|---|---|---|
+| `sacrament-program-app` | `sacrament-program-app.vercel.app` | **The live app the owner uses ("Rota")** |
+| `rameumptom-multi` | `rameumptom-multi.vercel.app` | Multi-tenant "v2" (in progress) |
+
+Each Vercel project has its **own** `NEXT_PUBLIC_SUPABASE_URL`, so each
+talks to a **different Supabase database**. Merging to `main` deploys
+**both**.
+
+---
+
+## 4. Supabase — which database is correct (READ THIS BEFORE ANY SQL)
+
+The single biggest recurring failure: running SQL/migrations against the
+**wrong Supabase project**, so changes never appear in the app.
+
+- The app the owner uses (`sacrament-program-app.vercel.app`) is backed by
+  the Supabase project named **"robertboot's Project"**. All migrations and
+  data fixes for the live app go **there**.
+- The Supabase project ref **`ecgjbijrtkoscqkgahup`** is **NOT** the live
+  app's database (it's a different/abandoned one). Don't run live fixes there.
+- `NEXT_PUBLIC_SUPABASE_URL` in Vercel is marked **Sensitive** → it cannot
+  be read back in the Vercel UI. Do **not** try to read or overwrite it.
+
+**Foolproof way to confirm you're in the right database** — take any
+program UUID from a URL the owner is using
+(`…/programs/<UUID>`) and run this in a Supabase SQL editor:
+
+```sql
+select case when exists (select 1 from programs where id='<UUID>')
+then 'THIS_IS_THE_APP_DATABASE' else 'WRONG_DATABASE' end as answer;
+```
+
+Only run migrations in the project that returns `THIS_IS_THE_APP_DATABASE`.
+
+---
+
+## 5. Secrets / credentials — where they live
+
+- All secrets (Supabase URL + keys, Twilio, etc.) are **Vercel → project →
+  Settings → Environment Variables**, per Vercel project.
+- They are **not** in the repo and must never be committed.
+- Supabase access: the owner logs into supabase.com; the correct project is
+  **"robertboot's Project"** (see §4).
+
+---
+
+## 6. Deploy workflow
+
+GitHub MCP has been unreliable in sessions. The reliable path used here:
+
+1. Make changes on branch `claude/fix-bookmark-update-phone-I4E1D`.
+2. `git stash && git fetch origin main && git reset --hard origin/main &&
+   git stash pop` (sync onto fresh main).
+3. Commit on the branch.
+4. `git checkout -B main origin/main && git merge --squash <branch> &&
+   git commit` (one squash commit on main).
+5. `git push origin main` (with retry/backoff).
+6. `git checkout <branch> && git reset --hard origin/main &&
+   git push -u origin <branch> --force-with-lease`.
+
+Vercel auto-deploys `main` for **both** apps. Verify the deployed version
+string changed before retesting (past bug: owner retested a stale build).
+
+When GitHub MCP **is** available, the equivalent is PR + squash-merge.
+
+---
+
+## 7. Database migrations (hand-applied)
+
+Migrations live in `supabase/migrations/`. They are **not** auto-applied —
+they must be pasted into the **Supabase SQL editor of "robertboot's
+Project"** and run manually.
+
+Key migrations and state (applied to "robertboot's Project"):
+
+- `20260601000000_slot_confirmed.sql` — adds
+  `speaking_assignments.slot_confirmed`.
+- `20260602000000_hymn_alerts.sql` — adds `hymns.usage_tags`,
+  `hymns.verse_note`; seeds usage tags by hymn number (sacrament 169–196,
+  easter 197–200, christmas 201–214); adds four
+  `programs.*_hymn_verse_note` booleans; recreates the
+  `get_published_program` RPC (the RPC bakes the verse note into the public
+  bulletin hymn title when that slot's toggle is on).
+
+Gotcha: the SQL editor mangles pasted text if hand-selected — always use
+the code block's copy control. Big RPC blocks have failed mid-script,
+rolling back the whole transaction; split schema changes from the RPC if
+needed.
+
+App code uses defensive queries (`maybeSingle`, separate selects, `?? false`)
+so it tolerates a not-yet-applied migration without 404ing.
+
+---
+
+## 8. Conventions & landmines
+
+- **iOS picker scroll history (don't repeat the loop):** the
+  Topic/Speaker/Hymn pickers use a Base UI `Dialog`. Base UI's *modal*
+  scroll-lock blocks touch-scroll inside the dialog on iOS. The working
+  solution: `modal={false}` on the picker `Dialog` **and** the
+  `DialogContent` (popup) is itself the scroll container
+  (`max-height:85svh; overflow-y-auto; overscroll-contain; touch-pan-y`),
+  with the cmdk list flowing at natural height. Do not revert to nested
+  flex-height scroll on the inner list.
+- `src/app/(app)/settings/actions.ts` is intentionally modified (carries
+  the production invite-link redirect using `NEXT_PUBLIC_SITE_URL`). Do
+  **not** revert it.
+- New-tab links: only the reschedule-conflict dialog's "Open →" should use
+  `target="_blank"`. (Print/Assignments pages also intentionally open new
+  tabs.)
+- Hymn picker: tapping the field always opens the picker (never clears);
+  clearing is an explicit "Clear — no hymn" row inside the dialog; the
+  selected hymn opens highlighted and rotated to the top.
+- Verse notes / usage tags are editable in-app: **Settings → "Hymn notes &
+  tags"** (search hymn → edit). SQL is only a test shortcut.
+
+---
+
+## 9. Built so far (high level)
+
+Rename to "Rota"; Public vs Conductor differentiation; Home always shows
+upcoming Sunday with Public + Conductor buttons; install prompt only when
+not installed; plan one Sunday at a time + "Plan the next program";
+in-editor auto-generate with review→confirm-slot; hymn usage alerts +
+verse notes + Settings editor; custom topic saved to library on confirm;
+any speaker assignable + reset-to-rotation; scheduled-date swap conflict
+dialog with last-spoke/upcoming dates; iOS picker scroll fixed; assorted
+UX fixes (dialog title clipping, single trigger control, in-place View).
+
+---
+
+## 10. Deferred — for the multi-tenant final build (PINNED)
+
+When building the marketed **multi-tenant** version (likely the
+`rameumptom-multi` line):
+
+- **Tenant-scoped hymn customizations.** Keep the shared `hymns` catalog
+  (number/title/hymnal) system-wide and read-only per tenant. Move
+  per-tenant `verse_note` and any tenant-specific `usage_tags` into an
+  overlay table, e.g. `hymn_overrides(tenant_id, hymn_id, usage_tags,
+  verse_note)`, resolved at read time as **system default ⊕ tenant
+  override**. Seeded sacrament/easter/christmas tags stay as shared
+  defaults; verse notes are inherently ward-specific.
+- **Developer self-service.** Provide a developer-only interface so the
+  owner can make small content/config updates via their own login
+  credentials (rather than SQL), scoped appropriately for multi-tenant.
+- Confirm the tenant key (ward/unit id) used by the v2 model and make the
+  overlay + any new tables tenant-scoped from the start.
+
+Status: design agreed, **not yet implemented**. ~weeks out.
+
+---
+
+## 11. If you are a fresh session recovering context
+
+1. Read this whole file.
+2. Confirm the right Supabase DB with the §4 query before any SQL.
+3. Use the §6 deploy workflow; verify the deployed version string changes.
+4. Continue outstanding test items: #7 verse note in Conductor + public
+   views; Public/Conductor differentiation; Home upcoming Sunday; install
+   note; Settings user invite/revoke.
