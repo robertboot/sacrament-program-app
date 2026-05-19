@@ -199,11 +199,20 @@ Status: design agreed, **not yet implemented**. ~weeks out.
      badge, per-slot verse-note toggle saving, Conductor view, and public
      bulletin (`get_published_program` RPC) all confirmed on
      "robertboot's Project".
-   - **Still to verify:** Public vs Conductor differentiation; Home shows
-     the upcoming Sunday; install prompt only when not installed; Settings
-     user invite/revoke.
+   - **DONE:** dashboard cards have explicit top-row buttons
+     (Conductor's version / Public version / Edit) beside the
+     Published/Draft badge; whole-card link removed (see §14).
+   - **DONE:** editor footer has a "View published version" link next to
+     Publish/Unpublish.
+   - **DONE:** program-render redesigned (serif title, gold/navy section
+     headers, paired rows, fixed Intermediate Hymn slot, Add-to-calendar
+     icon on Upcoming Events) — see §15.
    - **DONE:** branding refresh — see §12.
+   - **Still to verify:** Public vs Conductor differentiation (mostly
+     done by the redesign); Home shows the upcoming Sunday; install
+     prompt only when not installed; Settings user invite/revoke.
    - **In progress:** custom domain — see §13.
+   - **PINNED, not started:** multi-tenant launch — see §10.
 
 ---
 
@@ -227,8 +236,8 @@ delete & re-add the home-screen app to see a new icon.
 
 ## 13. Custom domain (in progress)
 
-The app references its own URL three ways — all must be updated or
-invites/auth break:
+Still pending the owner's domain + registrar. The app references its
+own URL three ways — all must be updated or invites/auth break:
 1. **Share links** use `location.origin` — auto-adapt to whatever domain
    the user is on. No change needed.
 2. **`NEXT_PUBLIC_SITE_URL`** (Vercel env, falls back to
@@ -245,3 +254,57 @@ Steps: add domain in Vercel project → set registrar DNS to Vercel's
 values (apex A `76.76.21.21` or `www` CNAME `cname.vercel-dns.com`;
 Vercel shows exact records) → Vercel auto-provisions SSL → set
 `NEXT_PUBLIC_SITE_URL` → update Supabase redirect URLs.
+
+---
+
+## 14. Dashboard card layout (current)
+
+Each upcoming-meeting card in `src/app/(app)/page.tsx`:
+- Top row: **Published/Draft** badge on the left, action buttons on the
+  right — **Conductor's version** (`/programs/<id>/view`), **Public
+  version** (`/p/<share_token>`, published only), **Edit**
+  (`/programs/<id>`, bishopric only). Same-tab navigation by rule (only
+  the reschedule-conflict dialog's "Open →" uses `target="_blank"`).
+- The whole-card link is intentionally removed; the buttons are the
+  affordance. `share_token` is fetched in the dashboard query.
+
+---
+
+## 15. Program render conventions (Public + Conductor share `program-render.tsx`)
+
+Design decisions made for readability + print (≤2 pages target for
+Conductor); changing any of these casually will regress the look:
+- **Title block:** serif (`font-serif`) branch name, gold uppercase
+  "Sacrament Meeting", `Ornament` (◆ between hairlines).
+- **Header row:** 3-column **Presiding / Conducting / Date** with small
+  gold uppercase labels (not a 2-col table).
+- **Section headings:** centered uppercase tracked text between thin
+  hairlines via `SectionHeading`. `tone="navy"` (default) for everything
+  except **Blessing and Passing of the Sacrament**, which is
+  `tone="gold"`. **font-bold** on the label text. `print:text-black` so
+  it prints solid.
+- **Row component:** circular outline icon (gold) + small gold
+  uppercase label + value. Icons: `Music2` for hymns, `HeartHandshake`
+  for prayers, `User` for speakers, `BookOpen` for the sacrament hymn
+  on public.
+- **Paired rows** (`grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2`):
+  Opening Hymn / Invocation; First Speaker / Second Speaker;
+  Intermediate Hymn / Concluding Speaker; Closing Hymn / Benediction.
+- **Intermediate Hymn is a fixed slot** (always rendered between 2nd
+  and 3rd speaker on non-fast meetings; shows hymn / custom text / `—`).
+- **Horizontal rules:** between the two speaker-pair rows (above
+  Intermediate Hymn), and between the Balance section and Closing
+  Hymn/Benediction.
+- **Spacing:** condensed with print: variants that shrink further on
+  paper. Gold + borders fall back to black for print.
+- **Upcoming Events:** each event with an `event_date` shows an
+  "Add to calendar" button (gold circular `CalendarPlus`, `no-print`)
+  linking to `/ics?title=…&date=…&description=…`. The route handler at
+  `src/app/ics/route.ts` returns a `text/calendar` file with proper
+  `Content-Disposition`, so iOS Safari's share sheet works correctly
+  (do NOT revert to a `data:` URI — it broke iOS share).
+- **Public bulletin needs `brief_reminder_events`** to populate
+  Upcoming Events. The `get_published_program` RPC was updated to
+  include it (events with `as_brief_reminder=true` within
+  `meeting_date` … `meeting_date + 32 days`). If the public bulletin
+  loses Upcoming Events again, the RPC was likely reverted — re-apply.
