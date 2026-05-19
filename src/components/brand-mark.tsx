@@ -72,11 +72,13 @@ export function BrandStack({ className }: { className?: string }) {
  */
 export function BrandWordmark({ className }: { className?: string }) {
   return (
-    <span className={cn("inline-flex items-center gap-2.5", className)}>
-      <BrandMark className="w-7 h-7 text-current" />
-      <span className="font-semibold tracking-tight text-xl leading-none">
-        R<span className="text-[var(--brand-gold)]">o</span>ta
-      </span>
-    </span>
+    <Image
+      src="/header-dark.png"
+      alt="Rota"
+      width={1081}
+      height={322}
+      priority
+      className={cn("h-8 w-auto", className)}
+    />
   );
 }
