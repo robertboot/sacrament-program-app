@@ -774,19 +774,27 @@ export function ProgramEditor({
                   </Button>
                 </>
               ) : (
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    start(async () => {
-                      const r = await setProgramStatus(program.id, "draft");
-                      if (r.error) toast.error(r.error);
-                      else toast.success("Reverted to draft.");
-                    })
-                  }
-                  disabled={pending}
-                >
-                  <Globe2 className="w-4 h-4" /> Unpublish
-                </Button>
+                <>
+                  <Link
+                    href={`/p/${program.share_token}`}
+                    className={cn(buttonVariants({ variant: "outline" }))}
+                  >
+                    <Eye className="w-4 h-4" /> View published version
+                  </Link>
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      start(async () => {
+                        const r = await setProgramStatus(program.id, "draft");
+                        if (r.error) toast.error(r.error);
+                        else toast.success("Reverted to draft.");
+                      })
+                    }
+                    disabled={pending}
+                  >
+                    <Globe2 className="w-4 h-4" /> Unpublish
+                  </Button>
+                </>
               )}
             </>
           )}
