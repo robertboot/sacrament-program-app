@@ -202,16 +202,46 @@ Status: design agreed, **not yet implemented**. ~weeks out.
    - **Still to verify:** Public vs Conductor differentiation; Home shows
      the upcoming Sunday; install prompt only when not installed; Settings
      user invite/revoke.
-   - **In progress:** branding refresh — owner has new logos (app icon,
-     favicon, PWA icons, in-app wordmark). See §12.
+   - **DONE:** branding refresh — see §12.
+   - **In progress:** custom domain — see §13.
 
 ---
 
-## 12. Branding assets (logo refresh in progress)
+## 12. Branding assets (DONE)
 
-Owner is supplying new logos. Asset locations to replace/regenerate:
-- `public/` icons + favicon, the PWA `manifest`/icons, and the in-app
-  `BrandStack` component (the wordmark/logo shown on Home and auth).
-Keep the existing icon style unless told otherwise; "Rota" is the name.
-When new files are provided, replace all icon sizes consistently and
-verify the installed-PWA icon + browser favicon both update.
+New "Rota" branding shipped. Source/master files live in `public/`:
+- `app-icon-master.png` (1024² master) → `icon-192/512.png`,
+  `apple-touch-icon.png`, `src/app/favicon.ico` are regenerated from it
+  with Pillow (`python3` + PIL is available in the env).
+- `splash-page-logo.png` → rendered by `BrandStack` (Home + auth splash),
+  tagline is baked into the image so no separate tagline text.
+- `header-dark.png` (cream art for the dark navy header) → rendered by
+  `BrandWordmark` (the app header). `header-light.png` is the navy-art
+  variant for light backgrounds (kept for future use).
+- Legacy `rameumptom-*` logos and old `icon.png` were removed.
+To change a logo: replace the source PNG in `public/`, re-run the Pillow
+resize for icons, redeploy. iOS caches the installed-PWA icon — must
+delete & re-add the home-screen app to see a new icon.
+
+---
+
+## 13. Custom domain (in progress)
+
+The app references its own URL three ways — all must be updated or
+invites/auth break:
+1. **Share links** use `location.origin` — auto-adapt to whatever domain
+   the user is on. No change needed.
+2. **`NEXT_PUBLIC_SITE_URL`** (Vercel env, falls back to
+   `https://sacrament-program-app.vercel.app`) is used for invite links
+   (`programs/[id]/actions.ts`) and magic-link `redirectTo`
+   (`settings/actions.ts`). Must be set to the custom domain in the
+   **sacrament-program-app** Vercel project, then redeploy.
+3. **Supabase Auth** ("robertboot's Project") → Authentication → URL
+   Configuration: Site URL + Redirect URLs must include
+   `https://<domain>/auth/callback` (and `https://<domain>/**`) or magic
+   links fail. Keep the `.vercel.app` entry during transition.
+
+Steps: add domain in Vercel project → set registrar DNS to Vercel's
+values (apex A `76.76.21.21` or `www` CNAME `cname.vercel-dns.com`;
+Vercel shows exact records) → Vercel auto-provisions SSL → set
+`NEXT_PUBLIC_SITE_URL` → update Supabase redirect URLs.
