@@ -64,14 +64,27 @@ function Ornament() {
 }
 
 /** Centered gold section label flanked by hairlines. */
-function SectionHeading({ children }: { children: ReactNode }) {
+function SectionHeading({
+  children,
+  tone = "navy",
+}: {
+  children: ReactNode;
+  tone?: "navy" | "gold";
+}) {
+  const isGold = tone === "gold";
+  const text = isGold
+    ? "text-[var(--brand-gold)] print:text-black"
+    : "text-primary print:text-black";
+  const line = isGold
+    ? "bg-[var(--brand-gold)]/70 print:bg-black/40"
+    : "bg-primary/70 print:bg-black/40";
   return (
     <div className="flex items-center gap-3 my-3 print:my-2 print-avoid-break">
-      <span className="h-px flex-1 bg-primary/70 print:bg-black/40" />
-      <h2 className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-primary print:text-black text-center">
+      <span className={`h-px flex-1 ${line}`} />
+      <h2 className={`text-[0.7rem] font-semibold uppercase tracking-[0.2em] ${text} text-center`}>
         {children}
       </h2>
-      <span className="h-px flex-1 bg-primary/70 print:bg-black/40" />
+      <span className={`h-px flex-1 ${line}`} />
     </div>
   );
 }
@@ -242,7 +255,7 @@ export function ProgramRender({
       <section className="my-2 print:my-1 print-avoid-break">
         <div className="flex items-center gap-3">
           <div className="flex-1">
-            <SectionHeading>Blessing and Passing of the Sacrament</SectionHeading>
+            <SectionHeading tone="gold">Blessing and Passing of the Sacrament</SectionHeading>
           </div>
           <div className="no-print shrink-0">
             <SacramentPrayersButton />
@@ -267,25 +280,29 @@ export function ProgramRender({
           </p>
         ) : (
           <>
-            {first && (
-              <Row icon={<User />} label={SLOT_LABELS.first} value={speakerLine(first)} />
-            )}
-            {second && (
-              <Row icon={<User />} label={SLOT_LABELS.second} value={speakerLine(second)} />
-            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-x-6">
+              {first && (
+                <Row icon={<User />} label={SLOT_LABELS.first} value={speakerLine(first)} />
+              )}
+              {second && (
+                <Row icon={<User />} label={SLOT_LABELS.second} value={speakerLine(second)} />
+              )}
+            </div>
             <hr className="my-1 border-black/15 print:border-black/40" />
-            <Row
-              icon={<Music2 />}
-              label="Intermediate Hymn"
-              value={
-                data.intermediateHymn
-                  ? hymnLine(data.intermediateHymn)
-                  : data.intermediateHymnText?.trim() || "—"
-              }
-            />
-            {concluding && (
-              <Row icon={<User />} label={SLOT_LABELS.concluding} value={speakerLine(concluding)} />
-            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-x-6">
+              <Row
+                icon={<Music2 />}
+                label="Intermediate Hymn"
+                value={
+                  data.intermediateHymn
+                    ? hymnLine(data.intermediateHymn)
+                    : data.intermediateHymnText?.trim() || "—"
+                }
+              />
+              {concluding && (
+                <Row icon={<User />} label={SLOT_LABELS.concluding} value={speakerLine(concluding)} />
+              )}
+            </div>
           </>
         )}
       </section>
