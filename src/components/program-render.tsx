@@ -67,11 +67,11 @@ function Ornament() {
 function SectionHeading({ children }: { children: ReactNode }) {
   return (
     <div className="flex items-center gap-3 my-3 print:my-2 print-avoid-break">
-      <span className="h-px flex-1 bg-[var(--brand-gold)]/40 print:bg-black/30" />
-      <h2 className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-[var(--brand-gold)] print:text-black text-center">
+      <span className="h-px flex-1 bg-primary/70 print:bg-black/40" />
+      <h2 className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-primary print:text-black text-center">
         {children}
       </h2>
-      <span className="h-px flex-1 bg-[var(--brand-gold)]/40 print:bg-black/30" />
+      <span className="h-px flex-1 bg-primary/70 print:bg-black/40" />
     </div>
   );
 }
