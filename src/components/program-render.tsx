@@ -95,10 +95,6 @@ export function ProgramRender({
   const isFast = data.meetingType === "fast_sunday";
   const isPublic = mode === "public";
 
-  const intermediate =
-    !isFast && (data.intermediateHymn ??
-      (data.intermediateHymnText ? { text: data.intermediateHymnText } : null));
-
   const slotByKey = (k: AssignmentSlot) => data.assignments.find((a) => a.slot === k);
   const first = slotByKey("first");
   const second = slotByKey("second");
@@ -275,17 +271,15 @@ export function ProgramRender({
             {second && (
               <Row icon={<User />} label={SLOT_LABELS.second} value={speakerLine(second)} />
             )}
-            {intermediate && (
-              <Row
-                icon={<Music2 />}
-                label="Intermediate"
-                value={
-                  "text" in intermediate
-                    ? intermediate.text
-                    : hymnLine(intermediate as { number: number; title: string })
-                }
-              />
-            )}
+            <Row
+              icon={<Music2 />}
+              label="Intermediate Hymn"
+              value={
+                data.intermediateHymn
+                  ? hymnLine(data.intermediateHymn)
+                  : data.intermediateHymnText?.trim() || "—"
+              }
+            />
             {concluding && (
               <Row icon={<User />} label={SLOT_LABELS.concluding} value={speakerLine(concluding)} />
             )}
