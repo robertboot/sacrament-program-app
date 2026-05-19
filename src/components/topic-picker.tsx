@@ -66,7 +66,9 @@ export function TopicPicker({
           <BookOpen className="w-4 h-4 shrink-0" />
           <span className="truncate">{display || "Pick a topic…"}</span>
         </span>
-        <ChevronDown className="w-4 h-4 opacity-50 shrink-0" />
+        {(!(value || customValue) || disabled) && (
+          <ChevronDown className="w-4 h-4 opacity-50 shrink-0" />
+        )}
       </button>
 
       {(value || customValue) && !disabled && (
@@ -74,7 +76,7 @@ export function TopicPicker({
           type="button"
           aria-label="Clear topic"
           onClick={() => onChange({ topic_id: null, custom_topic_text: null })}
-          className="absolute right-7 top-1/2 -translate-y-1/2 hover:bg-accent rounded-sm p-1"
+          className="absolute right-3 top-1/2 -translate-y-1/2 hover:bg-accent rounded-sm p-1"
         >
           <X className="w-3.5 h-3.5" />
         </button>
