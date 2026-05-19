@@ -197,7 +197,7 @@ function DashboardRowCard({
     <div className="relative">
       <Card className="py-0 rounded-2xl shadow-sm ring-1 ring-foreground/10">
           <CardContent className="p-4 sm:p-5">
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
               {row.status === "published" ? (
                 <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 ring-1 ring-emerald-200 dark:ring-emerald-800 rounded-full px-2 py-0.5">
                   <CheckCircle2 className="w-3.5 h-3.5" />
@@ -208,6 +208,30 @@ function DashboardRowCard({
                   Draft
                 </span>
               )}
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href={`/programs/${row.id}/view`}
+                  className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                >
+                  <Eye className="w-4 h-4" /> Conductor&rsquo;s version
+                </Link>
+                {row.status === "published" && (
+                  <Link
+                    href={`/p/${row.share_token}`}
+                    className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                  >
+                    <Globe className="w-4 h-4" /> Public version
+                  </Link>
+                )}
+                {canEdit && (
+                  <Link
+                    href={`/programs/${row.id}`}
+                    className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                  >
+                    <Pencil className="w-4 h-4" /> Edit
+                  </Link>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shrink-0">
@@ -339,30 +363,6 @@ function DashboardRowCard({
               ))}
             </div>
           )}
-            <div className="mt-4 pt-3 border-t flex flex-wrap gap-2">
-              <Link
-                href={`/programs/${row.id}/view`}
-                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-              >
-                <Eye className="w-4 h-4" /> View conductor&rsquo;s version
-              </Link>
-              {row.status === "published" && (
-                <Link
-                  href={`/p/${row.share_token}`}
-                  className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-                >
-                  <Globe className="w-4 h-4" /> View public version
-                </Link>
-              )}
-              {canEdit && (
-                <Link
-                  href={`/programs/${row.id}`}
-                  className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-                >
-                  <Pencil className="w-4 h-4" /> Edit
-                </Link>
-              )}
-            </div>
           </CardContent>
         </Card>
     </div>
