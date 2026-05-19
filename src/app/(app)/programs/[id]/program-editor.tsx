@@ -238,7 +238,6 @@ export function ProgramEditor({
           </Link>
           <Link
             href={`/programs/${program.id}/view`}
-            target="_blank"
             className={cn(
               buttonVariants({ variant: "outline", size: "sm" }),
               "bg-white hover:bg-zinc-50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100",
