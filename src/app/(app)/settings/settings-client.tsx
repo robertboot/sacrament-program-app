@@ -38,6 +38,7 @@ import {
   addBishopricMember,
   addChoristerMember,
   inviteMember,
+  sendInviteEmail,
   removeMember,
   updateBishopricMember,
   updateChoristerMember,
@@ -61,7 +62,7 @@ export function SettingsClient({
   const [calendarUrl, setCalendarUrl] = useState(settings.calendar_ics_url ?? "");
   const [unitType, setUnitType] = useState<UnitType>(settings.unit_type);
   const [wbFooter, setWbFooter] = useState(settings.ward_business_footer ?? "");
-  const [inviteUrl, setInviteUrl] = useState<{ name: string; url: string } | null>(
+  const [inviteUrl, setInviteUrl] = useState<{ id: string; name: string; email: string; url: string } | null>(
     null,
   );
   const labels = unitLabels(unitType);
@@ -254,7 +255,7 @@ function BishopricList({
   unitType: UnitType;
   pending: boolean;
   start: (cb: () => void | Promise<void>) => void;
-  onInvite: (i: { name: string; url: string }) => void;
+  onInvite: (i: { id: string; name: string; email: string; url: string }) => void;
 }) {
   const labels = unitLabels(unitType);
   if (members.length === 0) {
@@ -301,23 +302,23 @@ function BishopricRow({
   unitType: UnitType;
   pending: boolean;
   start: (cb: () => void | Promise<void>) => void;
-  onInvite: (i: { name: string; url: string }) => void;
+  onInvite: (i: { id: string; name: string; email: string; url: string }) => void;
 }) {
   const [editing, setEditing] = useState(false);
 
   function doInvite() {
     start(async () => {
       const r = await inviteMember(member.id);
-      if (r.error) {
-        toast.error(r.error);
-      } else if (r.sent) {
-        toast.success(`Invite emailed to ${r.email}.`);
-      } else if (r.inviteLink) {
-        // Supabase couldn't email it (rate-limit or no SMTP). Fall back to
-        // showing the link so the bishop can share it manually.
-        onInvite({ name: member.full_name, url: r.inviteLink });
+      if (r.error) toast.error(r.error);
+      else if (r.inviteLink && r.email) {
+        onInvite({
+          id: member.id,
+          name: member.full_name,
+          email: r.email,
+          url: r.inviteLink,
+        });
       } else {
-        toast.error("Couldn't send invite.");
+        toast.error("Couldn't generate an invite link.");
       }
     });
   }
@@ -509,7 +510,7 @@ function AddBishopricForm({
   unitType: UnitType;
   pending: boolean;
   start: (cb: () => void | Promise<void>) => void;
-  onInvite: (i: { name: string; url: string }) => void;
+  onInvite: (i: { id: string; name: string; email: string; url: string }) => void;
 }) {
   const labels = unitLabels(unitType);
   const [name, setName] = useState("");
@@ -614,7 +615,7 @@ function ChoristerList({
   members: Profile[];
   pending: boolean;
   start: (cb: () => void | Promise<void>) => void;
-  onInvite: (i: { name: string; url: string }) => void;
+  onInvite: (i: { id: string; name: string; email: string; url: string }) => void;
 }) {
   if (members.length === 0) {
     return (
@@ -645,7 +646,7 @@ function ChoristerRow({
   member: Profile;
   pending: boolean;
   start: (cb: () => void | Promise<void>) => void;
-  onInvite: (i: { name: string; url: string }) => void;
+  onInvite: (i: { id: string; name: string; email: string; url: string }) => void;
 }) {
   const [editing, setEditing] = useState(false);
 
@@ -808,7 +809,7 @@ function AddChoristerForm({
 }: {
   pending: boolean;
   start: (cb: () => void | Promise<void>) => void;
-  onInvite: (i: { name: string; url: string }) => void;
+  onInvite: (i: { id: string; name: string; email: string; url: string }) => void;
 }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -1061,12 +1062,22 @@ function InviteLinkDialog({
   invite,
   onClose,
 }: {
-  invite: { name: string; url: string } | null;
+  invite: { id: string; name: string; email: string; url: string } | null;
   onClose: () => void;
 }) {
   const [copiedKey, setCopiedKey] = useState<"message" | "link" | null>(null);
   const [message, setMessage] = useState("");
   const [trackedUrl, setTrackedUrl] = useState<string | null>(null);
+  const [sending, sendStart] = useTransition();
+
+  function sendEmail() {
+    if (!invite) return;
+    sendStart(async () => {
+      const r = await sendInviteEmail(invite.id);
+      if (r.error) toast.error(r.error);
+      else toast.success(`Invite emailed to ${r.email}.`);
+    });
+  }
 
   // Re-init the message whenever the dialog opens for a fresh invite.
   if (invite && invite.url !== trackedUrl) {
@@ -1094,11 +1105,10 @@ function InviteLinkDialog({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Invite link for {invite?.name}</DialogTitle>
+          <DialogTitle>Invite {invite?.name}</DialogTitle>
           <DialogDescription>
-            Paste the full message below into a text or email so they know
-            what they&rsquo;re being invited to. The link inside is good for
-            48 hours.
+            Send the sign-in link to <strong>{invite?.email}</strong> or copy
+            it to share via text. The link is good for 48 hours.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 min-w-0">
@@ -1147,13 +1157,20 @@ function InviteLinkDialog({
             )}
             {copiedKey === "link" ? "Copied" : "Copy link"}
           </Button>
-          <Button onClick={() => copyText(message, "message")}>
+          <Button
+            variant="outline"
+            onClick={() => copyText(message, "message")}
+          >
             {copiedKey === "message" ? (
               <Check className="w-4 h-4" />
             ) : (
               <Copy className="w-4 h-4" />
             )}
             {copiedKey === "message" ? "Copied" : "Copy message"}
+          </Button>
+          <Button onClick={sendEmail} disabled={sending}>
+            <Mail className="w-4 h-4" />
+            {sending ? "Sending…" : "Send email"}
           </Button>
         </DialogFooter>
       </DialogContent>

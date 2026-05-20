@@ -294,33 +294,48 @@ export async function inviteMember(userId: string) {
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL ?? "https://sacrament-program-app.vercel.app";
 
-  // Preferred path: have Supabase email the magic link directly.
+  const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
+    type: "magiclink",
+    email: u.user.email,
+    options: { redirectTo: `${siteUrl}/auth/callback?next=/home` },
+  });
+  if (linkErr) return { error: linkErr.message };
+  return {
+    error: null,
+    email: u.user.email,
+    inviteLink: linkData?.properties?.action_link ?? null,
+  };
+}
+
+/**
+ * Have Supabase email a magic sign-in link to an existing member. Used by
+ * the invite dialog's "Send email" button.
+ */
+export async function sendInviteEmail(userId: string) {
+  const auth = await requireBishopric();
+  if ("error" in auth) return { error: auth.error };
+
+  const admin = createServiceClient();
+  const { data: u, error: uErr } = await admin.auth.admin.getUserById(userId);
+  if (uErr || !u?.user?.email) {
+    return { error: uErr?.message ?? "No email on file for this user." };
+  }
+  if (u.user.email.endsWith(".placeholder.invalid")) {
+    return { error: "No real email on file." };
+  }
+
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://sacrament-program-app.vercel.app";
   const supabase = await createClient();
-  const { error: otpErr } = await supabase.auth.signInWithOtp({
+  const { error } = await supabase.auth.signInWithOtp({
     email: u.user.email,
     options: {
       shouldCreateUser: false,
       emailRedirectTo: `${siteUrl}/auth/callback?next=/home`,
     },
   });
-  if (!otpErr) {
-    return { error: null, sent: true, email: u.user.email };
-  }
-
-  // Fallback: produce a link the bishop can copy/paste if email sending
-  // is rate-limited or SMTP isn't configured in Supabase.
-  const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
-    type: "magiclink",
-    email: u.user.email,
-    options: { redirectTo: `${siteUrl}/auth/callback?next=/home` },
-  });
-  if (linkErr) return { error: linkErr.message ?? otpErr.message };
-  return {
-    error: null,
-    sent: false,
-    inviteLink: linkData?.properties?.action_link ?? null,
-    sendError: otpErr.message,
-  };
+  if (error) return { error: error.message };
+  return { error: null, sent: true, email: u.user.email };
 }
 
 /**
