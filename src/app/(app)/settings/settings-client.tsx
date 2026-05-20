@@ -308,11 +308,16 @@ function BishopricRow({
   function doInvite() {
     start(async () => {
       const r = await inviteMember(member.id);
-      if (r.error) toast.error(r.error);
-      else if (r.inviteLink) {
+      if (r.error) {
+        toast.error(r.error);
+      } else if (r.sent) {
+        toast.success(`Invite emailed to ${r.email}.`);
+      } else if (r.inviteLink) {
+        // Supabase couldn't email it (rate-limit or no SMTP). Fall back to
+        // showing the link so the bishop can share it manually.
         onInvite({ name: member.full_name, url: r.inviteLink });
       } else {
-        toast.error("Couldn't generate an invite link.");
+        toast.error("Couldn't send invite.");
       }
     });
   }
@@ -353,7 +358,7 @@ function BishopricRow({
           disabled={pending || !member.email}
           title={
             member.email
-              ? "Send a sign-in link"
+              ? "Email a sign-in link (re-invite)"
               : "Add an email first to invite this member"
           }
         >

@@ -293,13 +293,34 @@ export async function inviteMember(userId: string) {
 
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL ?? "https://sacrament-program-app.vercel.app";
+
+  // Preferred path: have Supabase email the magic link directly.
+  const supabase = await createClient();
+  const { error: otpErr } = await supabase.auth.signInWithOtp({
+    email: u.user.email,
+    options: {
+      shouldCreateUser: false,
+      emailRedirectTo: `${siteUrl}/auth/callback?next=/home`,
+    },
+  });
+  if (!otpErr) {
+    return { error: null, sent: true, email: u.user.email };
+  }
+
+  // Fallback: produce a link the bishop can copy/paste if email sending
+  // is rate-limited or SMTP isn't configured in Supabase.
   const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
     type: "magiclink",
     email: u.user.email,
     options: { redirectTo: `${siteUrl}/auth/callback?next=/home` },
   });
-  if (linkErr) return { error: linkErr.message };
-  return { error: null, inviteLink: linkData?.properties?.action_link ?? null };
+  if (linkErr) return { error: linkErr.message ?? otpErr.message };
+  return {
+    error: null,
+    sent: false,
+    inviteLink: linkData?.properties?.action_link ?? null,
+    sendError: otpErr.message,
+  };
 }
 
 /**
