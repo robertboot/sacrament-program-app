@@ -542,7 +542,12 @@ function AddBishopricForm({
       if (r.error) toast.error(r.error);
       else {
         toast.success(`${name.trim()} added.`);
-        if (r.inviteLink) onInvite({ name: name.trim(), url: r.inviteLink });
+        if (r.inviteLink) onInvite({
+          id: r.id,
+          name: name.trim(),
+          email: email.trim(),
+          url: r.inviteLink,
+        });
         setName("");
         setEmail("");
         setPosition("");
@@ -654,8 +659,13 @@ function ChoristerRow({
     start(async () => {
       const r = await inviteMember(member.id);
       if (r.error) toast.error(r.error);
-      else if (r.inviteLink) {
-        onInvite({ name: member.full_name, url: r.inviteLink });
+      else if (r.inviteLink && r.email) {
+        onInvite({
+          id: member.id,
+          name: member.full_name,
+          email: r.email,
+          url: r.inviteLink,
+        });
       }
     });
   }
@@ -824,7 +834,12 @@ function AddChoristerForm({
       if (r.error) toast.error(r.error);
       else {
         toast.success(`${name.trim()} added.`);
-        if (r.inviteLink) onInvite({ name: name.trim(), url: r.inviteLink });
+        if (r.inviteLink) onInvite({
+          id: r.id,
+          name: name.trim(),
+          email: email.trim(),
+          url: r.inviteLink,
+        });
         setName("");
         setEmail("");
       }
