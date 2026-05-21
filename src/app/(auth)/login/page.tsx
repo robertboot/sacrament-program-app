@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -24,6 +24,13 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Surface verification errors handed off by /auth/callback so it's obvious
+  // why a magic-link invite landed on this page.
+  useEffect(() => {
+    const err = search.get("error");
+    if (err) toast.error(`Sign-in link failed: ${err}`);
+  }, [search]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
