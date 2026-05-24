@@ -275,22 +275,37 @@ export function ProgramRender({
       )}
 
       <section className="my-2 print:my-1 print-avoid-break">
-        <div className="flex items-center gap-3">
-          <div className="flex-1">
-            <SectionHeading tone="gold">Blessing and Passing of the Sacrament</SectionHeading>
-          </div>
-          <div className="no-print shrink-0">
-            <SacramentPrayersButton />
-          </div>
-        </div>
         {isPublic ? (
-          <Row icon={<BookOpen />} label="Sacrament Hymn" value={hymnLine(data.sacramentHymn)} />
+          <>
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
+                <SectionHeading tone="gold">Blessing and Passing of the Sacrament</SectionHeading>
+              </div>
+              <div className="no-print shrink-0">
+                <SacramentPrayersButton />
+              </div>
+            </div>
+            <Row icon={<BookOpen />} label="Sacrament Hymn" value={hymnLine(data.sacramentHymn)} />
+          </>
         ) : (
-          <p className="text-sm leading-relaxed">
-            We will now prepare for the sacrament by singing{" "}
-            <span className="font-medium">{hymnLine(data.sacramentHymn)}</span>, after which the
-            sacrament will be passed to the congregation.
-          </p>
+          <div className="flex items-center gap-4 py-2 print:py-1">
+            <span className="shrink-0 w-10 h-10 rounded-full border border-[var(--brand-gold)]/50 print:border-black/40 flex items-center justify-center text-[var(--brand-gold)] print:text-black [&_svg]:w-[1.05rem] [&_svg]:h-[1.05rem]">
+              <BookOpen />
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[var(--brand-gold)] print:text-black">
+                Blessing and Passing of the Sacrament
+              </div>
+              <p className="text-sm leading-snug mt-0.5">
+                We will now prepare for the sacrament by singing{" "}
+                <span className="font-medium">{hymnLine(data.sacramentHymn)}</span>, after which the
+                sacrament will be passed to the congregation.
+              </p>
+            </div>
+            <div className="no-print shrink-0">
+              <SacramentPrayersButton />
+            </div>
+          </div>
         )}
       </section>
 
