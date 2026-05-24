@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { ProgramRender, type ProgramRenderData } from "@/components/program-render";
 import { PrintStyles } from "@/components/print-styles";
 import { PublicViewToolbar } from "@/components/public-view-toolbar";
@@ -15,6 +15,7 @@ type PayloadAssignment = {
 };
 
 type Payload = {
+  id: string;
   meeting_date: string;
   presiding: string | null;
   welcome_text: string | null;
@@ -64,10 +65,20 @@ export async function renderPublishedProgramByToken(token: string) {
   const supabase = createServiceClient();
   const { data, error } = await supabase.rpc("get_published_program", { p_token: token });
   if (error || !data) notFound();
-  return renderPayload(data as Payload);
+
+  // If a signed-in bishopric/chorister is viewing this public link, offer a
+  // one-tap toggle back to the conductor view of the same program.
+  const userClient = await createClient();
+  const {
+    data: { user },
+  } = await userClient.auth.getUser();
+  const payload = data as Payload;
+  const conductorHref = user ? `/programs/${payload.id}/view` : null;
+
+  return renderPayload(payload, conductorHref);
 }
 
-function renderPayload(p: Payload) {
+function renderPayload(p: Payload, conductorHref: string | null) {
   const renderData: ProgramRenderData = {
     branchName: p.settings?.branch_name ?? "Branch",
     unitType: p.settings?.unit_type ?? "branch",
@@ -126,7 +137,7 @@ function renderPayload(p: Payload) {
     <>
       <PrintStyles />
       <div className="bg-zinc-100 dark:bg-zinc-900 min-h-screen py-6">
-        <PublicViewToolbar title={shareTitle} />
+        <PublicViewToolbar title={shareTitle} conductorHref={conductorHref} />
         <div className="bg-white shadow rounded max-w-[7.5in] mx-auto">
           <ProgramRender data={renderData} mode="public" />
         </div>

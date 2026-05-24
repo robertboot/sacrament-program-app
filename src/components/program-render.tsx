@@ -275,7 +275,10 @@ export function ProgramRender({
       )}
 
       <section className="my-2 print:my-1 print-avoid-break">
-        <SectionHeading tone="gold">Blessing and Passing of the Sacrament</SectionHeading>
+        <SectionHeading>Blessing and Passing of the Sacrament</SectionHeading>
+        <div className="no-print text-center -mt-1 mb-1">
+          <SacramentPrayersButton />
+        </div>
         {isPublic ? (
           <Row icon={<BookOpen />} label="Sacrament Hymn" value={hymnLine(data.sacramentHymn)} />
         ) : (
@@ -290,9 +293,6 @@ export function ProgramRender({
             </p>
           </div>
         )}
-        <div className="no-print text-center mt-1">
-          <SacramentPrayersButton />
-        </div>
       </section>
 
       <section className="my-2 print:my-1 print-avoid-break">

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { addDays, format, parseISO } from "date-fns";
-import { Pencil, ArrowLeft } from "lucide-react";
+import { Pencil, ArrowLeft, Globe } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ProgramRender, type ProgramRenderData } from "@/components/program-render";
 import { PrintStyles } from "@/components/print-styles";
@@ -24,7 +24,7 @@ export default async function ViewProgramPage({
       .select(
         `id, meeting_date, presiding, welcome_text, brief_reminders, invocation, benediction,
          releases, sustainings, move_in_welcomes, aaronic_sustainings, baptism_confirmation,
-         baby_blessing, stake_business, chorister, organist, status, intermediate_hymn_text,
+         baby_blessing, stake_business, chorister, organist, status, share_token, intermediate_hymn_text,
          meeting_type, meeting_type_label,
          opening_hymn_id, sacrament_hymn_id, intermediate_hymn_id, closing_hymn_id,
          ward_business_releases, ward_business_sustainings, ward_business_move_in_welcomes,
@@ -230,14 +230,14 @@ export default async function ViewProgramPage({
               <Badge variant="outline">Draft</Badge>
             )}
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="flex flex-wrap gap-2">
             <Link
               href="/"
               className={cn(buttonVariants({ variant: "default", size: "sm" }))}
               title="Back to dashboard"
             >
               <ArrowLeft className="w-4 h-4" />
-              Done
+              Close
             </Link>
             <Link
               href={`/programs/${id}`}
@@ -246,6 +246,16 @@ export default async function ViewProgramPage({
               <Pencil className="w-4 h-4" />
               Edit
             </Link>
+            {program.status === "published" && program.share_token && (
+              <Link
+                href={`/p/${program.share_token}`}
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                title="See the congregation-facing bulletin"
+              >
+                <Globe className="w-4 h-4" />
+                Public view
+              </Link>
+            )}
             <PrintTrigger variant="outline" size="sm" />
           </div>
         </div>
