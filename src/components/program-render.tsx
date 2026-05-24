@@ -274,7 +274,7 @@ export function ProgramRender({
         </>
       )}
 
-      <section className="my-2 print:my-1 print-avoid-break">
+      <section className="mt-6 print:mt-4 mb-2 print:mb-1 print-avoid-break">
         <SectionHeading>Blessing and Passing of the Sacrament</SectionHeading>
         <div className="no-print text-center -mt-1 mb-1">
           <SacramentPrayersButton />

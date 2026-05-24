@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/server";
 import { ProgramRender, type ProgramRenderData } from "@/components/program-render";
 import { PrintStyles } from "@/components/print-styles";
 import { PrintTrigger } from "@/components/print-trigger";
-import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -213,22 +212,13 @@ export default async function ViewProgramPage({
       <PrintStyles />
       <div className="bg-zinc-100 dark:bg-zinc-900 min-h-screen py-6">
         <div className="max-w-[7.5in] mx-auto px-4 mb-4 no-print">
-          <div className="flex items-center justify-between gap-2 mb-3">
-            <div>
-              <h1 className="text-xs uppercase tracking-widest font-bold text-muted-foreground">
-                Conductor&rsquo;s Program
-              </h1>
-              <p className="text-[11px] text-muted-foreground">
-                Detailed version — visible only to signed-in leaders
-              </p>
-            </div>
-            {program.status === "published" ? (
-              <Badge className="bg-emerald-600 text-white hover:bg-emerald-600 border-transparent">
-                Published
-              </Badge>
-            ) : (
-              <Badge variant="outline">Draft</Badge>
-            )}
+          <div className="mb-3">
+            <h1 className="text-xs uppercase tracking-widest font-bold text-muted-foreground">
+              Conductor&rsquo;s Program
+            </h1>
+            <p className="text-[11px] text-muted-foreground">
+              Detailed version — visible only to signed-in leaders
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
