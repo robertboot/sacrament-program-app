@@ -1118,7 +1118,7 @@ function InviteLinkDialog({
         }
       }}
     >
-      <DialogContent>
+      <DialogContent className="max-h-[90svh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Invite {invite?.name}</DialogTitle>
           <DialogDescription>
@@ -1133,7 +1133,7 @@ function InviteLinkDialog({
             </Label>
             <Textarea
               id="invite-message"
-              rows={9}
+              rows={5}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               // Override the Textarea component's field-sizing-content, which
