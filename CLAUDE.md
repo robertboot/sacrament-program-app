@@ -204,13 +204,19 @@ Status: design agreed, **not yet implemented**. ~weeks out.
      Published/Draft badge; whole-card link removed (see §14).
    - **DONE:** editor footer has a "View published version" link next to
      Publish/Unpublish.
-   - **DONE:** program-render redesigned (serif title, gold/navy section
+   - **DONE:** program-render redesigned (serif title, navy section
      headers, paired rows, fixed Intermediate Hymn slot, Add-to-calendar
      icon on Upcoming Events) — see §15.
+   - **DONE:** auth/invite flow fixed end-to-end (token-hash email
+     template, callback handles both flows, middleware allowlists
+     `/auth/*`, cookies attached to redirect, login surfaces errors)
+     — see §16. **The Magic Link email template in Supabase must use
+     the token-hash pattern documented in §16.**
+   - **DONE:** view toggle (Conductor ↔ Public buttons in toolbars,
+     Published badge on Public) — see §17.
    - **DONE:** branding refresh — see §12.
-   - **Still to verify:** Public vs Conductor differentiation (mostly
-     done by the redesign); Home shows the upcoming Sunday; install
-     prompt only when not installed; Settings user invite/revoke.
+   - **Still to verify:** Home shows the upcoming Sunday; install
+     prompt only when not installed.
    - **In progress:** custom domain — see §13.
    - **PINNED, not started:** multi-tenant launch — see §10.
 
@@ -279,10 +285,13 @@ Conductor); changing any of these casually will regress the look:
 - **Header row:** 3-column **Presiding / Conducting / Date** with small
   gold uppercase labels (not a 2-col table).
 - **Section headings:** centered uppercase tracked text between thin
-  hairlines via `SectionHeading`. `tone="navy"` (default) for everything
-  except **Blessing and Passing of the Sacrament**, which is
-  `tone="gold"`. **font-bold** on the label text. `print:text-black` so
-  it prints solid.
+  hairlines via `SectionHeading`. **All section headings use the navy
+  `tone="navy"` (default)** — including Blessing and Passing of the
+  Sacrament. **font-bold** on the label text. `print:text-black` so it
+  prints solid.
+- **Sacrament Prayers link** (the only interactive element in the
+  Blessing section) sits **directly under the Blessing & Passing
+  heading**, centered, `no-print`.
 - **Row component:** circular outline icon (gold) + small gold
   uppercase label + value. Icons: `Music2` for hymns, `HeartHandshake`
   for prayers, `User` for speakers, `BookOpen` for the sacrament hymn
@@ -296,7 +305,8 @@ Conductor); changing any of these casually will regress the look:
   Intermediate Hymn), and between the Balance section and Closing
   Hymn/Benediction.
 - **Spacing:** condensed with print: variants that shrink further on
-  paper. Gold + borders fall back to black for print.
+  paper. Extra `mt-6` above the Blessing section to separate it from
+  Stake Business. Gold + borders fall back to black for print.
 - **Upcoming Events:** each event with an `event_date` shows an
   "Add to calendar" button (gold circular `CalendarPlus`, `no-print`)
   linking to `/ics?title=…&date=…&description=…`. The route handler at
@@ -308,3 +318,62 @@ Conductor); changing any of these casually will regress the look:
   include it (events with `as_brief_reminder=true` within
   `meeting_date` … `meeting_date + 32 days`). If the public bulletin
   loses Upcoming Events again, the RPC was likely reverted — re-apply.
+
+---
+
+## 16. Auth & invite flow (these all interact — touch carefully)
+
+There are four moving parts that must agree, or invited users get
+forced back to `/login`:
+
+1. **Magic-link email template** (Supabase → Authentication → Email
+   Templates → "Magic Link") must use the **token-hash** pattern, not
+   the default `{{ .ConfirmationURL }}`:
+   ```html
+   <a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=magiclink&next=/home">Sign in to Rota</a>
+   ```
+   Why: PKCE flow requires a `code_verifier` cookie in the SAME browser
+   that issued the request. The inviter's browser has it; the invitee's
+   doesn't — so PKCE fails silently for emailed links. Token-hash
+   doesn't need a verifier.
+2. **`/auth/callback` route** (`src/app/auth/callback/route.ts`) handles
+   both `?token_hash=&type=` (emailed links) and `?code=` (PKCE), and
+   writes session cookies **directly onto the redirect response** (not
+   via `cookies()` from next/headers, which drops cookies on redirects
+   in route handlers). Errors are surfaced as `?error=…` on `/login`
+   so failures are visible.
+3. **Middleware** (`src/lib/supabase/proxy.ts`) — `/auth/*` and `/ics`
+   are in the `isPublic` allowlist. Without that, an unauthenticated
+   invitee is bounced to `/login` before the callback can run
+   `verifyOtp`. This was the single biggest invite-flow bug.
+4. **Supabase Auth → URL Configuration**:
+   - **Site URL** = `https://sacrament-program-app.vercel.app` (the
+     `{{ .SiteURL }}` template variable resolves to this).
+   - **Redirect URLs** allowlist must include
+     `https://sacrament-program-app.vercel.app/**` (and the custom
+     domain when set).
+
+**Settings → invite flow:** the mail icon next to each member opens
+the `InviteLinkDialog`, which always shows three actions: **Send email**
+(calls `sendInviteEmail` → `supabase.auth.signInWithOtp`), **Copy link**
+(the magic link from `inviteMember` → `admin.auth.admin.generateLink`),
+and **Copy message** (the link wrapped in friendly wording). The dialog
+is `max-h-[90svh] overflow-y-auto` so buttons stay reachable on phones.
+
+---
+
+## 17. View toggle (Conductor ↔ Public)
+
+Leaders can flip between the two views without going back to the
+dashboard:
+- **Conductor view** toolbar shows a **"Public view"** button when
+  `program.status === "published"` (uses `program.share_token`).
+- **Public view** toolbar shows a **"Conductor view"** button only when
+  the visitor is authenticated. `render-published.tsx` runs
+  `createClient().auth.getUser()` and passes a `conductorHref` to
+  `PublicViewToolbar` only when a user exists — so anonymous bulletin
+  visitors don't see the link.
+- **Published** badge lives on the **Public** toolbar header (not the
+  Conductor toolbar — moved there because the conductor view is
+  always authenticated and didn't need the marker).
+- Conductor toolbar's left-most button is **"Close"** (was "Done").
