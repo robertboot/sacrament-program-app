@@ -94,6 +94,9 @@ export type Program = {
   conducting_id: string | null;
   welcome_text: string | null;
   brief_reminders: string | null;
+  /** Bishopric-only note shown in red on the dashboard card. Never
+   *  printed and never visible on the conductor or public views. */
+  planner_note: string | null;
   opening_hymn_id: number | null;
   sacrament_hymn_id: number | null;
   intermediate_hymn_id: number | null;

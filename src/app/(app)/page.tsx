@@ -33,6 +33,7 @@ type DashboardRow = {
   meeting_date: string;
   status: ProgramStatus;
   share_token: string;
+  planner_note: string | null;
   meeting_type: "regular" | "fast_sunday" | "no_services";
   meeting_type_label: string | null;
   conducting: { full_name: string } | null;
@@ -76,7 +77,7 @@ export default async function DashboardPage() {
   const { data: programs } = await supabase
     .from("programs")
     .select(
-      `id, meeting_date, status, share_token, meeting_type, meeting_type_label, intermediate_hymn_text,
+      `id, meeting_date, status, share_token, planner_note, meeting_type, meeting_type_label, intermediate_hymn_text,
        opening_hymn_id, sacrament_hymn_id, intermediate_hymn_id, closing_hymn_id,
        conducting:profiles!programs_conducting_id_fkey(full_name),
        opening_hymn:hymns!programs_opening_hymn_id_fkey(number, title),
@@ -233,6 +234,11 @@ function DashboardRowCard({
                 )}
               </div>
             </div>
+            {canEdit && row.planner_note && (
+              <div className="mb-3 rounded-md border border-red-300 bg-red-50 dark:bg-red-950/40 dark:border-red-900 px-3 py-2 text-sm text-red-800 dark:text-red-200 whitespace-pre-wrap">
+                {row.planner_note}
+              </div>
+            )}
             <div className="flex items-center gap-3 flex-wrap">
               <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shrink-0">
                 <CalendarIcon className="w-5 h-5" />

@@ -133,6 +133,7 @@ export function ProgramEditor({
     conducting_id: program.conducting_id,
     welcome_text: program.welcome_text ?? settings.default_welcome_text,
     brief_reminders: program.brief_reminders,
+    planner_note: program.planner_note ?? null,
     opening_hymn_id: program.opening_hymn_id,
     sacrament_hymn_id: program.sacrament_hymn_id,
     intermediate_hymn_id: program.intermediate_hymn_id,
@@ -378,6 +379,26 @@ export function ProgramEditor({
               placeholder="Reminders to read at the pulpit (optional)…"
             />
           </div>
+          {isBishopric && (
+            <div className="space-y-1.5">
+              <Label className="text-red-700 dark:text-red-400">
+                Planner note (bishopric only)
+              </Label>
+              <Textarea
+                rows={2}
+                value={draft.planner_note ?? ""}
+                onChange={(e) =>
+                  setDraft((p) => ({ ...p, planner_note: e.target.value || null }))
+                }
+                placeholder="Private note shown in red on the dashboard for this Sunday (e.g. 'Bishop away — Brother X presiding')."
+                className="border-red-300 focus-visible:border-red-500 focus-visible:ring-red-500/30"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Visible only on the planner. Never appears on the conductor
+                or public views.
+              </p>
+            </div>
+          )}
       </CollapsibleCard>
 
       {/* Hymns */}
