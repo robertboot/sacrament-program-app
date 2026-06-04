@@ -1,15 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { addDays, addMonths, format, parseISO, differenceInDays } from "date-fns";
+import { addMonths, format, parseISO, differenceInDays } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { loadActiveUnit } from "@/lib/active-unit";
 import { Card, CardContent } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { DashboardStatusPill } from "@/components/dashboard-status-pill";
 import { DashboardInviteAction } from "@/components/dashboard-invite-action";
 import { DashboardLegend } from "@/components/dashboard-legend";
 import { DashboardMonthGroup } from "@/components/dashboard-month-group";
 import { SpeakerHistoryButton } from "@/components/speaker-history-button";
-import { GenerateButton } from "./generate-button";
+import { PlanNextButton } from "@/components/plan-next-button";
 import { SLOT_LABELS } from "@/lib/assignments";
 import type { AssignmentStatus, ProgramStatus, AssignmentSlot } from "@/lib/supabase/types";
 import {
@@ -18,6 +20,8 @@ import {
   CheckCircle2,
   CircleAlert,
   Clock,
+  Eye,
+  Globe,
   Music2,
   Pencil,
   RefreshCw,
@@ -30,6 +34,8 @@ type DashboardRow = {
   id: string;
   meeting_date: string;
   status: ProgramStatus;
+  share_token: string;
+  planner_note: string | null;
   meeting_type: "regular" | "fast_sunday" | "no_services";
   meeting_type_label: string | null;
   conducting: { full_name: string } | null;
@@ -62,14 +68,15 @@ export default async function DashboardPage() {
   if (!ctx) redirect("/onboarding");
   const supabase = await createClient();
   const today = format(new Date(), "yyyy-MM-dd");
-  const horizon = format(addDays(new Date(), 91), "yyyy-MM-dd");
 
   const isBishopric = ctx.role === "leader";
 
+  // Every started (existing) program from today forward — no horizon cap.
+  // A program record means the bishop has started planning that Sunday.
   const { data: programs } = await supabase
     .from("programs")
     .select(
-      `id, meeting_date, status, meeting_type, meeting_type_label, intermediate_hymn_text,
+      `id, meeting_date, status, share_token, planner_note, meeting_type, meeting_type_label, intermediate_hymn_text,
        opening_hymn_id, sacrament_hymn_id, intermediate_hymn_id, closing_hymn_id,
        conducting:profiles!programs_conducting_id_fkey(full_name),
        opening_hymn:hymns!programs_opening_hymn_id_fkey(number, title),
@@ -82,7 +89,6 @@ export default async function DashboardPage() {
     )
     .eq("unit_id", ctx.unit.id)
     .gte("meeting_date", today)
-    .lte("meeting_date", horizon)
     .order("meeting_date", { ascending: true })
     .returns<DashboardRow[]>();
 
@@ -103,31 +109,29 @@ export default async function DashboardPage() {
       : null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Planner</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Upcoming meetings and schedules
+          Every Sunday you&rsquo;ve started planning
         </p>
       </div>
-
-      {isBishopric && (
-        <GenerateButton
-          unlockDate={generateUnlockDate}
-          latestMeetingDate={latestMeetingDate}
-        />
-      )}
 
       <DashboardLegend canEdit={isBishopric} />
 
       {programs && programs.length === 0 ? (
         <Card>
-          <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            No programs yet.{" "}
-            {isBishopric ? (
-              <>Tap <strong>Generate</strong> to scaffold the next 3 months of drafts.</>
-            ) : (
-              <>Ask a bishopric member to generate the schedule.</>
+          <CardContent className="py-10 text-center text-sm text-muted-foreground space-y-4">
+            <p>
+              No programs yet.{" "}
+              {isBishopric
+                ? "Plan the first Sunday to get started."
+                : "Ask a bishopric member to start the schedule."}
+            </p>
+            {isBishopric && (
+              <div className="max-w-xs mx-auto">
+                <PlanNextButton />
+              </div>
             )}
           </CardContent>
         </Card>
@@ -144,6 +148,11 @@ export default async function DashboardPage() {
           )}
           {programs && programs.length > 1 && (
             <DashboardGroupedByMonth programs={programs.slice(1)} canEdit={isBishopric} />
+          )}
+          {isBishopric && programs && programs.length > 0 && (
+            <div className="pt-2">
+              <PlanNextButton />
+            </div>
           )}
         </>
       )}
@@ -203,10 +212,9 @@ function DashboardRowCard({
 
   return (
     <div className="relative">
-      <Link href={`/programs/${row.id}/view`} className="block">
-        <Card className="py-0 rounded-2xl shadow-sm ring-1 ring-foreground/10 transition-all hover:bg-accent hover:shadow-md hover:-translate-y-px">
+      <Card className="py-0 rounded-2xl shadow-sm ring-1 ring-foreground/10">
           <CardContent className="p-4 sm:p-5">
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
               {row.status === "published" ? (
                 <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 ring-1 ring-emerald-200 dark:ring-emerald-800 rounded-full px-2 py-0.5">
                   <CheckCircle2 className="w-3.5 h-3.5" />
@@ -217,7 +225,36 @@ function DashboardRowCard({
                   Draft
                 </span>
               )}
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href={`/programs/${row.id}/view`}
+                  className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                >
+                  <Eye className="w-4 h-4" /> Conductor&rsquo;s version
+                </Link>
+                {row.status === "published" && (
+                  <Link
+                    href={`/p/${row.share_token}`}
+                    className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                  >
+                    <Globe className="w-4 h-4" /> Public version
+                  </Link>
+                )}
+                {canEdit && (
+                  <Link
+                    href={`/programs/${row.id}`}
+                    className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                  >
+                    <Pencil className="w-4 h-4" /> Edit
+                  </Link>
+                )}
+              </div>
             </div>
+            {canEdit && row.planner_note && (
+              <div className="mb-3 rounded-md border border-red-300 bg-red-50 dark:bg-red-950/40 dark:border-red-900 px-3 py-2 text-sm text-red-800 dark:text-red-200 whitespace-pre-wrap">
+                {row.planner_note}
+              </div>
+            )}
             <div className="flex items-center gap-3 flex-wrap">
               <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shrink-0">
                 <CalendarIcon className="w-5 h-5" />
@@ -350,17 +387,6 @@ function DashboardRowCard({
           )}
           </CardContent>
         </Card>
-      </Link>
-      {canEdit && (
-        <Link
-          href={`/programs/${row.id}`}
-          aria-label="Edit program"
-          className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-md bg-background/95 px-2 py-1 text-xs font-medium text-foreground ring-1 ring-foreground/10 shadow-sm hover:bg-accent hover:text-foreground transition-colors"
-        >
-          <Pencil className="w-3.5 h-3.5" />
-          Edit
-        </Link>
-      )}
     </div>
   );
 }

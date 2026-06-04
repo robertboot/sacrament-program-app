@@ -14,13 +14,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Rameumptom",
+  title: "Rota",
   description: "Plan and share sacrament meeting programs from the high stand.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Rameumptom",
+    title: "Rota",
   },
   icons: {
     icon: [

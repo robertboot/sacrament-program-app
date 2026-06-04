@@ -125,12 +125,37 @@ export type Topic = {
   categories?: SpeakerCategory[];
 };
 
+export type HymnUsageTag =
+  | "sacrament"
+  | "funeral"
+  | "baptism"
+  | "stake_conference"
+  | "christmas"
+  | "easter"
+  | "palm_sunday"
+  | "fourth_of_july";
+
+export const HYMN_USAGE_LABELS: Record<HymnUsageTag, string> = {
+  sacrament: "Sacrament only",
+  funeral: "Funeral",
+  baptism: "Baptism",
+  stake_conference: "Stake conference",
+  christmas: "Christmas",
+  easter: "Easter",
+  palm_sunday: "Palm Sunday",
+  fourth_of_july: "Fourth of July",
+};
+
 export type Hymn = {
   id: string;
   number: number;
   title: string;
-  /** @deprecated v1-only — v2 schema is single shared hymnbook. */
-  hymnal?: "1985" | "new";
+  hymnal: "1985" | "new";
+  /** Phase 4: usage_tags + verse_note will move to a per-tenant
+   *  `hymn_overrides(unit_id, hymn_id, …)` overlay. Until then they live
+   *  on the shared catalog so Talladega keeps working unchanged. */
+  usage_tags: string[];
+  verse_note: string | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -157,11 +182,18 @@ export type Program = {
   conducting_id: string | null;
   welcome_text: string | null;
   brief_reminders: string | null;
-  opening_hymn_id: string | null;
-  sacrament_hymn_id: string | null;
-  intermediate_hymn_id: string | null;
+  /** Bishopric-only note shown in red on the dashboard card. Never
+   *  printed and never visible on the conductor or public views. */
+  planner_note: string | null;
+  opening_hymn_id: number | null;
+  sacrament_hymn_id: number | null;
+  intermediate_hymn_id: number | null;
   intermediate_hymn_text: string | null;
-  closing_hymn_id: string | null;
+  closing_hymn_id: number | null;
+  opening_hymn_verse_note: boolean;
+  sacrament_hymn_verse_note: boolean;
+  intermediate_hymn_verse_note: boolean;
+  closing_hymn_verse_note: boolean;
   invocation: string | null;
   benediction: string | null;
   chorister: string | null;
@@ -197,6 +229,10 @@ export type SpeakingAssignment = {
   slot: AssignmentSlot;
   length_minutes: number;
   status: AssignmentStatus;
+  /** Bishop has reviewed the (possibly auto-generated) pick and finalized
+   *  this slot. Until true the slot is a draft suggestion and the invite
+   *  workflow is hidden. */
+  slot_confirmed: boolean;
   asked_at: string | null;
   asked_by: string | null;
   confirmed_at: string | null;

@@ -1,12 +1,19 @@
 import Link from "next/link";
-import { BookOpen, CalendarDays, Users } from "lucide-react";
+import {
+  BookOpen,
+  CalendarDays,
+  ChevronRight,
+  Eye,
+  Users,
+} from "lucide-react";
 import { redirect } from "next/navigation";
+import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { BrandStack } from "@/components/brand-mark";
 import { InstallPrompt } from "@/components/install-prompt";
 import { APP_VERSION } from "@/lib/version";
 
-export const metadata = { title: "Home — Rameumptom" };
+export const metadata = { title: "Home — Rota" };
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -21,15 +28,47 @@ export default async function HomePage() {
     .single();
   const isBishopric = profile?.role === "bishopric";
 
+  // The next upcoming program (today or future, soonest first) drives the
+  // Conductor's-program button. The Public button always points at /p/now,
+  // which resolves to the closest upcoming published program on its own.
+  const today = format(new Date(), "yyyy-MM-dd");
+  const { data: nextProgram } = await supabase
+    .from("programs")
+    .select("id, meeting_date")
+    .gte("meeting_date", today)
+    .order("meeting_date", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
   return (
     <div className="min-h-[calc(100vh-10rem)] flex flex-col items-center text-center px-4 pb-6 pt-2">
       <BrandStack className="mt-2 mb-4" />
 
-      <p className="text-muted-foreground text-base max-w-sm">
-        Plan, share, and run your sacrament meetings with ease.
-      </p>
-
-      <div className="w-full max-w-md mt-6">
+      <div className="w-full max-w-md mt-6 space-y-3">
+        <a
+          href="/p/now"
+          target="_blank"
+          rel="noreferrer"
+          className="grid grid-cols-[auto_1fr_auto] items-center gap-3 w-full px-5 py-4 rounded-xl bg-primary text-primary-foreground text-base font-semibold shadow-sm hover:opacity-90 transition"
+        >
+          <CalendarDays className="w-5 h-5 shrink-0" />
+          <span className="text-left">This Sunday&rsquo;s public program</span>
+          <ChevronRight className="w-5 h-5 shrink-0 opacity-80" />
+        </a>
+        {nextProgram ? (
+          <Link
+            href={`/programs/${nextProgram.id}/view`}
+            className="grid grid-cols-[auto_1fr_auto] items-center gap-3 w-full px-5 py-4 rounded-xl bg-card ring-1 ring-foreground/10 text-base font-semibold shadow-sm hover:bg-accent transition"
+          >
+            <Eye className="w-5 h-5 shrink-0 text-primary" />
+            <span className="text-left">This Sunday&rsquo;s conductor program</span>
+            <ChevronRight className="w-5 h-5 shrink-0 opacity-60" />
+          </Link>
+        ) : (
+          <div className="w-full px-5 py-4 rounded-xl bg-card ring-1 ring-foreground/10 text-sm text-muted-foreground">
+            No upcoming program yet.
+          </div>
+        )}
         <InstallPrompt />
       </div>
 

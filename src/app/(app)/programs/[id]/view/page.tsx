@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { addDays, format, parseISO } from "date-fns";
-import { Pencil, ArrowLeft } from "lucide-react";
+import { Pencil, ArrowLeft, Globe } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ProgramRender, type ProgramRenderData } from "@/components/program-render";
 import { PrintStyles } from "@/components/print-styles";
 import { PrintTrigger } from "@/components/print-trigger";
-import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -24,8 +23,9 @@ export default async function ViewProgramPage({
       .select(
         `id, meeting_date, presiding, welcome_text, brief_reminders, invocation, benediction,
          releases, sustainings, move_in_welcomes, aaronic_sustainings, baptism_confirmation,
-         baby_blessing, stake_business, chorister, organist, status, intermediate_hymn_text,
+         baby_blessing, stake_business, chorister, organist, status, share_token, intermediate_hymn_text,
          meeting_type, meeting_type_label,
+         opening_hymn_id, sacrament_hymn_id, intermediate_hymn_id, closing_hymn_id,
          ward_business_releases, ward_business_sustainings, ward_business_move_in_welcomes,
          ward_business_aaronic_sustainings, ward_business_baptism_confirmation,
          ward_business_baby_blessing,
@@ -59,6 +59,39 @@ export default async function ViewProgramPage({
     null;
   if (!program) notFound();
 
+  // Verse-note columns (hymns.verse_note + programs.*_hymn_verse_note) only
+  // exist after the hymn-alerts migration. Fetch them defensively so the
+  // page still works before the migration is applied.
+  const { data: verseFlagsRow } = await supabase
+    .from("programs")
+    .select(
+      "opening_hymn_verse_note, sacrament_hymn_verse_note, intermediate_hymn_verse_note, closing_hymn_verse_note",
+    )
+    .eq("id", id)
+    .maybeSingle();
+  const verseFlags = (verseFlagsRow ?? {}) as {
+    opening_hymn_verse_note?: boolean;
+    sacrament_hymn_verse_note?: boolean;
+    intermediate_hymn_verse_note?: boolean;
+    closing_hymn_verse_note?: boolean;
+  };
+  const hymnIds = [
+    program.opening_hymn_id,
+    program.sacrament_hymn_id,
+    program.intermediate_hymn_id,
+    program.closing_hymn_id,
+  ].filter((x): x is number => x != null);
+  const verseNoteById = new Map<number, string | null>();
+  if (hymnIds.length > 0) {
+    const { data: vn } = await supabase
+      .from("hymns")
+      .select("id, verse_note")
+      .in("id", hymnIds);
+    for (const h of (vn ?? []) as { id: number; verse_note: string | null }[]) {
+      verseNoteById.set(h.id, h.verse_note);
+    }
+  }
+
   // Only print events whose event_date is within 6 weeks of this meeting
   // (undated events still print as long as the display window matches).
   const eventHorizon = format(addDays(parseISO(program.meeting_date), 42), "yyyy-MM-dd");
@@ -89,6 +122,28 @@ export default async function ViewProgramPage({
     return Array.isArray(v) ? (v[0] ?? null) : v;
   };
 
+  // Append the verse note to the hymn title when the bishop opted in for
+  // that slot, so the conductor view matches the public bulletin. The note
+  // comes from the defensive verseNoteById lookup (empty pre-migration).
+  const withVerse = (
+    raw: unknown,
+    hymnId: number | null,
+    showNote: boolean | null | undefined,
+  ): { number: number; title: string } | null => {
+    const h = oneOf(
+      raw as
+        | { number: number; title: string }
+        | { number: number; title: string }[]
+        | null,
+    );
+    if (!h) return null;
+    const note = hymnId != null ? verseNoteById.get(hymnId) : null;
+    return {
+      number: h.number,
+      title: showNote && note ? `${h.title} (${note})` : h.title,
+    };
+  };
+
   const data: ProgramRenderData = {
     branchName: settings?.branch_name ?? "Branch",
     unitType: (settings?.unit_type as "ward" | "branch") ?? "branch",
@@ -100,7 +155,7 @@ export default async function ViewProgramPage({
     conducting: oneOf(program.conducting as unknown as ProgramRenderData["conducting"] | ProgramRenderData["conducting"][]),
     welcomeText: program.welcome_text,
     briefReminders: program.brief_reminders,
-    openingHymn: oneOf(program.opening_hymn as unknown as ProgramRenderData["openingHymn"] | ProgramRenderData["openingHymn"][]),
+    openingHymn: withVerse(program.opening_hymn, program.opening_hymn_id, verseFlags.opening_hymn_verse_note),
     invocation: program.invocation,
     wardBusiness: {
       releases: { active: !!program.ward_business_releases, names: program.releases },
@@ -123,10 +178,10 @@ export default async function ViewProgramPage({
       },
     },
     stakeBusiness: program.stake_business,
-    sacramentHymn: oneOf(program.sacrament_hymn as unknown as ProgramRenderData["sacramentHymn"] | ProgramRenderData["sacramentHymn"][]),
-    intermediateHymn: oneOf(program.intermediate_hymn as unknown as ProgramRenderData["intermediateHymn"] | ProgramRenderData["intermediateHymn"][]),
+    sacramentHymn: withVerse(program.sacrament_hymn, program.sacrament_hymn_id, verseFlags.sacrament_hymn_verse_note),
+    intermediateHymn: withVerse(program.intermediate_hymn, program.intermediate_hymn_id, verseFlags.intermediate_hymn_verse_note),
     intermediateHymnText: program.intermediate_hymn_text,
-    closingHymn: oneOf(program.closing_hymn as unknown as ProgramRenderData["closingHymn"] | ProgramRenderData["closingHymn"][]),
+    closingHymn: withVerse(program.closing_hymn, program.closing_hymn_id, verseFlags.closing_hymn_verse_note),
     benediction: program.benediction,
     chorister: program.chorister,
     organist: program.organist,
@@ -157,26 +212,22 @@ export default async function ViewProgramPage({
       <PrintStyles />
       <div className="bg-zinc-100 dark:bg-zinc-900 min-h-screen py-6">
         <div className="max-w-[7.5in] mx-auto px-4 mb-4 no-print">
-          <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="mb-3">
             <h1 className="text-xs uppercase tracking-widest font-bold text-muted-foreground">
-              Program Preview
+              Conductor&rsquo;s Program
             </h1>
-            {program.status === "published" ? (
-              <Badge className="bg-emerald-600 text-white hover:bg-emerald-600 border-transparent">
-                Published
-              </Badge>
-            ) : (
-              <Badge variant="outline">Draft</Badge>
-            )}
+            <p className="text-[11px] text-muted-foreground">
+              Detailed version — visible only to signed-in leaders
+            </p>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="flex flex-wrap gap-2">
             <Link
               href="/"
               className={cn(buttonVariants({ variant: "default", size: "sm" }))}
               title="Back to dashboard"
             >
               <ArrowLeft className="w-4 h-4" />
-              Done
+              Close
             </Link>
             <Link
               href={`/programs/${id}`}
@@ -185,6 +236,16 @@ export default async function ViewProgramPage({
               <Pencil className="w-4 h-4" />
               Edit
             </Link>
+            {program.status === "published" && program.share_token && (
+              <Link
+                href={`/p/${program.share_token}`}
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                title="See the congregation-facing bulletin"
+              >
+                <Globe className="w-4 h-4" />
+                Public view
+              </Link>
+            )}
             <PrintTrigger variant="outline" size="sm" />
           </div>
         </div>

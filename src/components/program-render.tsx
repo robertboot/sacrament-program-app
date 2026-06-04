@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+import { Music2, HeartHandshake, User, BookOpen, CalendarPlus } from "lucide-react";
 import { formatMeetingDate } from "@/lib/dates";
 import { SLOT_LABELS } from "@/lib/assignments";
 import { bishopricPositionLabel, leaderDisplayName, unitLabels, type UnitType } from "@/lib/labels";
@@ -50,6 +52,55 @@ export type ProgramRenderData = {
   }[];
 };
 
+/** Build the `/ics` URL for a single event so iOS Safari treats it as a
+ *  real, shareable calendar file (data: URIs choke in the share sheet). */
+function eventIcsHref(
+  title: string,
+  eventDate: string,
+  description: string | null,
+): string {
+  const params = new URLSearchParams({ title, date: eventDate });
+  if (description) params.set("description", description);
+  return `/ics?${params.toString()}`;
+}
+
+/** Thin ornamental rule with a center diamond — used under the title. */
+function Ornament() {
+  return (
+    <div className="flex items-center justify-center gap-3 my-3 print:my-1.5 text-[var(--brand-gold)] print:text-black">
+      <span className="h-px w-16 bg-current opacity-40" />
+      <span className="text-[0.6rem] leading-none">◆</span>
+      <span className="h-px w-16 bg-current opacity-40" />
+    </div>
+  );
+}
+
+/** Centered gold section label flanked by hairlines. */
+function SectionHeading({
+  children,
+  tone = "navy",
+}: {
+  children: ReactNode;
+  tone?: "navy" | "gold";
+}) {
+  const isGold = tone === "gold";
+  const text = isGold
+    ? "text-[var(--brand-gold)] print:text-black"
+    : "text-primary print:text-black";
+  const line = isGold
+    ? "bg-[var(--brand-gold)]/70 print:bg-black/40"
+    : "bg-primary/70 print:bg-black/40";
+  return (
+    <div className="flex items-center gap-3 my-3 print:my-2 print-avoid-break">
+      <span className={`h-px flex-1 ${line}`} />
+      <h2 className={`text-[0.7rem] font-bold uppercase tracking-[0.2em] ${text} text-center`}>
+        {children}
+      </h2>
+      <span className={`h-px flex-1 ${line}`} />
+    </div>
+  );
+}
+
 export function ProgramRender({
   data,
   mode = "admin",
@@ -69,10 +120,6 @@ export function ProgramRender({
   const isFast = data.meetingType === "fast_sunday";
   const isPublic = mode === "public";
 
-  const intermediate =
-    !isFast && (data.intermediateHymn ??
-      (data.intermediateHymnText ? { text: data.intermediateHymnText } : null));
-
   const slotByKey = (k: AssignmentSlot) => data.assignments.find((a) => a.slot === k);
   const first = slotByKey("first");
   const second = slotByKey("second");
@@ -80,78 +127,83 @@ export function ProgramRender({
 
   return (
     <>
-    <article className="mx-auto max-w-[7.5in] p-6 sm:p-10 text-black bg-white text-[14px] leading-snug">
-      <header className="text-center pb-3 mb-4 border-b-2 border-black">
-        <h1 className="text-2xl font-bold tracking-tight">{data.branchName}</h1>
-        <p className="uppercase tracking-widest text-xs text-gray-600 mt-1">
+    <article className="mx-auto max-w-[7.5in] bg-white text-black text-[14px] leading-snug p-6 sm:p-10 print:py-2 print:px-0 ring-1 ring-black/10 print:ring-0">
+      <header className="text-center">
+        <h1 className="font-serif text-[2.2rem] print:text-[1.8rem] leading-tight tracking-tight">
+          {data.branchName}
+        </h1>
+        <p className="uppercase tracking-[0.28em] text-xs text-[var(--brand-gold)] print:text-black mt-1.5">
           Sacrament Meeting
         </p>
+        <Ornament />
       </header>
 
-      <p className="italic text-center mb-5 text-sm">
+      <p className="font-serif italic text-center text-[0.95rem] leading-snug text-gray-700 print:text-black max-w-xl mx-auto mb-4 print:mb-2">
         {data.welcomeText ?? "Welcome to sacrament meeting. We're glad you're here."}
       </p>
 
       {isFast && (
-        <p className="text-center font-semibold uppercase tracking-widest text-xs mb-4">
+        <p className="text-center font-semibold uppercase tracking-[0.2em] text-xs mb-5">
           Fast &amp; Testimony Meeting
         </p>
       )}
 
-      <table className="w-full mb-4 text-sm">
-        <tbody>
-          <tr>
-            <td className="font-semibold pr-2 w-28">Presiding:</td>
-            <td>{data.presiding ?? "—"}</td>
-          </tr>
-          <tr>
-            <td className="font-semibold pr-2">Conducting:</td>
-            <td>
-              {(() => {
-                if (!data.conducting) return "—";
-                // v2 uses .position; v1 used .bishopric_position. Accept both
-                // while we finish porting render callsites.
-                const pos =
-                  (data.conducting as { position?: LeaderPosition | null }).position ??
-                  (data.conducting as { bishopric_position?: LeaderPosition | null })
-                    .bishopric_position ??
-                  null;
-                return (
-                  <>
-                    {leaderDisplayName(data.unitType, {
-                      full_name: data.conducting.full_name,
-                      position: pos,
-                    })}
-                    {pos && pos !== "president" && (
-                      <span className="text-gray-600 ml-2">
-                        ({bishopricPositionLabel(pos, data.unitType)})
-                      </span>
-                    )}
-                  </>
-                );
-              })()}
-            </td>
-          </tr>
-          <tr>
-            <td className="font-semibold pr-2">Date:</td>
-            <td>{formatMeetingDate(data.meetingDate)}</td>
-          </tr>
-        </tbody>
-      </table>
+      <div className="grid grid-cols-3 gap-4 text-center border-y border-black/10 print:border-black/30 py-3 print:py-2 mb-1">
+        <div className="px-2">
+          <div className="text-[0.62rem] uppercase tracking-[0.18em] text-[var(--brand-gold)] print:text-black mb-1">
+            Presiding
+          </div>
+          <div className="text-sm">{data.presiding ?? "—"}</div>
+        </div>
+        <div className="px-2 border-x border-black/10 print:border-black/30">
+          <div className="text-[0.62rem] uppercase tracking-[0.18em] text-[var(--brand-gold)] print:text-black mb-1">
+            Conducting
+          </div>
+          <div className="text-sm">
+            {(() => {
+              if (!data.conducting) return "—";
+              // v2 uses .position; v1 used .bishopric_position. Accept both
+              // while we finish porting render callsites.
+              const pos =
+                (data.conducting as { position?: LeaderPosition | null }).position ??
+                (data.conducting as { bishopric_position?: LeaderPosition | null })
+                  .bishopric_position ??
+                null;
+              return (
+                <>
+                  {leaderDisplayName(data.unitType, {
+                    full_name: data.conducting.full_name,
+                    position: pos,
+                  })}
+                  {pos && pos !== "president" && (
+                    <div className="text-gray-600 print:text-black italic text-xs mt-0.5">
+                      ({bishopricPositionLabel(pos, data.unitType)})
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+        </div>
+        <div className="px-2">
+          <div className="text-[0.62rem] uppercase tracking-[0.18em] text-[var(--brand-gold)] print:text-black mb-1">
+            Date
+          </div>
+          <div className="text-sm">{formatMeetingDate(data.meetingDate)}</div>
+        </div>
+      </div>
 
       {data.briefReminders && (
-        <section className="mb-4">
-          <h2 className="font-semibold text-sm uppercase tracking-wide border-b pb-1 mb-1">
-            Brief Reminders
-          </h2>
-          <div className="text-sm space-y-1 mt-1">
+        <section className="mb-1 print-avoid-break">
+          <SectionHeading>Brief Reminders</SectionHeading>
+          <div className="text-sm space-y-1">
             {data.briefReminders
               .split("\n")
               .map((line) => line.trim())
               .filter(Boolean)
               .map((line, i) => (
                 <div key={`txt-${i}`} className="flex gap-2">
-                  <span className="text-gray-500 select-none" aria-hidden="true">
+                  <span className="text-[var(--brand-gold)] print:text-black select-none" aria-hidden="true">
                     •
                   </span>
                   <div className="flex-1">{line}</div>
@@ -162,42 +214,48 @@ export function ProgramRender({
       )}
 
       {data.briefReminderEvents.length > 0 && (
-        <section className="mb-4">
-          <h2 className="font-semibold text-sm uppercase tracking-wide border-b pb-1 mb-1">
-            Upcoming Events
-          </h2>
-          <div className="text-sm space-y-1 mt-1">
+        <section className="mb-1 print-avoid-break">
+          <SectionHeading>Upcoming Events</SectionHeading>
+          <div className="text-sm space-y-1">
             {data.briefReminderEvents.map((e, i) => (
-              <div key={`ev-${i}`} className="flex gap-2">
-                <span className="text-gray-500 select-none" aria-hidden="true">
+              <div key={`ev-${i}`} className="flex items-start gap-2">
+                <span className="text-[var(--brand-gold)] print:text-black select-none mt-0.5" aria-hidden="true">
                   •
                 </span>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <span className="font-medium">{e.title}</span>
                   {e.event_date && (
-                    <span className="text-gray-600 ml-2">
+                    <span className="text-gray-600 print:text-black ml-2">
                       — {formatMeetingDate(e.event_date)}
                     </span>
                   )}
                   {e.description && (
-                    <div className="text-gray-700 text-xs">{e.description}</div>
+                    <div className="text-gray-700 print:text-black text-xs">{e.description}</div>
                   )}
                 </div>
+                {e.event_date && (
+                  <a
+                    href={eventIcsHref(e.title, e.event_date, e.description)}
+                    aria-label={`Add ${e.title} to your calendar`}
+                    title="Add to calendar"
+                    className="no-print shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-full border border-[var(--brand-gold)]/50 text-[var(--brand-gold)] hover:bg-[var(--brand-gold)]/10"
+                  >
+                    <CalendarPlus className="w-3.5 h-3.5" />
+                  </a>
+                )}
               </div>
             ))}
           </div>
         </section>
       )}
 
-      <Row label="Opening Hymn" value={hymnLine(data.openingHymn)} />
-      <Row label="Invocation" value={data.invocation?.trim() || "By Invitation"} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-x-6">
+        <Row icon={<Music2 />} label="Opening Hymn" value={hymnLine(data.openingHymn)} />
+        <Row icon={<HeartHandshake />} label="Invocation" value={data.invocation?.trim() || "By Invitation"} />
+      </div>
 
       {isPublic ? (
-        <section className="my-3">
-          <h2 className="font-semibold text-sm uppercase tracking-wide border-b pb-1 mb-1">
-            {unitLabels(data.unitType).unit} and Stake Business
-          </h2>
-        </section>
+        <SectionHeading>{unitLabels(data.unitType).unit} and Stake Business</SectionHeading>
       ) : (
         <>
           <WardBusinessSection
@@ -206,87 +264,109 @@ export function ProgramRender({
             footer={data.wardBusinessFooter}
           />
           {data.stakeBusiness && (
-            <section className="my-3">
-              <h2 className="font-semibold text-sm uppercase tracking-wide border-b pb-1 mb-1">
-                Stake Business
-              </h2>
+            <section className="my-2 print:my-1 print-avoid-break">
+              <SectionHeading>Stake Business</SectionHeading>
               <div className="whitespace-pre-wrap text-sm">{data.stakeBusiness}</div>
             </section>
           )}
         </>
       )}
 
-      <section className="my-3">
-        <div className="flex items-center justify-between border-b pb-1 mb-1">
-          <h2 className="font-semibold text-sm uppercase tracking-wide">
-            Blessing and Passing of the Sacrament
-          </h2>
-          <div className="no-print">
-            <SacramentPrayersButton />
-          </div>
+      <section className="mt-6 print:mt-4 mb-2 print:mb-1 print-avoid-break">
+        <SectionHeading>Blessing and Passing of the Sacrament</SectionHeading>
+        <div className="no-print text-center -mt-1 mb-1">
+          <SacramentPrayersButton />
         </div>
         {isPublic ? (
-          <Row label="Sacrament Hymn" value={hymnLine(data.sacramentHymn)} />
+          <Row icon={<BookOpen />} label="Sacrament Hymn" value={hymnLine(data.sacramentHymn)} />
         ) : (
-          <p className="text-sm leading-relaxed">
-            We will now prepare for the sacrament by singing{" "}
-            <span className="font-medium">{hymnLine(data.sacramentHymn)}</span>, after which the
-            sacrament will be passed to the congregation.
-          </p>
+          <div className="flex items-center gap-4 py-2 print:py-1">
+            <span className="shrink-0 w-10 h-10 rounded-full border border-[var(--brand-gold)]/50 print:border-black/40 flex items-center justify-center text-[var(--brand-gold)] print:text-black [&_svg]:w-[1.05rem] [&_svg]:h-[1.05rem]">
+              <BookOpen />
+            </span>
+            <p className="flex-1 text-sm leading-snug">
+              We will now prepare for the sacrament by singing{" "}
+              <span className="font-medium">{hymnLine(data.sacramentHymn)}</span>, after which the
+              sacrament will be passed to the congregation.
+            </p>
+          </div>
         )}
       </section>
 
-      <section className="my-3">
-        <h2 className="font-semibold text-sm uppercase tracking-wide border-b pb-1 mb-1">
-          {isFast ? "Bearing of Testimonies" : "Balance of Program"}
-        </h2>
+      <section className="my-2 print:my-1 print-avoid-break">
+        <SectionHeading>{isFast ? "Bearing of Testimonies" : "Balance of Program"}</SectionHeading>
         {isFast ? (
-          <p className="text-sm">
+          <p className="text-sm text-center italic">
             The congregation is invited to come to the pulpit and bear brief testimonies.
           </p>
         ) : (
           <>
-            {first && (
-              <Row label={SLOT_LABELS.first} value={speakerLine(first)} />
-            )}
-            {second && (
-              <Row label={SLOT_LABELS.second} value={speakerLine(second)} />
-            )}
-            {intermediate && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-x-6">
+              {first && (
+                <Row icon={<User />} label={SLOT_LABELS.first} value={speakerLine(first)} />
+              )}
+              {second && (
+                <Row icon={<User />} label={SLOT_LABELS.second} value={speakerLine(second)} />
+              )}
+            </div>
+            <hr className="my-1 border-black/15 print:border-black/40" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-x-6">
               <Row
-                label="Intermediate"
+                icon={<Music2 />}
+                label="Intermediate Hymn"
                 value={
-                  "text" in intermediate
-                    ? intermediate.text
-                    : hymnLine(intermediate as { number: number; title: string })
+                  data.intermediateHymn
+                    ? hymnLine(data.intermediateHymn)
+                    : data.intermediateHymnText?.trim() || "—"
                 }
               />
-            )}
-            {concluding && (
-              <Row label={SLOT_LABELS.concluding} value={speakerLine(concluding)} />
-            )}
+              {concluding && (
+                <Row icon={<User />} label={SLOT_LABELS.concluding} value={speakerLine(concluding)} />
+              )}
+            </div>
           </>
         )}
       </section>
 
-      <Row label="Closing Hymn" value={hymnLine(data.closingHymn)} />
-      <Row label="Benediction" value={data.benediction?.trim() || "By Invitation"} />
+      <hr className="my-1 border-black/15 print:border-black/40" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-x-6">
+        <Row icon={<Music2 />} label="Closing Hymn" value={hymnLine(data.closingHymn)} />
+        <Row icon={<HeartHandshake />} label="Benediction" value={data.benediction?.trim() || "By Invitation"} />
+      </div>
 
-      <section className="mt-6 text-center text-xs text-gray-600">
+      <Ornament />
+      <section className="text-center text-xs text-gray-600 print:text-black">
         Chorister: {data.chorister ?? "—"} &nbsp;·&nbsp; Organist: {data.organist ?? "—"}
       </section>
-
-
     </article>
     </>
   );
 }
 
-function Row({ label, value, compact }: { label: string; value: string; compact?: boolean }) {
+function Row({
+  label,
+  value,
+  icon,
+  compact,
+}: {
+  label: string;
+  value: string;
+  icon?: ReactNode;
+  compact?: boolean;
+}) {
   return (
-    <div className={compact ? "flex gap-2 py-0.5" : "flex gap-2 py-1"}>
-      <div className="font-semibold w-32 shrink-0">{label}:</div>
-      <div className="flex-1 whitespace-pre-wrap">{value}</div>
+    <div className={`flex items-center gap-4 ${compact ? "py-1 print:py-0.5" : "py-2 print:py-1"}`}>
+      {icon && (
+        <span className="shrink-0 w-10 h-10 rounded-full border border-[var(--brand-gold)]/50 print:border-black/40 flex items-center justify-center text-[var(--brand-gold)] print:text-black [&_svg]:w-[1.05rem] [&_svg]:h-[1.05rem]">
+          {icon}
+        </span>
+      )}
+      <div className="flex-1 min-w-0">
+        <div className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[var(--brand-gold)] print:text-black">
+          {label}
+        </div>
+        <div className="whitespace-pre-wrap leading-snug">{value}</div>
+      </div>
     </div>
   );
 }
@@ -327,15 +407,15 @@ function StructuredBlock({
   outro?: string;
 }) {
   return (
-    <div className="space-y-1 text-sm py-3 border-b border-gray-400 last:border-b-0 last:pb-0">
-      <div className="font-semibold text-xs uppercase tracking-wide">{heading}</div>
-      {intro && <p className="italic">{intro}</p>}
+    <div className="space-y-0.5 text-sm py-2 print:py-1 border-b border-black/15 print:border-black/30 last:border-b-0 last:pb-0">
+      <div className="font-semibold text-xs uppercase tracking-[0.14em]">{heading}</div>
+      {intro && <p className="italic text-gray-700 print:text-black">{intro}</p>}
       {lines.map((l, i) => (
         <p key={i} className="pl-4">
           {l}
         </p>
       ))}
-      {outro && <p className="italic">{outro}</p>}
+      {outro && <p className="italic text-gray-700 print:text-black">{outro}</p>}
     </div>
   );
 }
@@ -390,12 +470,10 @@ function WardBusinessSection({
   });
 
   return (
-    <section className="my-3">
-      <h2 className="font-semibold text-sm uppercase tracking-wide border-b pb-1 mb-1">
-        {labels.unit} Business
-      </h2>
+    <section className="my-2 print:my-1">
+      <SectionHeading>{labels.unit} Business</SectionHeading>
       {!anyActive ? (
-        <p className="italic text-sm">
+        <p className="italic text-sm text-center text-gray-700 print:text-black">
           There is no {labels.unitLower} business this week.
         </p>
       ) : (
@@ -448,7 +526,7 @@ function WardBusinessSection({
         </>
       )}
       {footer && footer.trim() && (
-        <p className="text-sm italic mt-3 pt-3 border-t border-gray-300">{footer}</p>
+        <p className="text-sm italic mt-3 pt-3 border-t border-black/20 print:border-black/40">{footer}</p>
       )}
     </section>
   );
@@ -474,21 +552,24 @@ function speakerLine(a: {
 function NoServicesRender({ data }: { data: ProgramRenderData }) {
   const labels = unitLabels(data.unitType);
   return (
-    <article className="mx-auto max-w-[7.5in] p-6 sm:p-10 text-black bg-white">
-      <header className="text-center pb-3 mb-4 border-b-2 border-black">
-        <h1 className="text-2xl font-bold tracking-tight">{data.branchName}</h1>
-        <p className="uppercase tracking-widest text-xs text-gray-600 mt-1">
+    <article className="mx-auto max-w-[7.5in] bg-white text-black p-8 sm:p-12 ring-1 ring-black/10 print:ring-0 print:p-0">
+      <header className="text-center">
+        <h1 className="font-serif text-[2.4rem] leading-tight tracking-tight">
+          {data.branchName}
+        </h1>
+        <p className="uppercase tracking-[0.28em] text-xs text-[var(--brand-gold)] print:text-black mt-1.5">
           {formatMeetingDate(data.meetingDate)}
         </p>
+        <Ornament />
       </header>
       <div className="text-center py-12 space-y-2">
-        <p className="uppercase tracking-widest text-xs text-gray-500">
+        <p className="uppercase tracking-[0.2em] text-xs text-gray-500 print:text-black">
           No sacrament meeting
         </p>
-        <h2 className="text-3xl font-bold">
+        <h2 className="font-serif text-3xl">
           {data.meetingTypeLabel?.trim() || "Conference"}
         </h2>
-        <p className="text-sm text-gray-700 max-w-lg mx-auto pt-2">
+        <p className="text-sm text-gray-700 print:text-black max-w-lg mx-auto pt-2">
           There is no sacrament meeting at the {labels.unitLower} today. Please refer to the
           conference schedule.
         </p>

@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
-import { ArrowLeft, Printer, Share2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowLeft, Eye, Printer, Share2 } from "lucide-react";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 /**
  * Toolbar shown above the printed bulletin on the public share page.
@@ -11,7 +13,15 @@ import { Button } from "@/components/ui/button";
  *  - Print  → window.print()
  *  - Share  → Web Share API if available, otherwise copy-to-clipboard fallback
  */
-export function PublicViewToolbar({ title }: { title: string }) {
+export function PublicViewToolbar({
+  title,
+  conductorHref,
+}: {
+  title: string;
+  /** When provided (signed-in viewer), shows a one-tap toggle to the
+   *  matching conductor view of the same program. */
+  conductorHref?: string | null;
+}) {
   const [pending, setPending] = useState(false);
 
   function close() {
@@ -52,19 +62,44 @@ export function PublicViewToolbar({ title }: { title: string }) {
   }
 
   return (
-    <div className="grid grid-cols-3 gap-2 max-w-[7.5in] mx-auto px-4 mb-4 no-print">
-      <Button variant="outline" size="sm" onClick={close}>
-        <ArrowLeft className="w-4 h-4" />
-        Close
-      </Button>
-      <Button size="sm" onClick={() => window.print()}>
-        <Printer className="w-4 h-4" />
-        Print
-      </Button>
-      <Button variant="outline" size="sm" onClick={share} disabled={pending}>
-        <Share2 className="w-4 h-4" />
-        Share
-      </Button>
+    <div className="max-w-[7.5in] mx-auto px-4 mb-4 no-print">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div>
+          <h1 className="text-xs uppercase tracking-widest font-bold text-muted-foreground">
+            Public Program
+          </h1>
+          <p className="text-[11px] text-muted-foreground">
+            The congregation-facing bulletin shared via the public link
+          </p>
+        </div>
+        <span className="inline-flex items-center gap-1 text-xs font-semibold text-white bg-emerald-600 rounded-full px-2.5 py-0.5 shrink-0">
+          Published
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" size="sm" onClick={close}>
+          <ArrowLeft className="w-4 h-4" />
+          Close
+        </Button>
+        {conductorHref && (
+          <Link
+            href={conductorHref}
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            title="Switch to the conductor's detailed view"
+          >
+            <Eye className="w-4 h-4" />
+            Conductor view
+          </Link>
+        )}
+        <Button size="sm" onClick={() => window.print()}>
+          <Printer className="w-4 h-4" />
+          Print
+        </Button>
+        <Button variant="outline" size="sm" onClick={share} disabled={pending}>
+          <Share2 className="w-4 h-4" />
+          Share
+        </Button>
+      </div>
     </div>
   );
 }

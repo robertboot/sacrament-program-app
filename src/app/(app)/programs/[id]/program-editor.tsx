@@ -19,6 +19,8 @@ import {
   MessageSquare,
   UserPlus,
   ArrowLeft,
+  Sparkles,
+  CircleCheck,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -73,7 +75,9 @@ export type FutureAssignment = {
   status: AssignmentStatus;
 };
 import {
+  autoGenerateProgram,
   clearAssignmentSpeaker,
+  confirmAssignmentSlot,
   ensureProgramSlots,
   regenerateShareToken,
   resetAssignmentSlot,
@@ -129,11 +133,16 @@ export function ProgramEditor({
     conducting_id: program.conducting_id,
     welcome_text: program.welcome_text ?? settings.default_welcome_text,
     brief_reminders: program.brief_reminders,
+    planner_note: program.planner_note ?? null,
     opening_hymn_id: program.opening_hymn_id,
     sacrament_hymn_id: program.sacrament_hymn_id,
     intermediate_hymn_id: program.intermediate_hymn_id,
     intermediate_hymn_text: program.intermediate_hymn_text,
     closing_hymn_id: program.closing_hymn_id,
+    opening_hymn_verse_note: program.opening_hymn_verse_note ?? false,
+    sacrament_hymn_verse_note: program.sacrament_hymn_verse_note ?? false,
+    intermediate_hymn_verse_note: program.intermediate_hymn_verse_note ?? false,
+    closing_hymn_verse_note: program.closing_hymn_verse_note ?? false,
     invocation: program.invocation ?? "By Invitation",
     benediction: program.benediction ?? "By Invitation",
     chorister: program.chorister,
@@ -230,7 +239,6 @@ export function ProgramEditor({
           </Link>
           <Link
             href={`/programs/${program.id}/view`}
-            target="_blank"
             className={cn(
               buttonVariants({ variant: "outline", size: "sm" }),
               "bg-white hover:bg-zinc-50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100",
@@ -376,6 +384,26 @@ export function ProgramEditor({
               placeholder="Reminders to read at the pulpit (optional)…"
             />
           </div>
+          {isBishopric && (
+            <div className="space-y-1.5">
+              <Label className="text-red-700 dark:text-red-400">
+                Planner note (bishopric only)
+              </Label>
+              <Textarea
+                rows={2}
+                value={draft.planner_note ?? ""}
+                onChange={(e) =>
+                  setDraft((p) => ({ ...p, planner_note: e.target.value || null }))
+                }
+                placeholder="Private note shown in red on the dashboard for this Sunday (e.g. 'Bishop away — Brother X presiding')."
+                className="border-red-300 focus-visible:border-red-500 focus-visible:ring-red-500/30"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Visible only on the planner. Never appears on the conductor
+                or public views.
+              </p>
+            </div>
+          )}
       </CollapsibleCard>
 
       {/* Hymns */}
@@ -387,6 +415,15 @@ export function ProgramEditor({
               value={draft.opening_hymn_id ?? null}
               onChange={(id) => setDraft((p) => ({ ...p, opening_hymn_id: id }))}
             />
+            <HymnVerseToggle
+              hymns={hymns}
+              hymnId={draft.opening_hymn_id ?? null}
+              checked={!!draft.opening_hymn_verse_note}
+              onChange={(v) => {
+                setDraft((p) => ({ ...p, opening_hymn_verse_note: v }));
+                saveFields({ opening_hymn_verse_note: v });
+              }}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Sacrament hymn</Label>
@@ -394,6 +431,15 @@ export function ProgramEditor({
               hymns={hymns}
               value={draft.sacrament_hymn_id ?? null}
               onChange={(id) => setDraft((p) => ({ ...p, sacrament_hymn_id: id }))}
+            />
+            <HymnVerseToggle
+              hymns={hymns}
+              hymnId={draft.sacrament_hymn_id ?? null}
+              checked={!!draft.sacrament_hymn_verse_note}
+              onChange={(v) => {
+                setDraft((p) => ({ ...p, sacrament_hymn_verse_note: v }));
+                saveFields({ sacrament_hymn_verse_note: v });
+              }}
             />
           </div>
           {!isFast && (
@@ -410,6 +456,15 @@ export function ProgramEditor({
                   }))
                 }
                 placeholder="Pick a hymn, or use the text field below…"
+              />
+              <HymnVerseToggle
+                hymns={hymns}
+                hymnId={draft.intermediate_hymn_id ?? null}
+                checked={!!draft.intermediate_hymn_verse_note}
+                onChange={(v) => {
+                  setDraft((p) => ({ ...p, intermediate_hymn_verse_note: v }));
+                  saveFields({ intermediate_hymn_verse_note: v });
+                }}
               />
               <Input
                 disabled={!!draft.intermediate_hymn_id}
@@ -430,6 +485,15 @@ export function ProgramEditor({
               hymns={hymns}
               value={draft.closing_hymn_id ?? null}
               onChange={(id) => setDraft((p) => ({ ...p, closing_hymn_id: id }))}
+            />
+            <HymnVerseToggle
+              hymns={hymns}
+              hymnId={draft.closing_hymn_id ?? null}
+              checked={!!draft.closing_hymn_verse_note}
+              onChange={(v) => {
+                setDraft((p) => ({ ...p, closing_hymn_verse_note: v }));
+                saveFields({ closing_hymn_verse_note: v });
+              }}
             />
           </div>
       </CollapsibleCard>
@@ -553,22 +617,59 @@ export function ProgramEditor({
                 </Button>
               </div>
             ) : (
-              SLOT_ORDER.map((slot) => {
-                const a = assignments.find((x) => x.slot === slot);
-                if (!a) return null;
-                return (
-                  <AssignmentCard
-                    key={a.id}
-                    assignment={a}
-                    speakers={speakers}
-                    topics={topics}
-                    isPast={isPast}
-                    pending={pending}
-                    start={start}
-                    futureBySpeaker={futureBySpeaker}
-                  />
-                );
-              })
+              <>
+                {!isPast &&
+                  !assignments.some(
+                    (a) =>
+                      a.speaker_id ||
+                      a.custom_speaker_name ||
+                      a.topic_id ||
+                      a.custom_topic_text ||
+                      a.slot_confirmed === true,
+                  ) && (
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        start(async () => {
+                          const r = await autoGenerateProgram(program.id);
+                          if (r.error) toast.error(r.error);
+                          else {
+                            toast.success(
+                              r.filled
+                                ? `Filled ${r.filled} slot${r.filled === 1 ? "" : "s"} — review and confirm each.`
+                                : "Nothing to fill — all slots already have picks.",
+                            );
+                            router.refresh();
+                          }
+                        })
+                      }
+                      disabled={pending}
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      Auto generate
+                    </Button>
+                  </div>
+                  )}
+                {SLOT_ORDER.map((slot) => {
+                  const a = assignments.find((x) => x.slot === slot);
+                  if (!a) return null;
+                  return (
+                    <AssignmentCard
+                      key={a.id}
+                      assignment={a}
+                      speakers={speakers}
+                      topics={topics}
+                      isPast={isPast}
+                      pending={pending}
+                      start={start}
+                      futureBySpeaker={futureBySpeaker}
+                    />
+                  );
+                })}
+              </>
             )}
         </CollapsibleCard>
       )}
@@ -699,19 +800,27 @@ export function ProgramEditor({
                   </Button>
                 </>
               ) : (
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    start(async () => {
-                      const r = await setProgramStatus(program.id, "draft");
-                      if (r.error) toast.error(r.error);
-                      else toast.success("Reverted to draft.");
-                    })
-                  }
-                  disabled={pending}
-                >
-                  <Globe2 className="w-4 h-4" /> Unpublish
-                </Button>
+                <>
+                  <Link
+                    href={`/p/${program.share_token}`}
+                    className={cn(buttonVariants({ variant: "outline" }))}
+                  >
+                    <Eye className="w-4 h-4" /> View published version
+                  </Link>
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      start(async () => {
+                        const r = await setProgramStatus(program.id, "draft");
+                        if (r.error) toast.error(r.error);
+                        else toast.success("Reverted to draft.");
+                      })
+                    }
+                    disabled={pending}
+                  >
+                    <Globe2 className="w-4 h-4" /> Unpublish
+                  </Button>
+                </>
               )}
             </>
           )}
@@ -815,6 +924,14 @@ function AssignmentCard({
 }) {
   const locked = assignment.status !== "not_yet_asked";
   const slot = assignment.slot;
+  // speaker_id → upcoming meeting dates they're already booked on, so the
+  // picker can flag a double-booking before it happens.
+  const upcomingBySpeaker = Object.fromEntries(
+    Object.entries(futureBySpeaker).map(([id, rows]) => [
+      id,
+      rows.map((r) => r.meetingDate).sort(),
+    ]),
+  );
   const [conflict, setConflict] = useState<null | {
     newSpeakerId: string;
     speakerName: string;
@@ -822,6 +939,11 @@ function AssignmentCard({
   }>(null);
   const [stakeOpen, setStakeOpen] = useState(false);
   const [stakeName, setStakeName] = useState(assignment.custom_speaker_name ?? "");
+  // When the topic is a typed one-off, offer to also save it to the topic
+  // library (tagged with this slot's length) at confirm time.
+  const hasOneOffTopic =
+    !assignment.topic_id && !!assignment.custom_topic_text?.trim();
+  const [promoteTopic, setPromoteTopic] = useState(true);
 
   function saveSpeakerTopic(next: {
     speaker_id?: string | null;
@@ -988,6 +1110,7 @@ function AssignmentCard({
             value={assignment.speaker_id}
             customValue={assignment.custom_speaker_name}
             onChange={handleSpeakerChange}
+            upcomingBySpeaker={upcomingBySpeaker}
             disabled={isPast}
           />
         </div>
@@ -1013,67 +1136,107 @@ function AssignmentCard({
 
       {!isPast && (
         <div className="flex flex-wrap gap-2">
-          {assignment.status === "not_yet_asked" && assignment.speaker_id && (
-            <>
-              {(() => {
-                const sp = speakers.find((s) => s.id === assignment.speaker_id);
-                if (!sp?.phone) return null;
-                return (
-                  <Button
-                    size="sm"
-                    onClick={() =>
-                      start(async () => {
-                        const r = await sendAssignmentInvite(assignment.id);
-                        if (r.error) toast.error(r.error);
-                        else toast.success(`Text sent to ${sp.full_name}.`);
-                      })
-                    }
-                    disabled={pending}
-                  >
-                    <MessageSquare className="w-4 h-4" /> Send text invite
-                  </Button>
-                );
-              })()}
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => changeStatus("awaiting_confirmation")}
-                disabled={pending}
-              >
-                <Send className="w-4 h-4" /> Mark as asked
-              </Button>
-            </>
-          )}
-          {assignment.status === "awaiting_confirmation" && (
-            <>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => changeStatus("confirmed")}
-                disabled={pending}
-              >
-                <CheckCircle2 className="w-4 h-4" /> Confirmed
-              </Button>
+          {/* Draft suggestion: bishop reviews, then confirms the slot before
+              the invite workflow opens. */}
+          {assignment.slot_confirmed === false &&
+            (assignment.speaker_id || assignment.custom_speaker_name) && (
+              <div className="flex flex-col gap-2">
+                {hasOneOffTopic && (
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+                    <Checkbox
+                      checked={promoteTopic}
+                      onCheckedChange={(v) => setPromoteTopic(v === true)}
+                    />
+                    Also save &ldquo;{assignment.custom_topic_text}&rdquo; as a
+                    reusable {SLOT_LABELS[slot]} topic
+                  </label>
+                )}
+                <Button
+                  size="sm"
+                  className="self-start"
+                  onClick={() =>
+                    start(async () => {
+                      const r = await confirmAssignmentSlot(
+                        assignment.id,
+                        hasOneOffTopic && promoteTopic,
+                      );
+                      if (r.error) toast.error(r.error);
+                      else toast.success("Slot confirmed.");
+                    })
+                  }
+                  disabled={pending}
+                >
+                  <CircleCheck className="w-4 h-4" /> Confirm slot
+                </Button>
+              </div>
+            )}
+          {assignment.slot_confirmed !== false &&
+            assignment.status === "not_yet_asked" &&
+            assignment.speaker_id && (
+              <>
+                {(() => {
+                  const sp = speakers.find(
+                    (s) => s.id === assignment.speaker_id,
+                  );
+                  if (!sp?.phone) return null;
+                  return (
+                    <Button
+                      size="sm"
+                      onClick={() =>
+                        start(async () => {
+                          const r = await sendAssignmentInvite(assignment.id);
+                          if (r.error) toast.error(r.error);
+                          else toast.success(`Text sent to ${sp.full_name}.`);
+                        })
+                      }
+                      disabled={pending}
+                    >
+                      <MessageSquare className="w-4 h-4" /> Send text invite
+                    </Button>
+                  );
+                })()}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => changeStatus("awaiting_confirmation")}
+                  disabled={pending}
+                >
+                  <Send className="w-4 h-4" /> Mark as asked
+                </Button>
+              </>
+            )}
+          {assignment.slot_confirmed !== false &&
+            assignment.status === "awaiting_confirmation" && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => changeStatus("confirmed")}
+                  disabled={pending}
+                >
+                  <CheckCircle2 className="w-4 h-4" /> Confirmed
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => changeStatus("declined")}
+                  disabled={pending}
+                >
+                  <XCircle className="w-4 h-4" /> Declined
+                </Button>
+              </>
+            )}
+          {assignment.slot_confirmed !== false &&
+            assignment.status === "confirmed" && (
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => changeStatus("declined")}
                 disabled={pending}
               >
-                <XCircle className="w-4 h-4" /> Declined
+                <XCircle className="w-4 h-4" /> Mark declined
               </Button>
-            </>
-          )}
-          {assignment.status === "confirmed" && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => changeStatus("declined")}
-              disabled={pending}
-            >
-              <XCircle className="w-4 h-4" /> Mark declined
-            </Button>
-          )}
+            )}
           {(locked ||
             !!assignment.custom_speaker_name ||
             !!assignment.speaker_id) && (
@@ -1112,7 +1275,7 @@ function AssignmentCard({
       </div>
 
       <Dialog open={conflict !== null} onOpenChange={(o) => !o && setConflict(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
               Reschedule {conflict?.speakerName} or keep both dates?
@@ -1214,6 +1377,34 @@ function AssignmentCard({
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+/**
+ * Opt-in checkbox shown only when the picked hymn carries a verse note.
+ * Controls whether "(Verses 1, 3, 5, 6)" prints on this week's program.
+ */
+function HymnVerseToggle({
+  hymns,
+  hymnId,
+  checked,
+  onChange,
+}: {
+  hymns: Hymn[];
+  hymnId: number | null;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  const hymn = hymnId ? hymns.find((h) => h.id === hymnId) : null;
+  if (!hymn?.verse_note) return null;
+  return (
+    <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none pt-0.5">
+      <Checkbox
+        checked={checked}
+        onCheckedChange={(v) => onChange(v === true)}
+      />
+      Print &ldquo;{hymn.verse_note}&rdquo; on the program
+    </label>
   );
 }
 

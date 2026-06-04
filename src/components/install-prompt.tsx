@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Calendar, ChevronRight, Share } from "lucide-react";
+import { Share } from "lucide-react";
 
 type Mode =
   | "loading"
@@ -12,7 +12,7 @@ type Mode =
   | "desktop";
 
 /**
- * Friendly prompt that explains how to add Rameumptom to the home screen.
+ * Friendly prompt that explains how to add Rota to the home screen.
  * Detects the running environment and shows the right copy:
  *  - Already installed (standalone) → green confirmation
  *  - iPhone Safari            → step-by-step instructions
@@ -65,28 +65,16 @@ export function InstallPrompt() {
       window.removeEventListener("beforeinstallprompt", onBeforeInstall);
   }, []);
 
-  if (mode === "loading") return null;
-
-  if (mode === "installed") {
-    return (
-      <a
-        href="/p/now"
-        target="_blank"
-        rel="noreferrer"
-        className="grid grid-cols-[auto_1fr_auto] items-center gap-3 w-full px-5 py-4 rounded-xl bg-primary text-primary-foreground text-base font-semibold shadow-sm hover:opacity-90 transition"
-      >
-        <Calendar className="w-5 h-5 shrink-0" />
-        <span className="text-left">View this Sunday&rsquo;s Program</span>
-        <ChevronRight className="w-5 h-5 shrink-0 opacity-80" />
-      </a>
-    );
-  }
+  // While detecting, or once installed, render nothing — the Home page owns
+  // the Public / Conductor buttons now. This component only nudges users who
+  // haven't added the app to their home screen yet.
+  if (mode === "loading" || mode === "installed") return null;
 
   if (mode === "ios-safari") {
     return (
       <div className="rounded-lg border bg-card px-4 py-3 text-sm shadow-sm space-y-2 text-left">
         <div className="font-semibold text-foreground">
-          Add Rameumptom to your home screen
+          Add Rota to your home screen
         </div>
         <ol className="text-muted-foreground space-y-1.5 list-decimal pl-5">
           <li>
@@ -115,7 +103,7 @@ export function InstallPrompt() {
           Open this page in Safari to install
         </div>
         <p className="text-muted-foreground">
-          On iPhone, only Safari can add Rameumptom to your home screen. Tap
+          On iPhone, only Safari can add Rota to your home screen. Tap
           the address bar, copy this URL, then paste it in Safari and use the{" "}
           <Share className="inline w-4 h-4 align-text-bottom" /> Share menu →{" "}
           <span className="font-medium text-foreground">Add to Home Screen</span>.
@@ -127,11 +115,11 @@ export function InstallPrompt() {
   if (mode === "android") {
     return (
       <div className="rounded-lg border bg-card px-4 py-3 text-sm shadow-sm space-y-2 text-left">
-        <div className="font-semibold text-foreground">Install Rameumptom</div>
+        <div className="font-semibold text-foreground">Install Rota</div>
         {deferred ? (
           <>
             <p className="text-muted-foreground">
-              Add Rameumptom to your home screen for one-tap access.
+              Add Rota to your home screen for one-tap access.
             </p>
             <button
               type="button"
@@ -157,11 +145,11 @@ export function InstallPrompt() {
   // Desktop.
   return (
     <div className="rounded-lg border bg-card px-4 py-3 text-sm shadow-sm space-y-2 text-left">
-      <div className="font-semibold text-foreground">Install Rameumptom</div>
+      <div className="font-semibold text-foreground">Install Rota</div>
       {deferred ? (
         <>
           <p className="text-muted-foreground">
-            Add Rameumptom as an app for one-click access.
+            Add Rota as an app for one-click access.
           </p>
           <button
             type="button"
@@ -174,7 +162,7 @@ export function InstallPrompt() {
       ) : (
         <p className="text-muted-foreground">
           In Chrome or Edge, click the install icon in the address bar to add
-          Rameumptom as an app. In Safari (macOS),{" "}
+          Rota as an app. In Safari (macOS),{" "}
           <span className="font-medium text-foreground">
             File → Add to Dock
           </span>

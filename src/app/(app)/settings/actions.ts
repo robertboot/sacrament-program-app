@@ -111,9 +111,12 @@ async function createMember({
   // the URL itself still signs the user in if pasted.
   let inviteLink: string | null = null;
   if (email?.trim()) {
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ?? "https://sacrament-program-app.vercel.app";
     const { data: linkData } = await admin.auth.admin.generateLink({
       type: "magiclink",
       email: finalEmail,
+      options: { redirectTo: `${siteUrl}/auth/callback?next=/home` },
     });
     inviteLink = linkData?.properties?.action_link ?? null;
   }
@@ -288,10 +291,71 @@ export async function inviteMember(userId: string) {
     };
   }
 
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://sacrament-program-app.vercel.app";
+
   const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
     type: "magiclink",
     email: u.user.email,
+    options: { redirectTo: `${siteUrl}/auth/callback?next=/home` },
   });
   if (linkErr) return { error: linkErr.message };
-  return { error: null, inviteLink: linkData?.properties?.action_link ?? null };
+  return {
+    error: null,
+    email: u.user.email,
+    inviteLink: linkData?.properties?.action_link ?? null,
+  };
+}
+
+/**
+ * Have Supabase email a magic sign-in link to an existing member. Used by
+ * the invite dialog's "Send email" button.
+ */
+export async function sendInviteEmail(userId: string) {
+  const auth = await requireBishopric();
+  if ("error" in auth) return { error: auth.error };
+
+  const admin = createServiceClient();
+  const { data: u, error: uErr } = await admin.auth.admin.getUserById(userId);
+  if (uErr || !u?.user?.email) {
+    return { error: uErr?.message ?? "No email on file for this user." };
+  }
+  if (u.user.email.endsWith(".placeholder.invalid")) {
+    return { error: "No real email on file." };
+  }
+
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://sacrament-program-app.vercel.app";
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithOtp({
+    email: u.user.email,
+    options: {
+      shouldCreateUser: false,
+      emailRedirectTo: `${siteUrl}/auth/callback?next=/home`,
+    },
+  });
+  if (error) return { error: error.message };
+  return { error: null, sent: true, email: u.user.email };
+}
+
+/**
+ * Update a hymn's usage tags + verse note. Bishopric-only. Used by the
+ * Settings hymn-tag editor to flag funeral/baptism/holiday hymns and
+ * record verse-restriction notes that can print on the program.
+ */
+export async function updateHymnMeta(
+  hymnId: number,
+  { usage_tags, verse_note }: { usage_tags: string[]; verse_note: string | null },
+) {
+  const auth = await requireBishopric();
+  if ("error" in auth) return { error: auth.error };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("hymns")
+    .update({ usage_tags, verse_note: verse_note?.trim() || null })
+    .eq("id", hymnId);
+  if (error) return { error: error.message };
+  revalidatePath("/settings");
+  revalidatePath("/");
+  return { error: null };
 }

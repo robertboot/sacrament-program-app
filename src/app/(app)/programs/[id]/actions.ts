@@ -102,18 +102,204 @@ export async function resetAssignmentSlot(assignmentId: string) {
     .select("program_id")
     .single();
   if (e1) return { error: e1.message };
-  // Step 2: clear just the speaker — keep the topic intact.
+  // Step 2: clear just the speaker — keep the topic intact — and drop the
+  // slot back to an unconfirmed draft so it must be reviewed + confirmed
+  // again before re-entering the invite workflow.
   const { error: e2 } = await supabase
     .from("speaking_assignments")
     .update({
       speaker_id: null,
       custom_speaker_name: null,
+      slot_confirmed: false,
     })
     .eq("id", assignmentId);
   if (e2) return { error: e2.message };
   revalidatePath(`/programs/${r1!.program_id}`);
   revalidatePath("/");
   return { error: null };
+}
+
+/**
+ * Mark a slot as reviewed + finalized by the bishop. Only after this does
+ * the invite workflow (text invite / mark asked / confirm / decline) open.
+ *
+ * If `promoteCustomTopic` is set and the slot has a typed one-off topic
+ * (custom_topic_text, no topic_id), that text is also saved into the
+ * topics table tagged with this slot's talk length so it's reusable
+ * later, and the assignment is repointed at the new topic row.
+ */
+export async function confirmAssignmentSlot(
+  assignmentId: string,
+  promoteCustomTopic = false,
+) {
+  const supabase = await createClient();
+
+  if (promoteCustomTopic) {
+    const { data: a } = await supabase
+      .from("speaking_assignments")
+      .select("slot, topic_id, custom_topic_text")
+      .eq("id", assignmentId)
+      .single();
+    const text = a?.custom_topic_text?.trim();
+    if (a && !a.topic_id && text) {
+      const category =
+        a.slot === "first"
+          ? "first"
+          : a.slot === "concluding"
+            ? "concluding"
+            : "second";
+      const { data: topic, error: tErr } = await supabase
+        .from("topics")
+        .insert({ title: text, is_active: true })
+        .select("id")
+        .single();
+      if (tErr) return { error: tErr.message };
+      const { error: tcErr } = await supabase
+        .from("topic_categories")
+        .insert({ topic_id: topic!.id, category });
+      if (tcErr) return { error: tcErr.message };
+      const { error: aErr } = await supabase
+        .from("speaking_assignments")
+        .update({ topic_id: topic!.id, custom_topic_text: null })
+        .eq("id", assignmentId);
+      if (aErr) return { error: aErr.message };
+    }
+  }
+
+  const { data, error } = await supabase
+    .from("speaking_assignments")
+    .update({ slot_confirmed: true })
+    .eq("id", assignmentId)
+    .select("program_id")
+    .single();
+  if (error) return { error: error.message };
+  revalidatePath(`/programs/${data!.program_id}`);
+  revalidatePath("/topics");
+  revalidatePath("/");
+  return { error: null };
+}
+
+/**
+ * Auto-fill every still-draft slot on a program with a suggested speaker
+ * and topic. Picks the longest-gap active speaker for the slot's category
+ * and the longest-unused active topic for that category, avoiding anyone
+ * already used elsewhere in this program. Does NOT confirm the slots — the
+ * bishop reviews each pick and confirms manually.
+ */
+export async function autoGenerateProgram(programId: string) {
+  const supabase = await createClient();
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [{ data: slots }, { data: speakers }, { data: topics }, { data: future }] =
+    await Promise.all([
+      supabase
+        .from("speaking_assignments")
+        .select("id, slot, speaker_id, topic_id, slot_confirmed")
+        .eq("program_id", programId)
+        .order("slot"),
+      supabase
+        .from("speakers")
+        .select("id, last_spoke_date, is_active, speaker_categories(category)")
+        .eq("is_active", true),
+      supabase
+        .from("topics")
+        .select("id, last_used_date, is_active, topic_categories(category)")
+        .eq("is_active", true),
+      // Speakers already booked on any other upcoming program — skip them so
+      // auto-generate doesn't double-book.
+      supabase
+        .from("speaking_assignments")
+        .select("speaker_id, programs!inner(meeting_date)")
+        .not("speaker_id", "is", null)
+        .neq("status", "declined")
+        .neq("program_id", programId)
+        .gte("programs.meeting_date", today),
+    ]);
+
+  if (!slots) return { error: "Couldn't load the program." };
+
+  const bookedElsewhere = new Set(
+    (future ?? [])
+      .map((r) => (r as { speaker_id: string | null }).speaker_id)
+      .filter((x): x is string => !!x),
+  );
+  const usedSpeakerIds = new Set(
+    slots.map((s) => s.speaker_id).filter((x): x is string => !!x),
+  );
+  const usedTopicIds = new Set(
+    slots.map((s) => s.topic_id).filter((x): x is string => !!x),
+  );
+
+  type Cat = "first" | "second" | "concluding";
+  const catFor = (slot: string): Cat[] =>
+    slot === "first" ? ["first"] : ["second", "concluding"];
+
+  function longestGap<
+    T extends { id: string; last: string | null; cats: string[] },
+  >(items: T[], allowed: string[], used: Set<string>): T | null {
+    const pool = items
+      .filter((i) => !used.has(i.id) && i.cats.some((c) => allowed.includes(c)))
+      .sort((a, b) => {
+        if (a.last === null && b.last === null) return a.id.localeCompare(b.id);
+        if (a.last === null) return -1;
+        if (b.last === null) return 1;
+        return a.last.localeCompare(b.last);
+      });
+    return pool[0] ?? null;
+  }
+
+  const speakerPool = (speakers ?? []).map((s) => ({
+    id: s.id as string,
+    last: (s as { last_spoke_date: string | null }).last_spoke_date,
+    cats: ((s.speaker_categories ?? []) as { category: string }[]).map(
+      (c) => c.category,
+    ),
+  }));
+  const topicPool = (topics ?? []).map((t) => ({
+    id: t.id as string,
+    last: (t as { last_used_date: string | null }).last_used_date,
+    cats: ((t.topic_categories ?? []) as { category: string }[]).map(
+      (c) => c.category,
+    ),
+  }));
+
+  let filled = 0;
+  for (const slot of slots) {
+    if (slot.slot_confirmed) continue; // never overwrite a confirmed slot
+    const allowed = catFor(slot.slot);
+    const patch: { speaker_id?: string; topic_id?: string } = {};
+
+    if (!slot.speaker_id) {
+      const pick = longestGap(
+        speakerPool,
+        allowed,
+        new Set([...usedSpeakerIds, ...bookedElsewhere]),
+      );
+      if (pick) {
+        patch.speaker_id = pick.id;
+        usedSpeakerIds.add(pick.id);
+      }
+    }
+    if (!slot.topic_id) {
+      const pick = longestGap(topicPool, allowed, usedTopicIds);
+      if (pick) {
+        patch.topic_id = pick.id;
+        usedTopicIds.add(pick.id);
+      }
+    }
+    if (Object.keys(patch).length > 0) {
+      const { error } = await supabase
+        .from("speaking_assignments")
+        .update(patch)
+        .eq("id", slot.id);
+      if (error) return { error: error.message };
+      filled++;
+    }
+  }
+
+  revalidatePath(`/programs/${programId}`);
+  revalidatePath("/");
+  return { error: null, filled };
 }
 
 /**

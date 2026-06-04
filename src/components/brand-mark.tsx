@@ -1,11 +1,9 @@
-"use client";
-
-import { useState } from "react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 /**
- * Inline pulpit + microphone mark as an SVG fallback. Adapts to currentColor
- * for the pulpit; the microphone uses the brand gold.
+ * Inline pulpit + microphone mark. Adapts to currentColor for the pulpit;
+ * the microphone uses the brand gold.
  */
 export function BrandMark({
   className,
@@ -53,62 +51,34 @@ export function BrandMark({
 }
 
 /**
- * The full vertical brand lockup (pulpit + halo + Rameumptom wordmark) used
- * on the Home splash. Falls back to the inline SVG stack if the PNG fails
- * to load so nothing is broken.
+ * Vertical brand lockup: the pulpit mark stacked above the "Rota"
+ * wordmark. Used on the Home splash.
  */
 export function BrandStack({ className }: { className?: string }) {
-  const [imgFailed, setImgFailed] = useState(false);
-
-  if (imgFailed) {
-    return (
-      <div className={cn("inline-flex flex-col items-center gap-5", className)}>
-        <BrandMark className="w-24 h-24 text-current" />
-        <span className="font-semibold tracking-tight text-4xl leading-none">
-          Ram
-          <span className="text-[var(--brand-gold)]">eum</span>
-          ptom
-        </span>
-      </div>
-    );
-  }
   return (
-    /* eslint-disable-next-line @next/next/no-img-element */
-    <img
-      src="/rameumptom-vert-logo.png"
-      alt="Rameumptom"
-      className={cn("max-w-[20rem] w-full h-auto", className)}
-      onError={() => setImgFailed(true)}
+    <Image
+      src="/splash-page-logo.png"
+      alt="Rota — Plan. Organize. Inspire."
+      width={724}
+      height={628}
+      priority
+      className={cn("h-auto w-auto max-w-[15rem]", className)}
     />
   );
 }
 
 /**
- * Horizontal pulpit + Rameumptom lockup for headers and auth pages. Same
- * SVG fallback as BrandStack.
+ * Horizontal pulpit + "Rota" lockup for headers and auth pages.
  */
 export function BrandWordmark({ className }: { className?: string }) {
-  const [imgFailed, setImgFailed] = useState(false);
-
-  if (imgFailed) {
-    return (
-      <span className={cn("inline-flex items-center gap-2.5", className)}>
-        <BrandMark className="w-7 h-7 text-current" />
-        <span className="font-semibold tracking-tight text-lg leading-none">
-          Ram
-          <span className="text-[var(--brand-gold)]">eum</span>
-          ptom
-        </span>
-      </span>
-    );
-  }
   return (
-    /* eslint-disable-next-line @next/next/no-img-element */
-    <img
-      src="/rameumptom-horz-logo-alt.png"
-      alt="Rameumptom"
-      className={cn("h-10 w-auto", className)}
-      onError={() => setImgFailed(true)}
+    <Image
+      src="/header-dark.png"
+      alt="Rota"
+      width={1081}
+      height={322}
+      priority
+      className={cn("h-8 w-auto", className)}
     />
   );
 }
