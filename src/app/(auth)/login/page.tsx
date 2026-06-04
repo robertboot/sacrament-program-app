@@ -80,6 +80,11 @@ function LoginForm() {
             {submitting ? "Signing in…" : "Sign in"}
           </Button>
           <p className="text-sm text-muted-foreground text-center">
+            <Link href="/forgot-password" className="underline">
+              Forgot password?
+            </Link>
+          </p>
+          <p className="text-sm text-muted-foreground text-center">
             No account?{" "}
             <Link href="/signup" className="underline">
               Sign up
