@@ -304,7 +304,7 @@ function SpeakerRow({ speaker, onClick }: { speaker: Speaker; onClick: () => voi
   );
 }
 
-function SpeakerDialog({
+export function SpeakerDialog({
   open,
   speaker,
   onClose,
