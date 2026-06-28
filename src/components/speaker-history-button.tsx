@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useTransition, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { Speaker } from "@/lib/supabase/types";
 import { getSpeakerById } from "@/app/(app)/speakers/actions";
 import { SpeakerViewDialog } from "@/components/speaker-view-dialog";
+import { SpeakerDialog } from "@/app/(app)/speakers/speakers-client";
 
 /**
  * Inline trigger that fetches a speaker by id and opens the same
@@ -14,8 +14,10 @@ import { SpeakerViewDialog } from "@/components/speaker-view-dialog";
  * it the clickable trigger — used on the planner to turn the speaker's name
  * into a visible link.
  *
- * If the speaker can't be loaded (deleted, RLS, etc.) the click silently
- * no-ops. Edit jumps to /speakers since the planner has no inline edit.
+ * Tapping Edit inside the history dialog now opens the same speaker edit
+ * dialog used on /speakers, so contact info can be updated without leaving
+ * the planner. If the speaker can't be loaded (deleted, RLS, etc.) the
+ * click silently no-ops.
  */
 export function SpeakerHistoryButton({
   speakerId,
@@ -28,8 +30,8 @@ export function SpeakerHistoryButton({
   className?: string;
   children: ReactNode;
 }) {
-  const router = useRouter();
-  const [speaker, setSpeaker] = useState<Speaker | null>(null);
+  const [viewing, setViewing] = useState<Speaker | null>(null);
+  const [editing, setEditing] = useState<Speaker | null>(null);
   const [, start] = useTransition();
 
   function openDialog(e: React.MouseEvent) {
@@ -38,7 +40,7 @@ export function SpeakerHistoryButton({
     e.stopPropagation();
     start(async () => {
       const r = await getSpeakerById(speakerId);
-      if (r.speaker) setSpeaker(r.speaker);
+      if (r.speaker) setViewing(r.speaker);
     });
   }
 
@@ -71,9 +73,18 @@ export function SpeakerHistoryButton({
         onKeyDown={(e) => e.stopPropagation()}
       >
         <SpeakerViewDialog
-          speaker={speaker}
-          onClose={() => setSpeaker(null)}
-          onEdit={() => router.push("/speakers")}
+          speaker={viewing}
+          onClose={() => setViewing(null)}
+          onEdit={() => {
+            const s = viewing;
+            setViewing(null);
+            setEditing(s);
+          }}
+        />
+        <SpeakerDialog
+          open={!!editing}
+          speaker={editing}
+          onClose={() => setEditing(null)}
         />
       </span>
     </>

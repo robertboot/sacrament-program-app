@@ -335,6 +335,11 @@ function DashboardRowCard({
                               </span>
                             )}
                           </div>
+                          {(a.topic?.title || a.custom_topic_text) && (
+                            <div className="text-xs italic text-muted-foreground leading-tight mt-0.5 truncate">
+                              {a.topic?.title ?? a.custom_topic_text}
+                            </div>
+                          )}
                           <div className="text-sm text-muted-foreground leading-tight">
                             {SLOT_LABELS[slot]}
                           </div>
