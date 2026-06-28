@@ -47,7 +47,7 @@ export default async function HomePage() {
       <div className="text-muted-foreground text-xs sm:text-sm leading-relaxed max-w-[600px] mx-auto mt-6 px-2">
         <p className="font-bold">Our Vision for this app</p>
         <p className="mt-1">
-          Our goal is to simplify the logistical work of sacrament meeting
+          To simplify the logistical work of sacrament meeting
           planning&mdash;coordinating speakers, topics, and assignments and
           confirming the schedule with everyone involved&mdash;so that
           bishopric leaders can devote their attention to receiving
