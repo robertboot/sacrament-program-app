@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Music2, HeartHandshake, User, BookOpen, CalendarPlus } from "lucide-react";
+import { Music2, HeartHandshake, User, CalendarPlus } from "lucide-react";
 import { formatMeetingDate } from "@/lib/dates";
 import { SLOT_LABELS } from "@/lib/assignments";
 import { bishopricPositionLabel, leaderDisplayName, unitLabels, type UnitType } from "@/lib/labels";
@@ -260,7 +260,7 @@ export function ProgramRender({
         />
         <Row
           icon={<HeartHandshake />}
-          iconClassName="text-gray-500 print:text-black"
+          iconClassName="text-pink-500 print:text-black"
           label="Invocation"
           value={data.invocation?.trim() || "By Invitation"}
         />
@@ -291,7 +291,7 @@ export function ProgramRender({
         </div>
         {isPublic ? (
           <Row
-            icon={<BookOpen />}
+            icon={<Music2 />}
             iconClassName="text-emerald-500 print:text-black"
             label="Sacrament Hymn"
             value={hymnLine(data.sacramentHymn)}
@@ -299,7 +299,7 @@ export function ProgramRender({
         ) : (
           <div className="flex items-center gap-4 py-2 print:py-1">
             <span className="shrink-0 w-10 h-10 rounded-full border border-[var(--brand-gold)]/50 print:border-black/40 flex items-center justify-center text-emerald-500 print:text-black [&_svg]:w-[1.05rem] [&_svg]:h-[1.05rem]">
-              <BookOpen />
+              <Music2 />
             </span>
             <p className="flex-1 text-sm leading-snug">
               We will now prepare for the sacrament by singing{" "}
@@ -372,7 +372,7 @@ export function ProgramRender({
         />
         <Row
           icon={<HeartHandshake />}
-          iconClassName="text-gray-500 print:text-black"
+          iconClassName="text-pink-500 print:text-black"
           label="Benediction"
           value={data.benediction?.trim() || "By Invitation"}
         />
