@@ -44,13 +44,16 @@ export default async function HomePage() {
     <div className="min-h-[calc(100vh-10rem)] flex flex-col items-center text-center px-4 pb-6 pt-2">
       <BrandStack className="mt-2 mb-4" />
 
-      <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-[600px] mx-auto mt-6 px-2">
-        Our purpose is to lift the administrative burden of sacrament
-        planning&mdash;managing speakers, topics, and assignments through
-        thoughtful automation&mdash;so that bishopric leaders can devote
-        their attention to receiving inspiration and enriching the worship
-        experience for all.
-      </p>
+      <div className="text-muted-foreground text-xs sm:text-sm leading-relaxed max-w-[600px] mx-auto mt-6 px-2">
+        <p className="font-bold">Our Vision for this app</p>
+        <p className="mt-1">
+          Our purpose is to lift the administrative burden of sacrament
+          planning&mdash;managing speakers, topics, and assignments through
+          thoughtful automation&mdash;so that bishopric leaders can devote
+          their attention to receiving inspiration and enriching the worship
+          experience for all.
+        </p>
+      </div>
 
       <div className="w-full max-w-md mt-6 space-y-3">
         <a
