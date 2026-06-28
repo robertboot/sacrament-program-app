@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Music2, User, CalendarPlus } from "lucide-react";
+import { Music2, HeartHandshake, User, CalendarPlus } from "lucide-react";
 import { formatMeetingDate } from "@/lib/dates";
 import { SLOT_LABELS } from "@/lib/assignments";
 import { bishopricPositionLabel, leaderDisplayName, unitLabels, type UnitType } from "@/lib/labels";
@@ -259,7 +259,8 @@ export function ProgramRender({
           value={hymnLine(data.openingHymn)}
         />
         <Row
-          icon={<span className="text-base leading-none">🙏</span>}
+          icon={<HeartHandshake />}
+          iconClassName="text-pink-500 print:text-black"
           label="Invocation"
           value={data.invocation?.trim() || "By Invitation"}
         />
@@ -370,7 +371,8 @@ export function ProgramRender({
           value={hymnLine(data.closingHymn)}
         />
         <Row
-          icon={<span className="text-base leading-none">🙏</span>}
+          icon={<HeartHandshake />}
+          iconClassName="text-pink-500 print:text-black"
           label="Benediction"
           value={data.benediction?.trim() || "By Invitation"}
         />
