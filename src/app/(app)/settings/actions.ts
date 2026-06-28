@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { loadActiveUnit } from "@/lib/active-unit";
 import type { BishopricPosition, UserRole } from "@/lib/supabase/types";
 
 function slugify(name: string) {
@@ -12,18 +13,23 @@ function slugify(name: string) {
     .slice(0, 32);
 }
 
+/**
+ * Multi-tenant guard: the caller must be signed in, have an active unit,
+ * and hold the `leader` role IN THAT UNIT (Bishop / Counselor / Clerk).
+ * Returns both the caller id and the active-unit context so settings
+ * mutations can scope to the right tenant.
+ *
+ * Previously this only checked a profile-level `role` flag, which would
+ * let a user who is a leader in one unit perform "bishopric-only" writes
+ * for any other unit they had also joined. Now scoping is per-unit via
+ * `unit_members`.
+ */
 async function requireBishopric() {
-  const supabase = await createClient();
-  const { data: userRes } = await supabase.auth.getUser();
-  if (!userRes.user) return { error: "Not signed in." as const };
-  const { data: callerProfile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", userRes.user.id)
-    .single();
-  if (callerProfile?.role !== "bishopric")
-    return { error: "Bishopric only." as const };
-  return { callerId: userRes.user.id };
+  const ctx = await loadActiveUnit();
+  if (!ctx) return { error: "Not signed in or no active unit." as const };
+  if (ctx.role !== "leader")
+    return { error: "Owners only." as const };
+  return { callerId: ctx.userId, ctx };
 }
 
 type SettingsInput = {
