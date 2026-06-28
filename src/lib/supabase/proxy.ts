@@ -78,9 +78,17 @@ export async function updateSession(request: NextRequest) {
     return redirectKeepingCookies(request, response, "/home");
   }
 
-  // Signed-in but no active unit yet → onboarding. The /onboarding route
-  // itself is exempt to avoid a redirect loop.
-  if (user && !isAuthRoute && !isPublic && path !== "/onboarding") {
+  // Signed-in but no active unit yet → onboarding. /onboarding itself is
+  // exempt to avoid a redirect loop, and /accept-invite is exempt because an
+  // invited user lands there before they have any membership and we want
+  // them to redeem the invite (not be forced to create a new unit).
+  if (
+    user &&
+    !isAuthRoute &&
+    !isPublic &&
+    path !== "/onboarding" &&
+    path !== "/accept-invite"
+  ) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("active_unit_id")
