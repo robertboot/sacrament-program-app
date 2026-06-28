@@ -48,7 +48,7 @@ export default async function HomePage() {
         <p className="font-bold">Our Vision for this app</p>
         <p className="mt-1">
           Our purpose is to lift the administrative burden of sacrament
-          planning&mdash;managing speakers, topics, and assignments through
+          meeting planning&mdash;managing speakers, topics, and assignments through
           thoughtful automation&mdash;so that bishopric leaders can devote
           their attention to receiving inspiration and enriching the worship
           experience for all.
