@@ -319,7 +319,8 @@ export function ProgramRender({
                 value={
                   data.intermediateHymn
                     ? hymnLine(data.intermediateHymn)
-                    : data.intermediateHymnText?.trim() || "—"
+                    : data.intermediateHymnText?.trim() ||
+                      "We will be dispensing with the intermediate hymn."
                 }
               />
               {concluding && (
