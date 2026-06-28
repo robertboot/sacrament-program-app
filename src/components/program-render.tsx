@@ -252,8 +252,18 @@ export function ProgramRender({
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-x-6">
-        <Row icon={<Music2 />} label="Opening Hymn" value={hymnLine(data.openingHymn)} />
-        <Row icon={<HeartHandshake />} label="Invocation" value={data.invocation?.trim() || "By Invitation"} />
+        <Row
+          icon={<Music2 />}
+          iconClassName="text-emerald-500 print:text-black"
+          label="Opening Hymn"
+          value={hymnLine(data.openingHymn)}
+        />
+        <Row
+          icon={<HeartHandshake />}
+          iconClassName="text-gray-500 print:text-black"
+          label="Invocation"
+          value={data.invocation?.trim() || "By Invitation"}
+        />
       </div>
 
       {isPublic ? (
@@ -280,10 +290,15 @@ export function ProgramRender({
           <SacramentPrayersButton />
         </div>
         {isPublic ? (
-          <Row icon={<BookOpen />} label="Sacrament Hymn" value={hymnLine(data.sacramentHymn)} />
+          <Row
+            icon={<BookOpen />}
+            iconClassName="text-emerald-500 print:text-black"
+            label="Sacrament Hymn"
+            value={hymnLine(data.sacramentHymn)}
+          />
         ) : (
           <div className="flex items-center gap-4 py-2 print:py-1">
-            <span className="shrink-0 w-10 h-10 rounded-full border border-[var(--brand-gold)]/50 print:border-black/40 flex items-center justify-center text-[var(--brand-gold)] print:text-black [&_svg]:w-[1.05rem] [&_svg]:h-[1.05rem]">
+            <span className="shrink-0 w-10 h-10 rounded-full border border-[var(--brand-gold)]/50 print:border-black/40 flex items-center justify-center text-emerald-500 print:text-black [&_svg]:w-[1.05rem] [&_svg]:h-[1.05rem]">
               <BookOpen />
             </span>
             <p className="flex-1 text-sm leading-snug">
@@ -305,16 +320,27 @@ export function ProgramRender({
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-x-6">
               {first && (
-                <Row icon={<User />} label={SLOT_LABELS.first} value={speakerLine(first)} />
+                <Row
+                  icon={<User />}
+                  iconClassName="text-sky-500 print:text-black"
+                  label={SLOT_LABELS.first}
+                  value={speakerLine(first)}
+                />
               )}
               {second && (
-                <Row icon={<User />} label={SLOT_LABELS.second} value={speakerLine(second)} />
+                <Row
+                  icon={<User />}
+                  iconClassName="text-sky-500 print:text-black"
+                  label={SLOT_LABELS.second}
+                  value={speakerLine(second)}
+                />
               )}
             </div>
             <hr className="my-1 border-black/15 print:border-black/40" />
             <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-x-6">
               <Row
                 icon={<Music2 />}
+                iconClassName="text-emerald-500 print:text-black"
                 label="Intermediate Hymn"
                 value={
                   data.intermediateHymn
@@ -324,7 +350,12 @@ export function ProgramRender({
                 }
               />
               {concluding && (
-                <Row icon={<User />} label={SLOT_LABELS.concluding} value={speakerLine(concluding)} />
+                <Row
+                  icon={<User />}
+                  iconClassName="text-sky-500 print:text-black"
+                  label={SLOT_LABELS.concluding}
+                  value={speakerLine(concluding)}
+                />
               )}
             </div>
           </>
@@ -333,8 +364,18 @@ export function ProgramRender({
 
       <hr className="my-1 border-black/15 print:border-black/40" />
       <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-x-6">
-        <Row icon={<Music2 />} label="Closing Hymn" value={hymnLine(data.closingHymn)} />
-        <Row icon={<HeartHandshake />} label="Benediction" value={data.benediction?.trim() || "By Invitation"} />
+        <Row
+          icon={<Music2 />}
+          iconClassName="text-emerald-500 print:text-black"
+          label="Closing Hymn"
+          value={hymnLine(data.closingHymn)}
+        />
+        <Row
+          icon={<HeartHandshake />}
+          iconClassName="text-gray-500 print:text-black"
+          label="Benediction"
+          value={data.benediction?.trim() || "By Invitation"}
+        />
       </div>
 
       <Ornament />
@@ -350,17 +391,21 @@ function Row({
   label,
   value,
   icon,
+  iconClassName = "text-[var(--brand-gold)] print:text-black",
   compact,
 }: {
   label: string;
   value: string;
   icon?: ReactNode;
+  /** Tailwind classes applied to the icon's color/inner styling. Border
+   *  stays gold; only the glyph color varies per row type. */
+  iconClassName?: string;
   compact?: boolean;
 }) {
   return (
     <div className={`flex items-center gap-4 ${compact ? "py-1 print:py-0.5" : "py-2 print:py-1"}`}>
       {icon && (
-        <span className="shrink-0 w-10 h-10 rounded-full border border-[var(--brand-gold)]/50 print:border-black/40 flex items-center justify-center text-[var(--brand-gold)] print:text-black [&_svg]:w-[1.05rem] [&_svg]:h-[1.05rem]">
+        <span className={`shrink-0 w-10 h-10 rounded-full border border-[var(--brand-gold)]/50 print:border-black/40 flex items-center justify-center [&_svg]:w-[1.05rem] [&_svg]:h-[1.05rem] ${iconClassName}`}>
           {icon}
         </span>
       )}
