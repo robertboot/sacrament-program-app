@@ -44,16 +44,36 @@ import type { SacramentEvent } from "@/lib/supabase/types";
 import {
   createEvent,
   deleteEvent,
+  saveCalendarUrl,
   syncCalendar,
   toggleBriefReminder,
   updateEvent,
 } from "./actions";
 
-export function EventsClient({ initialEvents }: { initialEvents: SacramentEvent[] }) {
+export function EventsClient({
+  initialEvents,
+  initialCalendarUrl,
+}: {
+  initialEvents: SacramentEvent[];
+  initialCalendarUrl: string | null;
+}) {
   const [editing, setEditing] = useState<SacramentEvent | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [syncing, startSync] = useTransition();
   const [search, setSearch] = useState("");
+  const [calendarUrl, setCalendarUrl] = useState(initialCalendarUrl ?? "");
+  const [savingUrl, startSaveUrl] = useTransition();
+  const hasCalendarUrl = !!initialCalendarUrl;
+
+  function saveUrl() {
+    const trimmed = calendarUrl.trim();
+    if (!trimmed) return;
+    startSaveUrl(async () => {
+      const r = await saveCalendarUrl(trimmed);
+      if (r.error) toast.error(r.error);
+      else toast.success("Calendar URL saved. You can now Sync calendar.");
+    });
+  }
 
   function doSync() {
     startSync(async () => {
@@ -104,6 +124,43 @@ export function EventsClient({ initialEvents }: { initialEvents: SacramentEvent[
           Add event
         </Button>
       </div>
+
+      {!hasCalendarUrl && (
+        <Card className="border-amber-300 bg-amber-50/60 dark:bg-amber-950/30 dark:border-amber-900">
+          <CardContent className="p-5 space-y-3">
+            <div className="flex items-center gap-2">
+              <Cloud className="w-5 h-5 text-amber-700 dark:text-amber-300" />
+              <h2 className="font-semibold text-base">Set up your church calendar</h2>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Go to and login to the Church of Jesus Christ website and generate
+              a synced calendar URL, which can be found here:{" "}
+              <a
+                href="https://www.churchofjesuschrist.org/calendar/sync-settings?lang=eng"
+                target="_blank"
+                rel="noreferrer"
+                className="text-blue-600 dark:text-blue-400 underline underline-offset-4 break-all"
+              >
+                https://www.churchofjesuschrist.org/calendar/sync-settings?lang=eng
+              </a>{" "}
+              after creating your calendar by subscribing to the various feeds,
+              click Generate URL and paste below.
+            </p>
+            <div className="flex gap-2 flex-wrap">
+              <Input
+                type="url"
+                placeholder="https://calendar.churchofjesuschrist.org/…"
+                value={calendarUrl}
+                onChange={(e) => setCalendarUrl(e.target.value)}
+                className="flex-1 min-w-0"
+              />
+              <Button onClick={saveUrl} disabled={savingUrl || !calendarUrl.trim()}>
+                Save URL
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />

@@ -14,6 +14,21 @@ type EventInput = {
   as_brief_reminder?: boolean;
 };
 
+/** First-time setup: persist the Church-supplied iCal feed URL so the
+ *  Events page can sync without sending the bishop over to /settings. */
+export async function saveCalendarUrl(url: string) {
+  const supabase = await createClient();
+  const trimmed = url.trim() || null;
+  const { error } = await supabase
+    .from("app_settings")
+    .update({ calendar_ics_url: trimmed })
+    .eq("id", 1);
+  if (error) return { error: error.message };
+  revalidatePath("/events");
+  revalidatePath("/settings");
+  return { error: null };
+}
+
 export async function createEvent(input: EventInput) {
   const supabase = await createClient();
   const { error } = await supabase.from("events").insert(input);
