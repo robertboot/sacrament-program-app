@@ -8,11 +8,12 @@ import { usePathname } from "next/navigation";
  * authenticated app, public bulletin, confirm page, privacy, terms.
  *
  * Suppressed on /home, which inlines its own disclaimer directly below the
- * version number, and on print so it doesn't clutter the bulletin handout.
+ * version number, on /asthma (a standalone personal tool with no Church
+ * connection), and on print so it doesn't clutter the bulletin handout.
  */
 export function SiteDisclaimer() {
   const path = usePathname();
-  if (path === "/home") return null;
+  if (path === "/home" || path.startsWith("/asthma")) return null;
 
   return (
     <footer className="no-print mt-auto border-t bg-muted/30">
