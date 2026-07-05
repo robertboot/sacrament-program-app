@@ -29,16 +29,28 @@ export default async function HomePage() {
   const isBishopric = profile?.role === "bishopric";
 
   // The next upcoming program (today or future, soonest first) drives the
-  // Conductor's-program button. The Public button always points at /p/now,
-  // which resolves to the closest upcoming published program on its own.
+  // Conductor's-program button. The Public button points at /p/now for the
+  // closest upcoming *published* program — if none is published yet, we
+  // grey the button out so users don't land on a dead-end page.
   const today = format(new Date(), "yyyy-MM-dd");
-  const { data: nextProgram } = await supabase
-    .from("programs")
-    .select("id, meeting_date")
-    .gte("meeting_date", today)
-    .order("meeting_date", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+  const [{ data: nextProgram }, { data: nextPublished }] = await Promise.all([
+    supabase
+      .from("programs")
+      .select("id, meeting_date")
+      .gte("meeting_date", today)
+      .order("meeting_date", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("programs")
+      .select("id")
+      .eq("status", "published")
+      .gte("meeting_date", today)
+      .order("meeting_date", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  const publicAvailable = !!nextPublished;
 
   return (
     <div className="min-h-[calc(100vh-10rem)] flex flex-col items-center text-center px-4 pb-6 pt-2">
@@ -56,16 +68,32 @@ export default async function HomePage() {
       </div>
 
       <div className="w-full max-w-md mt-6 space-y-3">
-        <a
-          href="/p/now"
-          target="_blank"
-          rel="noreferrer"
-          className="grid grid-cols-[auto_1fr_auto] items-center gap-3 w-full px-5 py-4 rounded-xl bg-primary text-primary-foreground text-base font-semibold shadow-sm hover:opacity-90 transition"
-        >
-          <CalendarDays className="w-5 h-5 shrink-0" />
-          <span className="text-left">This Sunday&rsquo;s public program</span>
-          <ChevronRight className="w-5 h-5 shrink-0 opacity-80" />
-        </a>
+        {publicAvailable ? (
+          <a
+            href="/p/now"
+            target="_blank"
+            rel="noreferrer"
+            className="grid grid-cols-[auto_1fr_auto] items-center gap-3 w-full px-5 py-4 rounded-xl bg-primary text-primary-foreground text-base font-semibold shadow-sm hover:opacity-90 transition"
+          >
+            <CalendarDays className="w-5 h-5 shrink-0" />
+            <span className="text-left">This Sunday&rsquo;s public program</span>
+            <ChevronRight className="w-5 h-5 shrink-0 opacity-80" />
+          </a>
+        ) : (
+          <div>
+            <div
+              aria-disabled="true"
+              className="grid grid-cols-[auto_1fr_auto] items-center gap-3 w-full px-5 py-4 rounded-xl bg-muted text-muted-foreground text-base font-semibold shadow-sm opacity-70 cursor-not-allowed"
+            >
+              <CalendarDays className="w-5 h-5 shrink-0" />
+              <span className="text-left">This Sunday&rsquo;s public program</span>
+              <ChevronRight className="w-5 h-5 shrink-0 opacity-60" />
+            </div>
+            <p className="text-xs text-red-600 dark:text-red-400 mt-1.5 text-left px-1">
+              The public version has yet to be published.
+            </p>
+          </div>
+        )}
         {nextProgram ? (
           <Link
             href={`/programs/${nextProgram.id}/view`}

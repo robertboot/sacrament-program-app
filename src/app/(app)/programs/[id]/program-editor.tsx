@@ -382,7 +382,7 @@ export function ProgramEditor({
           {isBishopric && (
             <div className="space-y-1.5">
               <Label className="text-red-700 dark:text-red-400">
-                Planner note (bishopric only)
+                Notes (bishopric only)
               </Label>
               <Textarea
                 rows={2}
@@ -390,12 +390,12 @@ export function ProgramEditor({
                 onChange={(e) =>
                   setDraft((p) => ({ ...p, planner_note: e.target.value || null }))
                 }
-                placeholder="Private note shown in red on the dashboard for this Sunday (e.g. 'Bishop away — Brother X presiding')."
+                placeholder="Private note shown in red on the dashboard and the conductor's agenda (e.g. 'Bishop away — Brother X presiding')."
                 className="border-red-300 focus-visible:border-red-500 focus-visible:ring-red-500/30"
               />
               <p className="text-[11px] text-muted-foreground">
-                Visible only on the planner. Never appears on the conductor
-                or public views.
+                Visible on the dashboard and the conductor&rsquo;s agenda.
+                Never appears on the public bulletin and never prints.
               </p>
             </div>
           )}

@@ -24,7 +24,7 @@ export default async function ViewProgramPage({
         `id, meeting_date, presiding, welcome_text, brief_reminders, invocation, benediction,
          releases, sustainings, move_in_welcomes, aaronic_sustainings, baptism_confirmation,
          baby_blessing, stake_business, chorister, organist, status, share_token, intermediate_hymn_text,
-         meeting_type, meeting_type_label,
+         meeting_type, meeting_type_label, planner_note,
          opening_hymn_id, sacrament_hymn_id, intermediate_hymn_id, closing_hymn_id,
          ward_business_releases, ward_business_sustainings, ward_business_move_in_welcomes,
          ward_business_aaronic_sustainings, ward_business_baptism_confirmation,
@@ -249,6 +249,16 @@ export default async function ViewProgramPage({
             <PrintTrigger variant="outline" size="sm" />
           </div>
         </div>
+        {program.planner_note && (
+          <div className="max-w-[7.5in] mx-auto px-4 mb-4 no-print">
+            <div className="rounded-md border border-red-300 bg-red-50 dark:bg-red-950/40 dark:border-red-900 px-3 py-2 text-sm text-red-800 dark:text-red-200 whitespace-pre-wrap">
+              <div className="text-[11px] uppercase tracking-wider font-semibold mb-1">
+                Notes
+              </div>
+              {program.planner_note}
+            </div>
+          </div>
+        )}
         <div className="bg-white shadow rounded">
           <ProgramRender data={data} />
         </div>
