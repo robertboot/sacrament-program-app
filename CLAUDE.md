@@ -119,6 +119,13 @@ Key migrations and state (applied to "robertboot's Project"):
   `programs.*_hymn_verse_note` booleans; recreates the
   `get_published_program` RPC (the RPC bakes the verse note into the public
   bulletin hymn title when that slot's toggle is on).
+- `20260701000000_speaker_approval_setting.sql` — adds
+  `app_settings.require_speaker_approval` (default `false`). Gates the
+  "Bishop's / Branch President's approval" button in the planner: when
+  on, each auto-generated pick is a draft until the leader clicks
+  approve; when off, the invite workflow is available immediately.
+  `updateSettings` has a defensive fallback so the rest of the page
+  saves even if this migration hasn't been applied yet.
 
 Gotcha: the SQL editor mangles pasted text if hand-selected — always use
 the code block's copy control. Big RPC blocks have failed mid-script,

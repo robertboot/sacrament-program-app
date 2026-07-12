@@ -33,12 +33,32 @@ type SettingsInput = {
   calendar_ics_url: string | null;
   unit_type: "ward" | "branch";
   ward_business_footer: string;
+  require_speaker_approval: boolean;
 };
 
 export async function updateSettings(input: SettingsInput) {
   const supabase = await createClient();
   const { error } = await supabase.from("app_settings").update(input).eq("id", 1);
-  if (error) return { error: error.message };
+  if (error) {
+    // If the require_speaker_approval column doesn't exist yet (migration
+    // not applied), fall back to updating everything else so the rest of
+    // the settings page still saves.
+    if (/require_speaker_approval/.test(error.message)) {
+      const rest: Partial<SettingsInput> = { ...input };
+      delete (rest as { require_speaker_approval?: boolean }).require_speaker_approval;
+      const { error: e2 } = await supabase
+        .from("app_settings")
+        .update(rest)
+        .eq("id", 1);
+      if (e2) return { error: e2.message };
+      revalidatePath("/settings");
+      return {
+        error:
+          "Saved, but the speaker-approval toggle isn't wired up yet — the migration for that column hasn't been applied.",
+      };
+    }
+    return { error: error.message };
+  }
   revalidatePath("/settings");
   return { error: null };
 }

@@ -62,6 +62,9 @@ export function SettingsClient({
   const [calendarUrl, setCalendarUrl] = useState(settings.calendar_ics_url ?? "");
   const [unitType, setUnitType] = useState<UnitType>(settings.unit_type);
   const [wbFooter, setWbFooter] = useState(settings.ward_business_footer ?? "");
+  const [requireApproval, setRequireApproval] = useState(
+    settings.require_speaker_approval ?? false,
+  );
   const [inviteUrl, setInviteUrl] = useState<{ id: string; name: string; email: string; url: string } | null>(
     null,
   );
@@ -76,6 +79,7 @@ export function SettingsClient({
         calendar_ics_url: calendarUrl.trim() || null,
         unit_type: unitType,
         ward_business_footer: wbFooter,
+        require_speaker_approval: requireApproval,
       });
       if (r.error) toast.error(r.error);
       else toast.success("Settings saved.");
@@ -135,6 +139,27 @@ export function SettingsClient({
             value={calendarUrl}
             onChange={(e) => setCalendarUrl(e.target.value)}
           />
+        </div>
+        <div className="space-y-1.5 pt-2 border-t">
+          <label className="flex items-start gap-2 text-sm cursor-pointer select-none">
+            <Checkbox
+              checked={requireApproval}
+              onCheckedChange={(v) => setRequireApproval(v === true)}
+              className="mt-0.5"
+            />
+            <div className="space-y-0.5">
+              <div className="font-medium">
+                Require {labels.leaderRole}&rsquo;s approval before a speaker
+                can be asked
+              </div>
+              <p className="text-xs text-muted-foreground">
+                When on, each auto-generated speaker + topic pick is a draft
+                until the {labels.leaderRole.toLowerCase()} approves it.
+                When off, invites can be sent immediately after a slot is
+                filled.
+              </p>
+            </div>
+          </label>
         </div>
         <div className="flex justify-end">
           <Button onClick={saveSettings} disabled={pending}>

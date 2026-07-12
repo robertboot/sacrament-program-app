@@ -174,5 +174,10 @@ export type AppSettings = {
   calendar_ics_url: string | null;
   unit_type: "ward" | "branch";
   ward_business_footer: string;
+  /** When true the bishop/branch president must click "Approve" on each
+   *  auto-generated speaker + topic pick before the invite workflow opens.
+   *  When false the approval step is skipped entirely and every slot is
+   *  treated as pre-approved. Off by default. */
+  require_speaker_approval: boolean;
   updated_at: string;
 };

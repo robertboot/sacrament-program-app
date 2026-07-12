@@ -662,6 +662,10 @@ export function ProgramEditor({
                       pending={pending}
                       start={start}
                       futureBySpeaker={futureBySpeaker}
+                      requireApproval={
+                        settings.require_speaker_approval ?? false
+                      }
+                      leaderRole={labels.leaderRole}
                     />
                   );
                 })}
@@ -909,6 +913,8 @@ function AssignmentCard({
   pending,
   start,
   futureBySpeaker,
+  requireApproval,
+  leaderRole,
 }: {
   assignment: SpeakingAssignment;
   speakers: Speaker[];
@@ -917,7 +923,13 @@ function AssignmentCard({
   pending: boolean;
   start: (cb: () => void | Promise<void>) => void;
   futureBySpeaker: Record<string, FutureAssignment[]>;
+  requireApproval: boolean;
+  leaderRole: string;
 }) {
+  // The slot_confirmed flag only gates the workflow when the unit has the
+  // approval-required setting on. If the setting is off, treat every slot
+  // as pre-approved so the invite workflow is immediately available.
+  const slotApproved = !requireApproval || assignment.slot_confirmed !== false;
   const locked = assignment.status !== "not_yet_asked";
   const slot = assignment.slot;
   // speaker_id → upcoming meeting dates they're already booked on, so the
@@ -1139,9 +1151,11 @@ function AssignmentCard({
 
       {!isPast && (
         <div className="flex flex-wrap gap-2">
-          {/* Draft suggestion: bishop reviews, then confirms the slot before
-              the invite workflow opens. */}
-          {assignment.slot_confirmed === false &&
+          {/* Draft suggestion: bishop / branch president reviews, then approves
+              the pick before the invite workflow opens. Only rendered when
+              the unit has the approval workflow turned on in Settings. */}
+          {requireApproval &&
+            !slotApproved &&
             (assignment.speaker_id || assignment.custom_speaker_name) && (
               <div className="flex flex-col gap-2">
                 {hasOneOffTopic && (
@@ -1164,16 +1178,16 @@ function AssignmentCard({
                         hasOneOffTopic && promoteTopic,
                       );
                       if (r.error) toast.error(r.error);
-                      else toast.success("Slot confirmed.");
+                      else toast.success(`${leaderRole}'s approval recorded.`);
                     })
                   }
                   disabled={pending}
                 >
-                  <CircleCheck className="w-4 h-4" /> Confirm slot
+                  <CircleCheck className="w-4 h-4" /> {leaderRole}&rsquo;s approval
                 </Button>
               </div>
             )}
-          {assignment.slot_confirmed !== false &&
+          {slotApproved &&
             assignment.status === "not_yet_asked" &&
             assignment.speaker_id && (
               <>
@@ -1208,7 +1222,7 @@ function AssignmentCard({
                 </Button>
               </>
             )}
-          {assignment.slot_confirmed !== false &&
+          {slotApproved &&
             assignment.status === "awaiting_confirmation" && (
               <>
                 <Button
@@ -1229,7 +1243,7 @@ function AssignmentCard({
                 </Button>
               </>
             )}
-          {assignment.slot_confirmed !== false &&
+          {slotApproved &&
             assignment.status === "confirmed" && (
               <Button
                 size="sm"
