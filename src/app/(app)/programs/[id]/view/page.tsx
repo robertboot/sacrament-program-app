@@ -280,11 +280,11 @@ export default async function ViewProgramPage({
             <div className="mt-3">
               {program.status === "published" ? (
                 <div className="rounded-md border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 dark:border-emerald-900 px-3 py-2 text-sm text-emerald-800 dark:text-emerald-200">
-                  Published — the public bulletin is live.
+                  Published - this Sundays program is live
                 </div>
               ) : (
                 <div className="rounded-md border border-red-300 bg-red-50 dark:bg-red-950/40 dark:border-red-900 px-3 py-2 text-sm text-red-800 dark:text-red-200">
-                  This program has yet to be published.
+                  Not-Published - Sundays program needs to be published still.
                   {!canPublish && (
                     <>
                       {" "}
