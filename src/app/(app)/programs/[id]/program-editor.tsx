@@ -52,7 +52,7 @@ import { TopicPicker } from "@/components/topic-picker";
 import { ConductingPicker } from "@/components/conducting-picker";
 import { StatusPill } from "@/components/status-pill";
 import { formatMeetingDate } from "@/lib/dates";
-import { SLOT_LABELS, SLOT_ORDER, STATUS_LABELS } from "@/lib/assignments";
+import { SLOT_LABELS, SLOT_ORDER } from "@/lib/assignments";
 import { unitLabels } from "@/lib/labels";
 import type {
   AppSettings,
@@ -66,6 +66,15 @@ import type {
   Topic,
   UserRole,
 } from "@/lib/supabase/types";
+
+// One-line, action-oriented hint that clarifies the pill's color at a
+// glance — sits directly under the status bubble on each assignment row.
+const STATUS_HINT: Record<AssignmentStatus, string> = {
+  not_yet_asked: "needs asking",
+  awaiting_confirmation: "waiting on reply",
+  confirmed: "all set",
+  declined: "declined",
+};
 
 export type FutureAssignment = {
   assignmentId: string;
@@ -1082,7 +1091,14 @@ function AssignmentCard({
           }}
         />
         <span className="text-xs text-muted-foreground">min</span>
-        <StatusPill status={assignment.status} past={isPast} className="ml-auto" />
+        <div className="ml-auto flex flex-col items-end gap-0.5">
+          <StatusPill status={assignment.status} past={isPast} />
+          {!isPast && (
+            <span className="text-[10px] leading-none text-muted-foreground">
+              {STATUS_HINT[assignment.status]}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="grid sm:grid-cols-2 gap-3">
