@@ -19,6 +19,16 @@ export const STATUS_LABELS: Record<AssignmentStatus, string> = {
   declined: "Declined",
 };
 
+// One-line, action-oriented hint rendered directly under the status
+// bubble on the dashboard and the editor's speaker rows. Kept short so
+// it stays out of the way visually.
+export const STATUS_HINT: Record<AssignmentStatus, string> = {
+  not_yet_asked: "needs asking",
+  awaiting_confirmation: "waiting on reply",
+  confirmed: "all set",
+  declined: "declined",
+};
+
 export type StatusTone = "black" | "yellow" | "green" | "red";
 
 export const STATUS_TONE: Record<AssignmentStatus, StatusTone> = {

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   STATUS_DOT_CLASS,
+  STATUS_HINT,
   STATUS_LABELS,
   STATUS_PILL_CLASS,
   STATUS_TONE,
@@ -71,17 +72,18 @@ export function DashboardStatusPill({
 
   // Dot-only mode: render a colored circle. 28px visible disc with an
   // invisible halo extending the tap area to ~52px so iPhone fingers can
-  // hit it cleanly without grazing the underlying card link.
+  // hit it cleanly without grazing the underlying card link. Below the
+  // disc sits a tiny caption (STATUS_HINT) so leaders can read what the
+  // color means from the dashboard without opening the editor.
   if (dotOnly) {
     const dotVisual = cn(
       "inline-block w-7 h-7 rounded-full border-2 border-zinc-200 dark:border-zinc-700 shadow-sm shrink-0",
       STATUS_DOT_CLASS[tone],
       pending && "opacity-50",
     );
-    if (!canAdvance) {
-      return <span className={cn(dotVisual, className)} title={label} />;
-    }
-    return (
+    const disc = !canAdvance ? (
+      <span className={dotVisual} title={label} />
+    ) : (
       <button
         type="button"
         disabled={pending}
@@ -98,11 +100,23 @@ export function DashboardStatusPill({
         className={cn(
           "relative inline-flex items-center justify-center cursor-pointer transition-transform active:scale-95 hover:scale-110",
           "before:absolute before:-inset-3 before:content-['']",
-          className,
         )}
       >
         <span className={dotVisual} />
       </button>
+    );
+    return (
+      <span
+        className={cn(
+          "inline-flex flex-col items-center gap-1 shrink-0",
+          className,
+        )}
+      >
+        {disc}
+        <span className="text-[10px] leading-none text-muted-foreground whitespace-nowrap">
+          {STATUS_HINT[status]}
+        </span>
+      </span>
     );
   }
 
