@@ -426,6 +426,7 @@ export function ProgramEditor({
               hymns={hymns}
               value={draft.sacrament_hymn_id ?? null}
               onChange={(id) => setDraft((p) => ({ ...p, sacrament_hymn_id: id }))}
+              slot="sacrament"
             />
             <HymnVerseToggle
               hymns={hymns}

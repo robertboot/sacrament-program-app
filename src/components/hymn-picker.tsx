@@ -30,17 +30,25 @@ export function HymnPicker({
   onChange,
   placeholder = "Pick a hymn…",
   disabled,
+  slot,
 }: {
   hymns: Hymn[];
   value: number | null;
   onChange: (id: number | null) => void;
   placeholder?: string;
   disabled?: boolean;
+  /** Which program slot this picker belongs to. Used to suppress the
+   *  "Intended for: Sacrament only" warning when a sacrament-tagged hymn
+   *  is chosen for the sacrament slot itself (the intended use). Other
+   *  tags and the verse note still surface as normal. */
+  slot?: "opening" | "sacrament" | "intermediate" | "closing";
 }) {
   const [open, setOpen] = useState(false);
   const [activeValue, setActiveValue] = useState("");
   const selected = value ? hymns.find((h) => h.id === value) : null;
-  const usageTags = (selected?.usage_tags ?? []) as HymnUsageTag[];
+  const rawTags = (selected?.usage_tags ?? []) as HymnUsageTag[];
+  const usageTags =
+    slot === "sacrament" ? rawTags.filter((t) => t !== "sacrament") : rawTags;
   const verseNote = selected?.verse_note ?? null;
 
   // When a hymn is selected, open the list rotated so the chosen hymn sits
