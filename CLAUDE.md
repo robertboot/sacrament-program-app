@@ -289,9 +289,10 @@ Conductor); changing any of these casually will regress the look:
   `tone="navy"` (default)** — including Blessing and Passing of the
   Sacrament. **font-bold** on the label text. `print:text-black` so it
   prints solid.
-- **Sacrament Prayers link** (the only interactive element in the
-  Blessing section) sits **directly under the Blessing & Passing
-  heading**, centered, `no-print`.
+- **Sacrament Prayers link** sits **between the Blessing & Passing
+  section and the Balance of Program heading** — centered,
+  `no-print`. (Was under the Blessing heading; moved so the button
+  reads as the transition from sacrament back into the meeting.)
 - **Row component:** circular outline icon (gold) + small gold
   uppercase label + value. Icons: `Music2` for hymns, `HeartHandshake`
   for prayers, `User` for speakers, `BookOpen` for the sacrament hymn
