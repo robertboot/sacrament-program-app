@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addDays, format, parseISO } from "date-fns";
+import { addDays, format, parseISO, subDays } from "date-fns";
 import { Pencil, ArrowLeft, Globe } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ProgramRender, type ProgramRenderData } from "@/components/program-render";
@@ -8,6 +8,7 @@ import { PrintStyles } from "@/components/print-styles";
 import { PrintTrigger } from "@/components/print-trigger";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { PublishButton } from "./publish-button";
 
 export default async function ViewProgramPage({
   params,
@@ -58,6 +59,25 @@ export default async function ViewProgramPage({
     (footerRow as { ward_business_footer?: string | null } | null)?.ward_business_footer ??
     null;
   if (!program) notFound();
+
+  // Bishopric-only affordances (Publish/Unpublish). Regular members and
+  // choristers see the toolbar without the publish controls.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: viewerProfile } = user
+    ? await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle()
+    : { data: null };
+  const isBishopric = viewerProfile?.role === "bishopric";
+
+  const meetingDate = parseISO(program.meeting_date);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const daysUntilMeeting = Math.round(
+    (meetingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+  );
+  const canPublish = daysUntilMeeting <= 6;
+  const publishOpensDate = format(subDays(meetingDate, 6), "EEE, MMM d");
 
   // Verse-note columns (hymns.verse_note + programs.*_hymn_verse_note) only
   // exist after the hymn-alerts migration. Fetch them defensively so the
@@ -229,6 +249,14 @@ export default async function ViewProgramPage({
               <ArrowLeft className="w-4 h-4" />
               Close
             </Link>
+            {isBishopric && (
+              <PublishButton
+                programId={program.id}
+                status={program.status as "draft" | "published"}
+                canPublish={canPublish}
+                publishOpensDate={publishOpensDate}
+              />
+            )}
             <Link
               href={`/programs/${id}`}
               className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
@@ -248,6 +276,26 @@ export default async function ViewProgramPage({
             )}
             <PrintTrigger variant="outline" size="sm" />
           </div>
+          {isBishopric && (
+            <div className="mt-3">
+              {program.status === "published" ? (
+                <div className="rounded-md border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 dark:border-emerald-900 px-3 py-2 text-sm text-emerald-800 dark:text-emerald-200">
+                  Published — the public bulletin is live.
+                </div>
+              ) : (
+                <div className="rounded-md border border-red-300 bg-red-50 dark:bg-red-950/40 dark:border-red-900 px-3 py-2 text-sm text-red-800 dark:text-red-200">
+                  This program has yet to be published.
+                  {!canPublish && (
+                    <>
+                      {" "}
+                      Publishing opens {publishOpensDate} (6 days before the
+                      meeting).
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         {program.planner_note && (
           <div className="max-w-[7.5in] mx-auto px-4 mb-4 no-print">
