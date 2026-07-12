@@ -24,6 +24,29 @@ export type Profile = {
   /** Hydrated from auth.users by the settings page; null if no real email
    *  is on file (placeholder accounts that haven't been claimed yet). */
   email?: string | null;
+  /** Optional: only defined after the notifications migration is applied.
+   *  When false the leader doesn't receive SMS-side notifications
+   *  (in-app bell notifications are still delivered). */
+  sms_notifications_enabled?: boolean;
+};
+
+export type NotificationType =
+  | "speaker_confirmed"
+  | "speaker_declined"
+  | "speaker_silent"
+  | "slot_needs_approval"
+  | "program_published";
+
+export type Notification = {
+  id: string;
+  user_id: string;
+  type: NotificationType | string;
+  title: string;
+  body: string | null;
+  action_url: string | null;
+  read_at: string | null;
+  delivered_sms_at: string | null;
+  created_at: string;
 };
 
 export type Speaker = {

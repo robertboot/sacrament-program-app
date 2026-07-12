@@ -11,7 +11,7 @@
 
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { createServiceClient } from "@/lib/supabase/server";
-import { sendSms } from "@/lib/sms";
+import { notifyBishopric } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
 
   // Service-role client bypasses RLS, so a direct update is fine. The
   // guard_locked_assignment trigger will keep the timestamps consistent.
-  const { error: updateErr } = await sb
+  const { data: updated, error: updateErr } = await sb
     .from("speaking_assignments")
     .update({
       status: decision,
@@ -69,7 +69,9 @@ export async function POST(req: Request) {
       responded_at: new Date().toISOString(),
       confirmation_source: "self",
     })
-    .eq("id", pending.id);
+    .eq("id", pending.id)
+    .select("program_id")
+    .single();
   if (updateErr) {
     return twimlReply(
       "Sorry, something went wrong recording your response. Please contact the bishopric.",
@@ -80,6 +82,23 @@ export async function POST(req: Request) {
     "en-US",
     { weekday: "long", month: "long", day: "numeric" },
   );
+
+  // Fan out an in-app notification to the whole bishopric so leaders see
+  // the reply on the bell without having to open the planner. Best-effort:
+  // the speaker's Twilio reply always goes through even if this fails.
+  const programId = updated?.program_id as string | undefined;
+  await notifyBishopric({
+    type: decision === "confirmed" ? "speaker_confirmed" : "speaker_declined",
+    title:
+      decision === "confirmed"
+        ? `${pending.speaker_name} confirmed for ${meetingDate}`
+        : `${pending.speaker_name} declined for ${meetingDate}`,
+    body:
+      decision === "declined"
+        ? "You'll want to line up a replacement."
+        : null,
+    actionUrl: programId ? `/programs/${programId}` : null,
+  });
   if (decision === "confirmed") {
     return twimlReply(
       `Thanks ${firstName(pending.speaker_name)}! You're confirmed for ${meetingDate}. We'll be in touch with more details closer to the meeting.`,

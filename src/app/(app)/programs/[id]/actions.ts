@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { notifyBishopric, notifyUsers } from "@/lib/notifications";
 import type { AssignmentStatus, MeetingType, ProgramStatus } from "@/lib/supabase/types";
 
 type ProgramFields = {
@@ -297,6 +298,36 @@ export async function autoGenerateProgram(programId: string) {
     }
   }
 
+  // If the unit has approval-required on and we actually filled slots,
+  // ping the bishopric so the draft picks don't sit forgotten.
+  if (filled > 0) {
+    const { data: setting } = await supabase
+      .from("app_settings")
+      .select("require_speaker_approval")
+      .eq("id", 1)
+      .maybeSingle();
+    if ((setting as { require_speaker_approval?: boolean } | null)?.require_speaker_approval) {
+      const { data: prog } = await supabase
+        .from("programs")
+        .select("meeting_date")
+        .eq("id", programId)
+        .single();
+      const meetingLabel = prog?.meeting_date
+        ? new Date(prog.meeting_date + "T00:00:00").toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+          })
+        : "Sunday";
+      await notifyBishopric({
+        type: "slot_needs_approval",
+        title: `${filled} slot${filled === 1 ? "" : "s"} awaiting approval — ${meetingLabel}`,
+        body: "Auto-generate filled these as drafts. Review and approve.",
+        actionUrl: `/programs/${programId}`,
+      });
+    }
+  }
+
   revalidatePath(`/programs/${programId}`);
   revalidatePath("/");
   return { error: null, filled };
@@ -392,12 +423,37 @@ export async function setProgramStatus(programId: string, status: ProgramStatus)
     // Refresh conductor's last_conducted_date (some bishopric flows publish day-of).
     const { data: p } = await supabase
       .from("programs")
-      .select("conducting_id")
+      .select("conducting_id, meeting_date")
       .eq("id", programId)
       .single();
     if (p?.conducting_id) {
       await supabase.rpc("recompute_bishopric_last_conducted", { p_profile_id: p.conducting_id });
     }
+
+    // Ping choristers + counselors so they know the bulletin is live.
+    // Senior leader (bishop) is excluded because they just clicked
+    // Publish — the notification would only be noise.
+    const admin = createServiceClient();
+    const { data: recipients } = await admin
+      .from("profiles")
+      .select("id, role, bishopric_position")
+      .or(
+        "role.eq.chorister,and(role.eq.bishopric,bishopric_position.neq.bishop)",
+      );
+    const ids = ((recipients ?? []) as { id: string }[]).map((r) => r.id);
+    const meetingLabel = p?.meeting_date
+      ? new Date(p.meeting_date + "T00:00:00").toLocaleDateString("en-US", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+        })
+      : "Sunday";
+    await notifyUsers(ids, {
+      type: "program_published",
+      title: `Program published for ${meetingLabel}`,
+      body: null,
+      actionUrl: `/programs/${programId}/view`,
+    });
   }
   revalidatePath(`/programs/${programId}`);
   revalidatePath("/");

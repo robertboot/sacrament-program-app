@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { CalendarDays, Users, BookOpen, Megaphone, Settings, LogOut, Home } from "lucide-react";
 import { BrandWordmark } from "@/components/brand-mark";
+import { NotificationBell } from "@/components/notification-bell";
 import type { UserRole } from "@/lib/supabase/types";
 
 const ITEMS = [
@@ -80,6 +81,7 @@ export function AppNav({ role, fullName }: { role: UserRole; fullName: string })
           })}
         </nav>
         <div className="ml-auto flex items-center gap-2">
+          <NotificationBell />
           <DropdownMenu>
             <DropdownMenuTrigger
               className={cn(
