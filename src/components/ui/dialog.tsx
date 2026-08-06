@@ -8,17 +8,26 @@ import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
 
 /**
- * True iOS-safe body scroll-lock. Base UI's built-in modal scroll-lock
- * sets overflow:hidden on <html>, which iOS Safari happily ignores —
- * touch drags on the page behind still scroll it, and tap targets
- * behind the dialog stay selectable. The only reliable fix on iOS is
- * to fix the body element in place while remembering the scroll
- * position, then restore it on close.
+ * True iOS-safe body scroll-lock, driven by observing which dialog
+ * popups are actually open in the DOM.
  *
- * Uses ref-counting so nested dialogs (dialog inside a dialog) don't
- * fight over the lock — only the outermost releases it.
+ * Why observation, not React lifecycle: Base UI keeps popups mounted
+ * during their close animation and consumers put
+ * <Dialog><DialogContent>…</DialogContent></Dialog> in JSX
+ * unconditionally, so hooking into DialogContent's mount / effect
+ * lifecycle either locks too early (page-load) or releases too late
+ * (post-animation). A single MutationObserver watching for
+ * `[data-slot="dialog-content"][data-open]` on the whole document is
+ * immune to that timing — the body is locked iff at least one dialog
+ * currently reports itself as open.
+ *
+ * Base UI's own modal scroll-lock puts overflow:hidden on <html>,
+ * which iOS Safari happily ignores. The only reliable iOS fix is to
+ * pin body with position:fixed while remembering the scroll offset,
+ * disable user-select, and kill touch-action so a stray touch on
+ * body can't drift the viewport sideways.
  */
-let bodyLockDepth = 0
+let bodyLockEngaged = false
 let bodyLockScrollY = 0
 let bodyLockPrev: {
   position: string
@@ -32,10 +41,9 @@ let bodyLockPrev: {
   touchAction: string
 } | null = null
 
-function acquireBodyLock() {
-  if (typeof document === "undefined") return
-  bodyLockDepth += 1
-  if (bodyLockDepth > 1) return
+function lockBodyNow() {
+  if (typeof document === "undefined" || bodyLockEngaged) return
+  bodyLockEngaged = true
   const body = document.body
   const style = body.style as CSSStyleDeclaration & { webkitUserSelect?: string }
   bodyLockScrollY = window.scrollY || window.pageYOffset || 0
@@ -58,16 +66,12 @@ function acquireBodyLock() {
   style.overflow = "hidden"
   style.userSelect = "none"
   style.webkitUserSelect = "none"
-  // Kill any lingering horizontal pan / side-swipe on the body while a
-  // dialog is open — iOS was letting overscroll on the body drift the
-  // whole viewport sideways.
   style.touchAction = "none"
 }
 
-function releaseBodyLock() {
-  if (typeof document === "undefined") return
-  bodyLockDepth = Math.max(0, bodyLockDepth - 1)
-  if (bodyLockDepth > 0 || !bodyLockPrev) return
+function unlockBodyNow() {
+  if (typeof document === "undefined" || !bodyLockEngaged || !bodyLockPrev) return
+  bodyLockEngaged = false
   const body = document.body
   const style = body.style as CSSStyleDeclaration & { webkitUserSelect?: string }
   style.position = bodyLockPrev.position
@@ -83,19 +87,41 @@ function releaseBodyLock() {
   window.scrollTo(0, bodyLockScrollY)
 }
 
+let dialogObserverStarted = false
+
+function startDialogObserver() {
+  if (dialogObserverStarted || typeof document === "undefined") return
+  dialogObserverStarted = true
+
+  const evaluate = () => {
+    // Body is locked iff at least one popup has data-open. Base UI adds
+    // data-open when the popup enters open state and swaps to data-closed
+    // while animating out, so the observation matches the on-screen state.
+    const anyOpen = document.querySelector(
+      '[data-slot="dialog-content"][data-open]',
+    )
+    if (anyOpen) lockBodyNow()
+    else unlockBodyNow()
+  }
+
+  const observer = new MutationObserver(evaluate)
+  observer.observe(document.body, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ["data-open", "data-closed"],
+  })
+  evaluate()
+}
+
 /**
- * Placed as a child of DialogPrimitive.Popup so it only mounts when the
- * popup is actually open. Mounting DialogContent itself is NOT enough —
- * consumers put <Dialog><DialogContent>…</DialogContent></Dialog> in
- * their JSX unconditionally, so DialogContent's function body runs
- * every render regardless of `open`. Keying off Popup's mount lifecycle
- * (Base UI only mounts Popup while open + closing animation) means the
- * body-lock effect fires exactly when the dialog is on screen.
+ * Idempotently starts the global dialog observer. Rendered inside every
+ * DialogContent — the observer itself does nothing until a popup with
+ * data-open exists, so mounting it on page paint is harmless.
  */
-function BodyScrollLock() {
+function DialogObserverStart() {
   React.useEffect(() => {
-    acquireBodyLock()
-    return () => releaseBodyLock()
+    startDialogObserver()
   }, [])
   return null
 }
@@ -162,7 +188,7 @@ function DialogContent({
         )}
         {...props}
       >
-        <BodyScrollLock />
+        <DialogObserverStart />
         {showCloseButton && (
           // Sticky top-0 wrapper keeps the X reachable when the popup
           // scrolls internally. h-0 + negative margins mean the wrapper
