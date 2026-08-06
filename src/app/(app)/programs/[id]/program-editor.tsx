@@ -167,9 +167,35 @@ export function ProgramEditor({
   const isFast = meetingType === "fast_sunday";
   const isNoServices = meetingType === "no_services";
 
+  // Fields a chorister is allowed to update per the DB's
+  // guard_chorister_program_update trigger. Everything else the trigger
+  // rejects with "Chorister may only edit hymn fields", so a bishopric-
+  // shaped draft would fail the whole UPDATE — including the hymn edits
+  // the chorister actually changed. Whitelist before sending.
+  const CHORISTER_SAVEABLE = new Set<keyof typeof draft>([
+    "opening_hymn_id",
+    "sacrament_hymn_id",
+    "intermediate_hymn_id",
+    "closing_hymn_id",
+    "opening_hymn_verse_note",
+    "sacrament_hymn_verse_note",
+    "intermediate_hymn_verse_note",
+    "closing_hymn_verse_note",
+    "intermediate_hymn_text",
+    "chorister",
+    "organist",
+  ]);
+
   function saveAll() {
     start(async () => {
-      const r = await updateProgramFields(program.id, draft);
+      const payload = isBishopric
+        ? draft
+        : Object.fromEntries(
+            Object.entries(draft).filter(([k]) =>
+              CHORISTER_SAVEABLE.has(k as keyof typeof draft),
+            ),
+          );
+      const r = await updateProgramFields(program.id, payload);
       if (r.error) toast.error(r.error);
       else toast.success("Saved.");
     });
@@ -491,6 +517,28 @@ export function ProgramEditor({
               }}
             />
           </div>
+          {/* Music-team assignments live in the Hymns card so choristers
+              can maintain them without needing bishopric permission. */}
+          <div className="grid sm:grid-cols-2 gap-3 pt-2 border-t">
+            <div className="space-y-1.5">
+              <Label>Chorister</Label>
+              <Input
+                value={draft.chorister ?? ""}
+                onChange={(e) =>
+                  setDraft((p) => ({ ...p, chorister: e.target.value || null }))
+                }
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Organist</Label>
+              <Input
+                value={draft.organist ?? ""}
+                onChange={(e) =>
+                  setDraft((p) => ({ ...p, organist: e.target.value || null }))
+                }
+              />
+            </div>
+          </div>
       </CollapsibleCard>
 
       {/* Ward/Branch business */}
@@ -719,24 +767,6 @@ export function ProgramEditor({
                   value={draft.benediction ?? ""}
                   onChange={(e) =>
                     setDraft((p) => ({ ...p, benediction: e.target.value || null }))
-                  }
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Chorister</Label>
-                <Input
-                  value={draft.chorister ?? ""}
-                  onChange={(e) =>
-                    setDraft((p) => ({ ...p, chorister: e.target.value || null }))
-                  }
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Organist</Label>
-                <Input
-                  value={draft.organist ?? ""}
-                  onChange={(e) =>
-                    setDraft((p) => ({ ...p, organist: e.target.value || null }))
                   }
                 />
               </div>
