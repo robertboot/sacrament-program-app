@@ -83,11 +83,21 @@ function releaseBodyLock() {
   window.scrollTo(0, bodyLockScrollY)
 }
 
-function useBodyScrollLock() {
+/**
+ * Placed as a child of DialogPrimitive.Popup so it only mounts when the
+ * popup is actually open. Mounting DialogContent itself is NOT enough —
+ * consumers put <Dialog><DialogContent>…</DialogContent></Dialog> in
+ * their JSX unconditionally, so DialogContent's function body runs
+ * every render regardless of `open`. Keying off Popup's mount lifecycle
+ * (Base UI only mounts Popup while open + closing animation) means the
+ * body-lock effect fires exactly when the dialog is on screen.
+ */
+function BodyScrollLock() {
   React.useEffect(() => {
     acquireBodyLock()
     return () => releaseBodyLock()
   }, [])
+  return null
 }
 
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
@@ -132,7 +142,6 @@ function DialogContent({
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
 }) {
-  useBodyScrollLock()
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -153,6 +162,7 @@ function DialogContent({
         )}
         {...props}
       >
+        <BodyScrollLock />
         {showCloseButton && (
           // Sticky top-0 wrapper keeps the X reachable when the popup
           // scrolls internally. h-0 + negative margins mean the wrapper
