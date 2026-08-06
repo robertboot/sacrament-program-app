@@ -507,9 +507,9 @@ export async function sendAssignmentInvite(assignmentId: string) {
   if (!speaker?.phone) return { error: "Speaker has no phone number on file." };
 
   const slotLabel: Record<string, string> = {
-    first: "first speaker (5 min)",
-    second: "second speaker (10–15 min)",
-    concluding: "concluding speaker (15 min)",
+    first: "First speaker (about 5 min)",
+    second: "Second speaker (about 10–15 min)",
+    concluding: "Concluding speaker (about 15 min)",
   };
   const meetingDate = new Date(program!.meeting_date + "T00:00:00").toLocaleDateString(
     "en-US",
@@ -519,10 +519,16 @@ export async function sendAssignmentInvite(assignmentId: string) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sacrament-program-app.vercel.app";
   const link = `${siteUrl}/c/${a.confirm_token}`;
 
+  // Labeled lines so date / slot / topic stand out on a small SMS
+  // preview instead of being buried in a paragraph.
   const body = [
     `Hi ${speaker.full_name},`,
-    `Would you be willing to be a speaker in sacrament meeting on ${meetingDate} as ${slotLabel[a.slot] ?? a.slot}?`,
-    `Topic: ${topicText}`,
+    `Would you be willing to speak in sacrament meeting?`,
+    [
+      `Date: ${meetingDate}`,
+      `Slot: ${slotLabel[a.slot] ?? a.slot}`,
+      `Topic: ${topicText}`,
+    ].join("\n"),
     `Please tap to respond: ${link}`,
     `Or reply Y to accept, N to decline. If declining, feel free to share a reason.`,
   ].join("\n\n");

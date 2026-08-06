@@ -16,9 +16,9 @@ import { sendSms } from "@/lib/sms";
 export const dynamic = "force-dynamic";
 
 const SLOT_LABEL: Record<string, string> = {
-  first: "first speaker (≈5 min)",
-  second: "second speaker (≈10–15 min)",
-  concluding: "concluding speaker (≈15 min)",
+  first: "First speaker (about 5 min)",
+  second: "Second speaker (about 10–15 min)",
+  concluding: "Concluding speaker (about 15 min)",
 };
 
 type Row = {
@@ -71,9 +71,15 @@ export async function GET(request: Request) {
     const topicText = topic?.title ?? row.custom_topic_text ?? "(no topic on file)";
     const firstName = speaker.full_name.split(/\s+/)[0] || speaker.full_name;
 
+    // Labeled lines mirror the invite text so the reminder feels
+    // familiar and the important bits stand out at a glance.
     const body = [
-      `Hi ${firstName} — friendly reminder you're speaking in sacrament meeting this ${meetingDate} as ${SLOT_LABEL[row.slot] ?? row.slot}.`,
-      `Topic: ${topicText}`,
+      `Hi ${firstName} — friendly reminder you're speaking in sacrament meeting in two days.`,
+      [
+        `Date: ${meetingDate}`,
+        `Slot: ${SLOT_LABEL[row.slot] ?? row.slot}`,
+        `Topic: ${topicText}`,
+      ].join("\n"),
       `Looking forward to your message. Reach out if you need anything!`,
     ].join("\n\n");
 

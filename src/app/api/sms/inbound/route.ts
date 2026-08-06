@@ -21,7 +21,29 @@ type Pending = {
   speaker_phone: string;
   status: string;
   meeting_date: string;
+  /** Present after the decline-reason migration; used to restate the slot
+   *  in the Y / N confirmation TwiML. */
+  slot?: "first" | "second" | "concluding";
+  /** Same — topic title or the free-text custom topic. */
+  topic_title?: string | null;
 };
+
+const SLOT_LABEL: Record<string, string> = {
+  first: "First speaker (about 5 min)",
+  second: "Second speaker (about 10–15 min)",
+  concluding: "Concluding speaker (about 15 min)",
+};
+
+function receiptBlock(
+  meetingDate: string,
+  slot: string | undefined,
+  topic: string | null | undefined,
+): string {
+  const lines = [`Date: ${meetingDate}`];
+  if (slot) lines.push(`Slot: ${SLOT_LABEL[slot] ?? slot}`);
+  if (topic) lines.push(`Topic: ${topic}`);
+  return lines.join("\n");
+}
 
 export async function POST(req: Request) {
   const url = req.url;
@@ -143,13 +165,22 @@ export async function POST(req: Request) {
         : null,
     actionUrl: programId ? `/programs/${programId}` : null,
   });
+  const receipt = receiptBlock(meetingDate, pending.slot, pending.topic_title);
   if (decision === "confirmed") {
     return twimlReply(
-      `Thanks ${firstName(pending.speaker_name)}! You're confirmed for ${meetingDate}. We'll be in touch with more details closer to the meeting.`,
+      [
+        `Thanks ${firstName(pending.speaker_name)}! You're confirmed for:`,
+        receipt,
+        `We'll be in touch with more details closer to the meeting.`,
+      ].join("\n\n"),
     );
   }
   return twimlReply(
-    `Thanks for letting us know, ${firstName(pending.speaker_name)}. We'll find someone else. If you'd like to share a reason with the bishopric, just reply now.`,
+    [
+      `Thanks for letting us know, ${firstName(pending.speaker_name)}. We'll find someone else. Here's what you were declining, for your records:`,
+      receipt,
+      `If you'd like to share a reason with the bishopric, just reply now.`,
+    ].join("\n\n"),
   );
 }
 

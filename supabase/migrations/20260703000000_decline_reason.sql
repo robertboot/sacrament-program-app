@@ -85,6 +85,34 @@ returns jsonb language sql security definer set search_path = public as $$
   where a.confirm_token = p_token;
 $$;
 
+-- Extend the pending-invite RPC to also return slot + topic so the SMS
+-- inbound webhook can restate them in the Y / N confirmation TwiML.
+-- Speakers driving or checking their phone quickly get a full receipt
+-- of what they just confirmed / declined.
+create or replace function resolve_pending_assignment_for_phone(p_phone text)
+returns jsonb language sql security definer set search_path = public as $$
+  select jsonb_build_object(
+    'id', a.id,
+    'speaker_name', s.full_name,
+    'speaker_phone', s.phone,
+    'status', a.status,
+    'meeting_date', p.meeting_date,
+    'slot', a.slot,
+    'topic_title', coalesce(t.title, a.custom_topic_text)
+  )
+  from speaking_assignments a
+  join speakers s on s.id = a.speaker_id
+  join programs p on p.id = a.program_id
+  left join topics t on t.id = a.topic_id
+  where s.phone is not null
+    and regexp_replace(s.phone, '\D', '', 'g') = regexp_replace(p_phone, '\D', '', 'g')
+    and a.status = 'awaiting_confirmation'
+  order by a.invited_at desc nulls last
+  limit 1;
+$$;
+
+grant execute on function resolve_pending_assignment_for_phone(text) to anon, authenticated;
+
 -- Return the most recent declined assignment for a phone number that's
 -- still awaiting a reason. Used by the SMS inbound webhook to route
 -- follow-up messages ("<free text>") into decline_reason instead of the
