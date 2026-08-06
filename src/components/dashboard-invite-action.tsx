@@ -4,7 +4,7 @@ import { useTransition } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
-import { MessageSquare, UserPen } from "lucide-react";
+import { CheckCircle2, MessageSquare, UserPen } from "lucide-react";
 import {
   sendAssignmentInvite,
   buildReminderInvite,
@@ -25,6 +25,7 @@ export function DashboardInviteAction({
   speakerPhone,
   status,
   invitedAt,
+  remindedAt = null,
   confirmationSource,
   isUpcoming = false,
 }: {
@@ -33,6 +34,7 @@ export function DashboardInviteAction({
   speakerPhone: string | null;
   status: AssignmentStatus;
   invitedAt: string | null;
+  remindedAt?: string | null;
   confirmationSource: "self" | "manual" | null;
   /** Only the very next Sunday's card shows the Send-reminder button —
    *  reminders don't make sense for meetings two or three weeks out. */
@@ -104,7 +106,7 @@ export function DashboardInviteAction({
         >
           {confirmationSource === "self" ? "Self-confirmed via text" : "Marked confirmed"}
         </span>
-        {isUpcoming && speakerPhone && (
+        {isUpcoming && speakerPhone && !remindedAt && (
           <button
             type="button"
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-800 dark:text-blue-200 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900 rounded-md px-2 py-1 border border-blue-200 dark:border-blue-900 disabled:opacity-60"
@@ -125,6 +127,35 @@ export function DashboardInviteAction({
             <MessageSquare className="w-3.5 h-3.5" />
             {pending ? "Opening…" : "Send reminder"}
           </button>
+        )}
+        {isUpcoming && speakerPhone && remindedAt && (
+          // Already reminded — show a done-state pill so leaders don't
+          // accidentally re-text the same speaker, plus a quiet
+          // "Send again" affordance for the rare case someone actually
+          // needs a second nudge.
+          <span className="inline-flex items-center gap-1.5 text-xs italic text-emerald-700 dark:text-emerald-300">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Reminded {formatDistanceToNow(new Date(remindedAt), { addSuffix: true })}
+            <button
+              type="button"
+              className="ml-1 not-italic text-[11px] font-medium text-blue-700 dark:text-blue-300 hover:underline disabled:opacity-60"
+              disabled={pending}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                start(async () => {
+                  const r = await buildReminderInvite(assignmentId);
+                  if (r.error) {
+                    toast.error(r.error);
+                    return;
+                  }
+                  if (r.smsUrl) window.location.href = r.smsUrl;
+                });
+              }}
+            >
+              Send again
+            </button>
+          </span>
         )}
       </div>
     );

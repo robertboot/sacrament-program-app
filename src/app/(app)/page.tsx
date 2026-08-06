@@ -60,6 +60,7 @@ type DashboardRow = {
     custom_topic_text: string | null;
     asked_at: string | null;
     invited_at: string | null;
+    reminded_at: string | null;
     confirmation_source: "self" | "manual" | null;
   }[];
 };
@@ -93,7 +94,7 @@ export default async function DashboardPage() {
          sacrament_hymn:hymns!programs_sacrament_hymn_id_fkey(number, title),
          intermediate_hymn:hymns!programs_intermediate_hymn_id_fkey(number, title),
          closing_hymn:hymns!programs_closing_hymn_id_fkey(number, title),
-         assignments:speaking_assignments(id, slot, status, speaker_id, custom_speaker_name, custom_topic_text, asked_at, invited_at, confirmation_source,
+         assignments:speaking_assignments(id, slot, status, speaker_id, custom_speaker_name, custom_topic_text, asked_at, invited_at, reminded_at, confirmation_source,
            speaker:speakers(full_name, phone),
            topic:topics(title))`,
       )
@@ -410,6 +411,7 @@ function DashboardRowCard({
                                 speakerPhone={a.speaker?.phone ?? null}
                                 status={a.status}
                                 invitedAt={a.invited_at}
+                                remindedAt={a.reminded_at}
                                 confirmationSource={a.confirmation_source}
                                 isUpcoming={featured}
                               />

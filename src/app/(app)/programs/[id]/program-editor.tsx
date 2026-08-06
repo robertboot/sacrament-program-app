@@ -1305,8 +1305,14 @@ function AssignmentCard({
                       })
                     }
                     disabled={pending}
+                    title={
+                      assignment.reminded_at
+                        ? `Already reminded ${new Date(assignment.reminded_at).toLocaleDateString()}. Tap to send again.`
+                        : undefined
+                    }
                   >
-                    <MessageSquare className="w-4 h-4" /> Send reminder
+                    <MessageSquare className="w-4 h-4" />{" "}
+                    {assignment.reminded_at ? "Reminded — send again" : "Send reminder"}
                   </Button>
                 );
               })()}
