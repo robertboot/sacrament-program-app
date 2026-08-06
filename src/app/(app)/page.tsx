@@ -9,6 +9,8 @@ import { DashboardStatusPill } from "@/components/dashboard-status-pill";
 import { DashboardInviteAction } from "@/components/dashboard-invite-action";
 import { DashboardLegend } from "@/components/dashboard-legend";
 import { DashboardMonthGroup } from "@/components/dashboard-month-group";
+import { RecentUpdates, type RecentUpdate } from "@/components/recent-updates";
+import { NephisNote } from "@/components/nephis-notes";
 import { SpeakerHistoryButton } from "@/components/speaker-history-button";
 import { PlanNextButton } from "@/components/plan-next-button";
 import { SLOT_LABELS } from "@/lib/assignments";
@@ -74,7 +76,7 @@ export default async function DashboardPage() {
   // Parallelize the profile lookup with the programs fetch — previously
   // the profile query blocked the programs query, adding one full RTT
   // to every dashboard render.
-  const [{ data: profile }, { data: programs }] = await Promise.all([
+  const [{ data: profile }, { data: programs }, { data: recent }] = await Promise.all([
     userId
       ? supabase.from("profiles").select("role").eq("id", userId).single()
       : Promise.resolve({ data: null as { role: string } | null }),
@@ -98,8 +100,47 @@ export default async function DashboardPage() {
       .gte("meeting_date", today)
       .order("meeting_date", { ascending: true })
       .returns<DashboardRow[]>(),
+    // Recent Updates feed — the last 25 speaker responses across every
+    // program (upcoming or past). Capped at 25 so the card stays snappy;
+    // the client only shows ~5 without scrolling anyway.
+    supabase
+      .from("speaking_assignments")
+      .select(
+        `id, program_id, status, responded_at, confirmation_source, decline_reason,
+         custom_speaker_name,
+         speaker:speakers(full_name),
+         program:programs!inner(meeting_date)`,
+      )
+      .not("responded_at", "is", null)
+      .in("status", ["confirmed", "declined"])
+      .order("responded_at", { ascending: false })
+      .limit(25),
   ]);
   const isBishopric = profile?.role === "bishopric";
+  const recentUpdates: RecentUpdate[] = ((recent ?? []) as unknown as {
+    id: string;
+    program_id: string;
+    status: "confirmed" | "declined";
+    responded_at: string;
+    confirmation_source: "self" | "manual" | null;
+    decline_reason: string | null;
+    custom_speaker_name: string | null;
+    speaker: { full_name: string } | { full_name: string }[] | null;
+    program: { meeting_date: string } | { meeting_date: string }[] | null;
+  }[]).map((r) => {
+    const sp = Array.isArray(r.speaker) ? r.speaker[0] : r.speaker;
+    const pg = Array.isArray(r.program) ? r.program[0] : r.program;
+    return {
+      assignmentId: r.id,
+      programId: r.program_id,
+      meetingDate: pg?.meeting_date ?? "",
+      speakerName: sp?.full_name ?? r.custom_speaker_name ?? "A speaker",
+      response: r.status,
+      respondedAt: r.responded_at,
+      declineReason: r.decline_reason,
+      source: r.confirmation_source,
+    };
+  });
   // Planner is bishopric-only; a chorister who reaches / directly
   // (bookmark, deep link, typing the URL) lands on Home instead.
   if (!isBishopric) redirect("/home");
@@ -114,6 +155,17 @@ export default async function DashboardPage() {
       </div>
 
       <DashboardLegend canEdit={isBishopric} />
+
+      <NephisNote
+        tip={
+          <>
+            Every speaker reply — text or web — lands here within seconds.
+            Tap any row to jump straight to that meeting.
+          </>
+        }
+      >
+        <RecentUpdates items={recentUpdates} />
+      </NephisNote>
 
       {programs && programs.length === 0 ? (
         <Card>

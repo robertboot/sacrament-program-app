@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   XCircle,
   Send,
+  Mail,
   MessageSquare,
   UserPlus,
   ArrowLeft,
@@ -82,6 +83,7 @@ import {
   resetAssignmentSlot,
   sendAssignmentInvite,
   buildReminderInvite,
+  buildEmailInvite,
   setProgramStatus,
   updateAssignmentSpeakerTopic,
   updateAssignmentStatus,
@@ -1228,6 +1230,26 @@ function AssignmentCard({
                     >
                       <MessageSquare className="w-4 h-4" /> Send text invite
                     </Button>
+                    {sp.email && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          start(async () => {
+                            const r = await buildEmailInvite(assignment.id);
+                            if (r.error) {
+                              toast.error(r.error);
+                              return;
+                            }
+                            if (r.mailtoUrl) window.location.href = r.mailtoUrl;
+                          })
+                        }
+                        disabled={pending}
+                        title="Email a longer invite that includes the printable-assignment instructions"
+                      >
+                        <Mail className="w-4 h-4" /> Email invite
+                      </Button>
+                    )}
                   );
                 })()}
                 <Button

@@ -560,6 +560,96 @@ export async function sendAssignmentInvite(assignmentId: string) {
 }
 
 /**
+ * Prepare a mailto: URL for emailing an invitation to a speaker who
+ * prefers email over SMS. Same hand-off pattern as sendAssignmentInvite
+ * — the client redirects to `mailtoUrl` and the leader's mail app opens
+ * pre-filled with subject + body. The email version carries the full
+ * printable-assignment template + topic description in addition to the
+ * date/slot/topic block, so the speaker gets everything a physical
+ * assignment slip would give them.
+ *
+ * Requires speaker.email to be set. Still flips status to
+ * awaiting_confirmation + stamps invited_at.
+ */
+export async function buildEmailInvite(assignmentId: string) {
+  const supabase = await createClient();
+
+  const { data: a, error } = await supabase
+    .from("speaking_assignments")
+    .select(
+      `id, slot, length_minutes, confirm_token, program_id,
+       speaker:speakers(full_name, email),
+       topic:topics(title, description),
+       custom_topic_text,
+       program:programs(meeting_date)`,
+    )
+    .eq("id", assignmentId)
+    .single();
+  if (error || !a) return { error: error?.message ?? "Assignment not found." };
+
+  const speaker = Array.isArray(a.speaker) ? a.speaker[0] : a.speaker;
+  const topic = Array.isArray(a.topic) ? a.topic[0] : a.topic;
+  const program = Array.isArray(a.program) ? a.program[0] : a.program;
+  if (!speaker?.email) return { error: "Speaker has no email address on file." };
+
+  const { data: settings } = await supabase
+    .from("app_settings")
+    .select("branch_name, assignment_paper_template")
+    .eq("id", 1)
+    .single();
+  const branchName = settings?.branch_name ?? "the branch";
+  const template = settings?.assignment_paper_template ?? "";
+
+  const slotLabel: Record<string, string> = {
+    first: "First speaker (about 5 min)",
+    second: "Second speaker (about 10–15 min)",
+    concluding: "Concluding speaker (about 15 min)",
+  };
+  const meetingDate = new Date(program!.meeting_date + "T00:00:00").toLocaleDateString(
+    "en-US",
+    { weekday: "long", month: "long", day: "numeric", year: "numeric" },
+  );
+  const topicTitle = topic?.title ?? a.custom_topic_text ?? "(no topic yet)";
+  const topicDescription = topic?.description ?? "";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sacrament-program-app.vercel.app";
+  const link = `${siteUrl}/c/${a.confirm_token}`;
+
+  const bodyLines = [
+    `Hi ${speaker.full_name},`,
+    ``,
+    `Would you be willing to speak in sacrament meeting for ${branchName}?`,
+    ``,
+    `Date: ${meetingDate}`,
+    `Slot: ${slotLabel[a.slot] ?? a.slot}`,
+    `Topic: ${topicTitle}`,
+  ];
+  if (topicDescription.trim()) {
+    bodyLines.push(``, topicDescription.trim());
+  }
+  bodyLines.push(
+    ``,
+    `Please respond here: ${link}`,
+  );
+  if (template.trim()) {
+    bodyLines.push(``, `— — —`, ``, template.trim());
+  }
+  const body = bodyLines.join("\n");
+  const subject = `Speaking invitation — ${meetingDate}`;
+
+  const mailtoUrl = `mailto:${encodeURIComponent(speaker.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+  const { error: ue } = await supabase
+    .from("speaking_assignments")
+    .update({ status: "awaiting_confirmation", invited_at: new Date().toISOString() })
+    .eq("id", assignmentId);
+  if (ue) return { error: ue.message };
+
+  revalidatePath(`/programs/${a.program_id}`);
+  revalidatePath("/");
+  return { error: null, mailtoUrl };
+}
+
+/**
  * Build the "friendly reminder, you're speaking in a few days" native
  * SMS for a confirmed speaker. Same handoff pattern as
  * sendAssignmentInvite — client redirects to `smsUrl` to open Messages.
