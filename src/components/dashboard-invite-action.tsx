@@ -26,6 +26,7 @@ export function DashboardInviteAction({
   status,
   invitedAt,
   confirmationSource,
+  isUpcoming = false,
 }: {
   assignmentId: string;
   speakerName: string;
@@ -33,6 +34,9 @@ export function DashboardInviteAction({
   status: AssignmentStatus;
   invitedAt: string | null;
   confirmationSource: "self" | "manual" | null;
+  /** Only the very next Sunday's card shows the Send-reminder button —
+   *  reminders don't make sense for meetings two or three weeks out. */
+  isUpcoming?: boolean;
 }) {
   const [pending, start] = useTransition();
 
@@ -100,7 +104,7 @@ export function DashboardInviteAction({
         >
           {confirmationSource === "self" ? "Self-confirmed via text" : "Marked confirmed"}
         </span>
-        {speakerPhone && (
+        {isUpcoming && speakerPhone && (
           <button
             type="button"
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-800 dark:text-blue-200 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900 rounded-md px-2 py-1 border border-blue-200 dark:border-blue-900 disabled:opacity-60"

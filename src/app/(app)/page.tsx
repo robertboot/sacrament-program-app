@@ -400,6 +400,7 @@ function DashboardRowCard({
                                 status={a.status}
                                 invitedAt={a.invited_at}
                                 confirmationSource={a.confirmation_source}
+                                isUpcoming={featured}
                               />
                             </div>
                           )}
