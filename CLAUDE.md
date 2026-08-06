@@ -139,6 +139,27 @@ so it tolerates a not-yet-applied migration without 404ing.
 
 ## 8. Conventions & landmines
 
+- **iOS Dialog protection (base primitive, don't re-solve per dialog):**
+  `src/components/ui/dialog.tsx` carries the iOS-safe patterns for every
+  `<Dialog>` in the app. Do not undo any of these without checking on
+  iPhone first:
+  - `DialogContent` caps at `max-h-[90svh]` and is itself the scroll
+    container (`overflow-y-auto overscroll-none touch-pan-y`). Prevents
+    top/bottom clipping on tall dialogs and blocks iOS from interpreting
+    diagonal drags as horizontal side-swipes.
+  - Close (X) is wrapped in a `sticky top-0 h-0 order-first` zero-height
+    container so it stays pinned to the visible top-right when the popup
+    scrolls internally.
+  - `DialogOverlay` (backdrop) has `touch-action: none` so a touch on
+    the darkened area can't trigger iOS edge-swipe navigation.
+  - Body scroll-lock is DOM-driven, not React lifecycle-driven. A single
+    `MutationObserver` watches for `[data-slot="dialog-content"][data-open]`
+    and toggles body `{position:fixed; overflow:hidden; touch-action:none;
+    user-select:none}` accordingly. Coalesced with `requestAnimationFrame`
+    so mutation bursts (route changes, form re-renders) don't starve iOS
+    touch scrolling. The React-lifecycle approach was tried and failed —
+    Base UI Popup mounts eagerly from JSX and stays mounted through the
+    close animation, so any lifecycle-tied hook leaks.
 - **iOS picker scroll history (don't repeat the loop):** the
   Topic/Speaker/Hymn pickers use a Base UI `Dialog`. Base UI's *modal*
   scroll-lock blocks touch-scroll inside the dialog on iOS. The working
@@ -146,7 +167,21 @@ so it tolerates a not-yet-applied migration without 404ing.
   `DialogContent` (popup) is itself the scroll container
   (`max-height:85svh; overflow-y-auto; overscroll-contain; touch-pan-y`),
   with the cmdk list flowing at natural height. Do not revert to nested
-  flex-height scroll on the inner list.
+  flex-height scroll on the inner list. (The base `DialogContent` now
+  applies its own `max-h-[90svh]` etc., but the picker's arbitrary-value
+  `[max-height:85svh]` still wins via tailwind-merge dedupe.)
+- **Chorister role — Save must whitelist fields.** The DB has a
+  `guard_chorister_program_update` trigger (see all-in-one.sql) that
+  raises "Chorister may only edit hymn fields" if a chorister UPDATEs
+  presiding / conducting_id / welcome_text / brief_reminders /
+  invocation / benediction / releases / sustainings / stake_business /
+  status / share_token. The editor's `saveAll()` sends the whole draft,
+  so a chorister Save was failing on *every* field including the hymns
+  they'd actually changed. Fix (already applied): `program-editor.tsx`
+  whitelists `CHORISTER_SAVEABLE` fields when `role !== 'bishopric'`
+  before sending. If you add new chorister-editable columns to the DB,
+  add them to that whitelist too. The `chorister` and `organist` inputs
+  intentionally live in the Hymns card so both roles can edit them.
 - `src/app/(app)/settings/actions.ts` is intentionally modified (carries
   the production invite-link redirect using `NEXT_PUBLIC_SITE_URL`). Do
   **not** revert it.
@@ -170,7 +205,12 @@ in-editor auto-generate with review→confirm-slot; hymn usage alerts +
 verse notes + Settings editor; custom topic saved to library on confirm;
 any speaker assignable + reset-to-rotation; scheduled-date swap conflict
 dialog with last-spoke/upcoming dates; iOS picker scroll fixed; assorted
-UX fixes (dialog title clipping, single trigger control, in-place View).
+UX fixes (dialog title clipping, single trigger control, in-place View);
+**notification bell + fanout system** (§18); **iOS dialog fix set**
+(§8 — every dialog protected via base primitive); **perf pass** cutting
+per-nav latency across middleware / dashboard / editor / home / view
+/ notification bell (§19); chorister role can edit hymns / chorister /
+organist via a Save-time field whitelist (§8).
 
 ---
 
@@ -385,3 +425,99 @@ dashboard:
   Conductor toolbar — moved there because the conductor view is
   always authenticated and didn't need the marker).
 - Conductor toolbar's left-most button is **"Close"** (was "Done").
+
+---
+
+## 18. Notification system (in-app bell)
+
+Migration `20260702000000_notifications.sql` — apply in "robertboot's
+Project" per §7. Creates `notifications` (one row per recipient user,
+per event), `profiles.sms_notifications_enabled`, and
+`speaking_assignments.silence_flagged_at`.
+
+Architecture:
+- **Fanout** — `src/lib/notifications.ts` exports `notifyBishopric()`
+  and `notifyUsers(ids)`. Both use the service client so webhook /
+  cron writes succeed with no user session; both are best-effort
+  (try/catch swallows so the underlying action never fails on a
+  notification write).
+- **Read path** — `src/lib/notifications-actions.ts`. Two shapes:
+  `countUnreadNotifications()` for the cheap poll, `listNotifications()`
+  for the dropdown open. All actions use `auth.getClaims()` (local
+  JWT verify, no auth-server round-trip) and still filter by user_id
+  because the notifications table has **no RLS enabled yet** — if
+  RLS gets added later, the app-level filter becomes belt-and-braces.
+- **UI** — `src/components/notification-bell.tsx` in the header.
+  Polls unread count every 60s, pauses on `document.hidden`, lazy-
+  loads the full 30-row list on dropdown open. Header suppresses
+  the bell on `/programs/[id]/view` because the whole AppNav is
+  suppressed there.
+
+Wired triggers (all in-app; SMS to leaders is deferred — leaders
+have no phone on file):
+- Speaker Y/N via SMS → `speaker_confirmed` / `speaker_declined`
+  fanned to whole bishopric (inbound Twilio webhook).
+- `setProgramStatus("published")` → `program_published` to
+  choristers + counselors (senior leader who published is skipped).
+- `autoGenerateProgram` when approval-required → `slot_needs_approval`
+  to bishopric.
+- Silent 48h after invite → daily cron `/api/cron/silent-sweeper`
+  at 15:00 UTC flags each stale awaiting_confirmation row once via
+  `silence_flagged_at`.
+
+To add a new event type: pick a new `type` string, call
+`notifyBishopric` or `notifyUsers` from the server-side handler,
+that's it. No enum migration needed (type is text).
+
+---
+
+## 19. Perf toolkit (patterns that landed, keep applying them)
+
+Baseline audit done 2026-08-06; these principles were rolled through
+middleware, dashboard, editor, home, view, and the notification bell.
+Apply the same pattern to any new server component or action.
+
+- **`auth.getClaims()` over `auth.getUser()` for JWT-only checks.**
+  `getUser()` round-trips to Supabase's auth server; `getClaims()`
+  verifies the JWT locally. `getClaims().data.claims.sub` is the
+  user id. Use `getUser()` only when you specifically need fresh
+  user metadata beyond the id (rare).
+- **Middleware short-circuits `isPublic` BEFORE any Supabase call.**
+  Public routes (`/p/`, `/c/`, `/auth/`, `/ics`, `/api/sms/`,
+  `/api/cron/`, `/privacy`, `/terms`, `/favicon.ico`) return
+  immediately in `src/lib/supabase/proxy.ts` — no auth check, no
+  Supabase client instantiation. Adding a new public prefix? Add it
+  there.
+- **Fold auth + profile + data into one `Promise.all`.** The pattern
+  that repeatedly showed up: `getUser()` awaited, then profile
+  lookup awaited on its id, THEN the big data Promise.all started.
+  That's 2 serial round-trips before the real work begins. Instead:
+  read `userId` from `getClaims()` (local), then put the profile
+  query inside the same Promise.all as everything else.
+- **Fold defensive follow-up queries into the main SELECT once the
+  migration is applied.** The conductor view had three separate
+  `.maybeSingle()` follow-ups (ward_business_footer, verse-note
+  flags, hymn verse_note) written when those columns didn't exist
+  yet. Once the migration lands, they become dead-weight serial
+  round-trips. Merge the columns into the main SELECT and delete
+  the fallback.
+- **`next.config.ts` — `experimental.optimizePackageImports`** for
+  `lucide-react` and `date-fns`. Tree-shakes barrel imports; keep
+  the list updated if we add another big shared package (e.g. a
+  charting lib).
+- **Notification bell polling is HEAD count only.** Don't add
+  polling for the full row list. Full list loads on dropdown open.
+  Poll pauses on `document.hidden`. If another polling widget gets
+  added, mirror this: unread count via `head:true` select, list
+  lazy on interaction, pause when hidden.
+- **Deferred (need input before shipping):**
+  - **Public bulletin caching.** `/p/[token]` is `force-dynamic` +
+    `Cache-Control: no-store` globally. Moving to ISR
+    (`revalidate = 30` or tag-based `revalidateTag` invalidated on
+    publish) is a big anonymous-visitor win but trades instant
+    freshness for ~30s stale — needs owner sign-off.
+  - **`pastForLastSpoke` query in the editor** pulls every
+    historical assignment ever to compute each speaker's last-spoke
+    date in JS. Fine now, grows unbounded over years. Fix is a
+    small trigger that maintains `speakers.last_spoke_date` on
+    assignment confirm.

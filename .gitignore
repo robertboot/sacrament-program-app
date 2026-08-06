@@ -37,7 +37,11 @@ yarn-error.log*
 .vercel
 
 # Local Claude Code config (machine-specific)
-.claude/
+# Local Claude Code session state, but skills and slash-commands
+# committed under .claude/ should be shared with the repo.
+.claude/*
+!.claude/skills/
+!.claude/commands/
 
 # typescript
 *.tsbuildinfo
