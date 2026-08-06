@@ -5,7 +5,10 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { MessageSquare, UserPen } from "lucide-react";
-import { sendAssignmentInvite } from "@/app/(app)/programs/[id]/actions";
+import {
+  sendAssignmentInvite,
+  buildReminderInvite,
+} from "@/app/(app)/programs/[id]/actions";
 import type { AssignmentStatus } from "@/lib/supabase/types";
 
 /**
@@ -87,15 +90,39 @@ export function DashboardInviteAction({
 
   if (status === "confirmed") {
     return (
-      <span
-        className={
-          confirmationSource === "self"
-            ? "text-sm italic text-emerald-700 dark:text-emerald-300"
-            : "text-sm italic text-muted-foreground"
-        }
-      >
-        {confirmationSource === "self" ? "Self-confirmed via text" : "Marked confirmed"}
-      </span>
+      <div className="flex items-center gap-2 flex-wrap">
+        <span
+          className={
+            confirmationSource === "self"
+              ? "text-sm italic text-emerald-700 dark:text-emerald-300"
+              : "text-sm italic text-muted-foreground"
+          }
+        >
+          {confirmationSource === "self" ? "Self-confirmed via text" : "Marked confirmed"}
+        </span>
+        {speakerPhone && (
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-800 dark:text-blue-200 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900 rounded-md px-2 py-1 border border-blue-200 dark:border-blue-900 disabled:opacity-60"
+            disabled={pending}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              start(async () => {
+                const r = await buildReminderInvite(assignmentId);
+                if (r.error) {
+                  toast.error(r.error);
+                  return;
+                }
+                if (r.smsUrl) window.location.href = r.smsUrl;
+              });
+            }}
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            {pending ? "Opening…" : "Send reminder"}
+          </button>
+        )}
+      </div>
     );
   }
 

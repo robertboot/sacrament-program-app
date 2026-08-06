@@ -1,4 +1,4 @@
-import { Lightbulb } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -23,7 +23,7 @@ export function NephisNote({
   return (
     <div className={cn("space-y-2", className)}>
       <div className="inline-flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 ring-1 ring-amber-200 dark:ring-amber-900 px-3 py-2 text-xs text-amber-900 dark:text-amber-200 max-w-full">
-        <Lightbulb className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+        <BookOpen className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
         <div className="min-w-0">
           <div className="text-[10px] uppercase tracking-widest font-bold text-amber-800 dark:text-amber-300 mb-0.5">
             Nephi&rsquo;s Notes
