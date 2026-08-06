@@ -4,6 +4,7 @@ import {
   CalendarDays,
   ChevronRight,
   Eye,
+  Music2,
   Users,
 } from "lucide-react";
 import { redirect } from "next/navigation";
@@ -110,6 +111,16 @@ export default async function HomePage() {
               No upcoming program yet.
             </div>
           ))}
+        {!isBishopric && nextProgram && (
+          <Link
+            href={`/programs/${nextProgram.id}`}
+            className="grid grid-cols-[auto_1fr_auto] items-center gap-3 w-full px-5 py-4 rounded-xl bg-card ring-1 ring-foreground/10 text-base font-semibold shadow-sm hover:bg-accent transition"
+          >
+            <Music2 className="w-5 h-5 shrink-0 text-primary" />
+            <span className="text-left">Edit this Sunday&rsquo;s music</span>
+            <ChevronRight className="w-5 h-5 shrink-0 opacity-60" />
+          </Link>
+        )}
         <InstallPrompt />
       </div>
 
