@@ -524,6 +524,7 @@ export async function sendAssignmentInvite(assignmentId: string) {
     `Would you be willing to be a speaker in sacrament meeting on ${meetingDate} as ${slotLabel[a.slot] ?? a.slot}?`,
     `Topic: ${topicText}`,
     `Please tap to respond: ${link}`,
+    `Or reply Y to accept, N to decline. If declining, feel free to share a reason.`,
   ].join("\n\n");
 
   const { sendSms } = await import("@/lib/sms");

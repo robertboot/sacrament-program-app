@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase/server";
 import { ConfirmForm } from "./confirm-form";
+import { DeclineReasonAddon } from "./decline-reason-addon";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,8 @@ type AssignmentPayload = {
   status: "not_yet_asked" | "awaiting_confirmation" | "confirmed" | "declined";
   last_response: "confirmed" | "declined" | null;
   responded_at: string | null;
+  /** Optional — only defined after the decline-reason migration is applied. */
+  decline_reason?: string | null;
   meeting_date: string;
   speaker_name: string | null;
   topic_title: string | null;
@@ -75,7 +78,15 @@ export default async function PublicConfirmPage({
         </div>
 
         {a.last_response ? (
-          <RespondedState response={a.last_response} respondedAt={a.responded_at} />
+          <>
+            <RespondedState response={a.last_response} respondedAt={a.responded_at} />
+            {a.last_response === "declined" && (
+              <DeclineReasonAddon
+                token={token}
+                existingReason={a.decline_reason ?? null}
+              />
+            )}
+          </>
         ) : (
           <ConfirmForm token={token} />
         )}

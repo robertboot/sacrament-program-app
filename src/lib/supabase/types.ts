@@ -172,6 +172,9 @@ export type SpeakingAssignment = {
   asked_by: string | null;
   confirmed_at: string | null;
   declined_at: string | null;
+  /** Optional — only defined after the decline-reason migration is applied.
+   *  Captured either on the /c/[token] web page or via a follow-up SMS. */
+  decline_reason?: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;

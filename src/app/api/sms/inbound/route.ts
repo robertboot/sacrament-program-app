@@ -45,7 +45,51 @@ export async function POST(req: Request) {
       "Sorry, something went wrong looking up your invitation. Please reply to the bishopric directly.",
     );
   }
+
+  // No pending invite? Check whether this speaker recently declined and
+  // was invited to share a reason. If so, treat this inbound as the
+  // reason, save it, and fan out the enriched notification.
   if (!data) {
+    const { data: awaitingReason } = await sb.rpc(
+      "resolve_awaiting_reason_for_phone",
+      { p_phone: from },
+    );
+    if (awaitingReason) {
+      const info = awaitingReason as {
+        id: string;
+        confirm_token: string;
+        speaker_name: string;
+      };
+      await sb
+        .from("speaking_assignments")
+        .update({ decline_reason: body })
+        .eq("id", info.id);
+      const { data: prog } = await sb
+        .from("speaking_assignments")
+        .select("program_id, program:programs!inner(meeting_date)")
+        .eq("id", info.id)
+        .single();
+      const programId = prog?.program_id as string | undefined;
+      const meetingDateIso = Array.isArray(prog?.program)
+        ? (prog?.program as { meeting_date: string }[])[0]?.meeting_date
+        : (prog?.program as { meeting_date: string } | undefined)?.meeting_date;
+      const meetingLabel = meetingDateIso
+        ? new Date(meetingDateIso + "T00:00:00").toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+          })
+        : "Sunday";
+      await notifyBishopric({
+        type: "speaker_declined",
+        title: `${info.speaker_name} shared a reason for declining (${meetingLabel})`,
+        body: `Reason: ${body}`,
+        actionUrl: programId ? `/programs/${programId}` : null,
+      });
+      return twimlReply(
+        `Thanks, ${firstName(info.speaker_name)} — we've passed that along to the bishopric.`,
+      );
+    }
     return twimlReply(
       "We couldn't find a pending speaking invitation for this number. If you think this is wrong, please contact the bishopric.",
     );
@@ -105,7 +149,7 @@ export async function POST(req: Request) {
     );
   }
   return twimlReply(
-    `Thanks for letting us know, ${firstName(pending.speaker_name)}. We'll find someone else. No worries!`,
+    `Thanks for letting us know, ${firstName(pending.speaker_name)}. We'll find someone else. If you'd like to share a reason with the bishopric, just reply now.`,
   );
 }
 

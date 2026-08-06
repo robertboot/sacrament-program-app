@@ -1304,6 +1304,16 @@ function AssignmentCard({
           <span>Declined {new Date(assignment.declined_at).toLocaleDateString()}</span>
         )}
       </div>
+      {assignment.status === "declined" && assignment.decline_reason && (
+        <div className="rounded-md border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-900 p-2.5 text-xs">
+          <div className="text-[10px] uppercase tracking-wider font-semibold text-red-800 dark:text-red-300 mb-0.5">
+            Speaker&rsquo;s note
+          </div>
+          <p className="text-red-900 dark:text-red-200 whitespace-pre-wrap">
+            {assignment.decline_reason}
+          </p>
+        </div>
+      )}
 
       <Dialog open={conflict !== null} onOpenChange={(o) => !o && setConflict(null)}>
         <DialogContent className="sm:max-w-md">
