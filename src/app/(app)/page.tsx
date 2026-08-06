@@ -10,7 +10,7 @@ import { DashboardInviteAction } from "@/components/dashboard-invite-action";
 import { DashboardLegend } from "@/components/dashboard-legend";
 import { DashboardMonthGroup } from "@/components/dashboard-month-group";
 import { RecentUpdates, type RecentUpdate } from "@/components/recent-updates";
-import { NephisNote } from "@/components/nephis-notes";
+import { NephisNote, NephisTip } from "@/components/nephis-notes";
 import { SpeakerHistoryButton } from "@/components/speaker-history-button";
 import { PlanNextButton } from "@/components/plan-next-button";
 import { SLOT_LABELS } from "@/lib/assignments";
@@ -154,18 +154,11 @@ export default async function DashboardPage() {
         </p>
       </div>
 
+      <NephisNote />
+
       <DashboardLegend canEdit={isBishopric} />
 
-      <NephisNote
-        tip={
-          <>
-            Every speaker reply — text or web — lands here within seconds.
-            Tap any row to jump straight to that meeting.
-          </>
-        }
-      >
-        <RecentUpdates items={recentUpdates} />
-      </NephisNote>
+      <RecentUpdates items={recentUpdates} />
 
       {programs && programs.length === 0 ? (
         <Card>
@@ -337,6 +330,24 @@ function DashboardRowCard({
                   : `${row.meeting_type_label ?? "No services"} — no sacrament meeting.`}
               </div>
             ) : (
+              <>
+                {featured &&
+                  canEdit &&
+                  row.assignments.some(
+                    (x) =>
+                      x.status === "confirmed" &&
+                      !!x.speaker?.phone,
+                  ) && (
+                    <div className="mt-3">
+                      <NephisTip storageKey="send-reminder-scope">
+                        The <span className="font-semibold">Send reminder</span>{" "}
+                        button under each confirmed speaker only appears on
+                        this Sunday&rsquo;s card — it&rsquo;s hidden for
+                        future weeks so you can&rsquo;t send a reminder too
+                        early.
+                      </NephisTip>
+                    </div>
+                  )}
               <div className="mt-4 rounded-xl bg-muted/40 divide-y divide-border">
                 {(["first", "second", "concluding"] as AssignmentSlot[]).map(
                   (slot) => {
@@ -421,6 +432,7 @@ function DashboardRowCard({
                   },
                 )}
               </div>
+              </>
             )}
 
             {featured && row.meeting_type !== "no_services" && (
