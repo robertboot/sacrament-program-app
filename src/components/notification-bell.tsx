@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { Notification } from "@/lib/supabase/types";
 import {
+  countUnreadNotifications,
   listNotifications,
   markAllNotificationsRead,
   markNotificationRead,
@@ -24,24 +25,58 @@ const REFRESH_MS = 60_000; // poll once a minute; keeps it simple, no realtime.
 export function NotificationBell() {
   const router = useRouter();
   const [items, setItems] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loadedList, setLoadedList] = useState(false);
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
 
-  async function refresh() {
-    const rows = await listNotifications();
-    setItems(rows);
-  }
-
+  // Cheap poll: only the unread count comes back on the interval. The
+  // full 30-row list is fetched exactly when the dropdown opens (below).
   useEffect(() => {
-    refresh();
-    const id = setInterval(refresh, REFRESH_MS);
-    return () => clearInterval(id);
+    let cancelled = false;
+    async function tick() {
+      if (cancelled) return;
+      const n = await countUnreadNotifications();
+      if (!cancelled) setUnreadCount(n);
+    }
+    tick();
+    const id = setInterval(() => {
+      // Skip the poll while the tab is backgrounded — iOS Safari
+      // throttles it anyway, and we don't need fresh counts nobody's
+      // looking at.
+      if (typeof document !== "undefined" && document.hidden) return;
+      tick();
+    }, REFRESH_MS);
+    const onVisible = () => {
+      if (typeof document !== "undefined" && !document.hidden) tick();
+    };
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", onVisible);
+    }
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", onVisible);
+      }
+    };
   }, []);
 
-  const unreadCount = items.filter((n) => !n.read_at).length;
+  useEffect(() => {
+    if (!open) return;
+    // Lazy-load the actual row list the first time the dropdown opens
+    // (and on every subsequent open, so it stays fresh).
+    (async () => {
+      const rows = await listNotifications();
+      setItems(rows);
+      setLoadedList(true);
+      setUnreadCount(rows.filter((n) => !n.read_at).length);
+    })();
+  }, [open]);
 
   function handleItemClick(n: Notification) {
     if (!n.read_at) {
+      setUnreadCount((c) => Math.max(0, c - 1));
       start(async () => {
         await markNotificationRead(n.id);
         setItems((prev) =>
@@ -56,6 +91,7 @@ export function NotificationBell() {
   }
 
   function handleMarkAll() {
+    setUnreadCount(0);
     start(async () => {
       await markAllNotificationsRead();
       const now = new Date().toISOString();
@@ -98,7 +134,11 @@ export function NotificationBell() {
           )}
         </div>
         <div className="flex-1 overflow-y-auto">
-          {items.length === 0 ? (
+          {!loadedList ? (
+            <p className="text-sm text-muted-foreground text-center py-6 px-3">
+              Loading…
+            </p>
+          ) : items.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6 px-3">
               You&rsquo;re all caught up.
             </p>

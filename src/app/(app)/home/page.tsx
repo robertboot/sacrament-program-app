@@ -17,23 +17,23 @@ export const metadata = { title: "Home — Rota" };
 
 export default async function HomePage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  const isBishopric = profile?.role === "bishopric";
+  // getClaims verifies the JWT locally, avoiding the Supabase auth
+  // round-trip that getUser() incurs.
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  if (!userId) redirect("/login");
 
   // The next upcoming program (today or future, soonest first) drives the
   // Conductor's-program button. The Public button points at /p/now for the
   // closest upcoming *published* program — if none is published yet, we
   // grey the button out so users don't land on a dead-end page.
   const today = format(new Date(), "yyyy-MM-dd");
-  const [{ data: nextProgram }, { data: nextPublished }] = await Promise.all([
+  const [
+    { data: profile },
+    { data: nextProgram },
+    { data: nextPublished },
+  ] = await Promise.all([
+    supabase.from("profiles").select("role").eq("id", userId).single(),
     supabase
       .from("programs")
       .select("id, meeting_date")
@@ -50,6 +50,7 @@ export default async function HomePage() {
       .limit(1)
       .maybeSingle(),
   ]);
+  const isBishopric = profile?.role === "bishopric";
   const publicAvailable = !!nextPublished;
 
   return (

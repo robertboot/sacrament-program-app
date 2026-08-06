@@ -65,32 +65,40 @@ export default async function DashboardPage() {
   const supabase = await createClient();
   const today = format(new Date(), "yyyy-MM-dd");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", (await supabase.auth.getUser()).data.user!.id)
-    .single();
-  const isBishopric = profile?.role === "bishopric";
+  // getClaims verifies the JWT locally (no network); getUser round-trips
+  // to Supabase's auth server. We only need the user id here.
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
 
-  // Every started (existing) program from today forward — no horizon cap.
-  // A program record means the bishop has started planning that Sunday.
-  const { data: programs } = await supabase
-    .from("programs")
-    .select(
-      `id, meeting_date, status, share_token, planner_note, meeting_type, meeting_type_label, intermediate_hymn_text,
-       opening_hymn_id, sacrament_hymn_id, intermediate_hymn_id, closing_hymn_id,
-       conducting:profiles!programs_conducting_id_fkey(full_name),
-       opening_hymn:hymns!programs_opening_hymn_id_fkey(number, title),
-       sacrament_hymn:hymns!programs_sacrament_hymn_id_fkey(number, title),
-       intermediate_hymn:hymns!programs_intermediate_hymn_id_fkey(number, title),
-       closing_hymn:hymns!programs_closing_hymn_id_fkey(number, title),
-       assignments:speaking_assignments(id, slot, status, speaker_id, custom_speaker_name, custom_topic_text, asked_at, invited_at, confirmation_source,
-         speaker:speakers(full_name, phone),
-         topic:topics(title))`,
-    )
-    .gte("meeting_date", today)
-    .order("meeting_date", { ascending: true })
-    .returns<DashboardRow[]>();
+  // Parallelize the profile lookup with the programs fetch — previously
+  // the profile query blocked the programs query, adding one full RTT
+  // to every dashboard render.
+  const [{ data: profile }, { data: programs }] = await Promise.all([
+    userId
+      ? supabase.from("profiles").select("role").eq("id", userId).single()
+      : Promise.resolve({ data: null as { role: string } | null }),
+    // Every started (existing) program from today forward — no horizon
+    // cap. A program record means the bishop has started planning
+    // that Sunday.
+    supabase
+      .from("programs")
+      .select(
+        `id, meeting_date, status, share_token, planner_note, meeting_type, meeting_type_label, intermediate_hymn_text,
+         opening_hymn_id, sacrament_hymn_id, intermediate_hymn_id, closing_hymn_id,
+         conducting:profiles!programs_conducting_id_fkey(full_name),
+         opening_hymn:hymns!programs_opening_hymn_id_fkey(number, title),
+         sacrament_hymn:hymns!programs_sacrament_hymn_id_fkey(number, title),
+         intermediate_hymn:hymns!programs_intermediate_hymn_id_fkey(number, title),
+         closing_hymn:hymns!programs_closing_hymn_id_fkey(number, title),
+         assignments:speaking_assignments(id, slot, status, speaker_id, custom_speaker_name, custom_topic_text, asked_at, invited_at, confirmation_source,
+           speaker:speakers(full_name, phone),
+           topic:topics(title))`,
+      )
+      .gte("meeting_date", today)
+      .order("meeting_date", { ascending: true })
+      .returns<DashboardRow[]>(),
+  ]);
+  const isBishopric = profile?.role === "bishopric";
 
   return (
     <div className="space-y-6 pb-24">

@@ -18,7 +18,19 @@ export default async function ViewProgramPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: program }, { data: settings }] = await Promise.all([
+  // getClaims verifies the JWT locally without an auth round-trip. The
+  // profile lookup + program + settings queries all run in a single
+  // parallel batch; previously getUser() + profile + a second app_settings
+  // query + a second programs query + a hymns verse_note query all ran
+  // serially after the main pair, adding 5 sequential round-trips.
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+
+  const [
+    { data: program },
+    { data: settings },
+    { data: viewerProfile },
+  ] = await Promise.all([
     supabase
       .from("programs")
       .select(
@@ -27,14 +39,15 @@ export default async function ViewProgramPage({
          baby_blessing, stake_business, chorister, organist, status, share_token, intermediate_hymn_text,
          meeting_type, meeting_type_label, planner_note,
          opening_hymn_id, sacrament_hymn_id, intermediate_hymn_id, closing_hymn_id,
+         opening_hymn_verse_note, sacrament_hymn_verse_note, intermediate_hymn_verse_note, closing_hymn_verse_note,
          ward_business_releases, ward_business_sustainings, ward_business_move_in_welcomes,
          ward_business_aaronic_sustainings, ward_business_baptism_confirmation,
          ward_business_baby_blessing,
          conducting:profiles!programs_conducting_id_fkey(full_name, bishopric_position),
-         opening_hymn:hymns!programs_opening_hymn_id_fkey(number, title),
-         sacrament_hymn:hymns!programs_sacrament_hymn_id_fkey(number, title),
-         intermediate_hymn:hymns!programs_intermediate_hymn_id_fkey(number, title),
-         closing_hymn:hymns!programs_closing_hymn_id_fkey(number, title),
+         opening_hymn:hymns!programs_opening_hymn_id_fkey(number, title, verse_note),
+         sacrament_hymn:hymns!programs_sacrament_hymn_id_fkey(number, title, verse_note),
+         intermediate_hymn:hymns!programs_intermediate_hymn_id_fkey(number, title, verse_note),
+         closing_hymn:hymns!programs_closing_hymn_id_fkey(number, title, verse_note),
          assignments:speaking_assignments(slot, length_minutes, custom_topic_text, custom_speaker_name,
             speaker:speakers(full_name),
             topic:topics(title))`,
@@ -43,31 +56,19 @@ export default async function ViewProgramPage({
       .single(),
     supabase
       .from("app_settings")
-      .select("branch_name, unit_type")
+      .select("branch_name, unit_type, ward_business_footer")
       .eq("id", 1)
       .single(),
+    // Bishopric-only affordances (Publish/Unpublish). Regular members and
+    // choristers see the toolbar without the publish controls.
+    userId
+      ? supabase.from("profiles").select("role").eq("id", userId).maybeSingle()
+      : Promise.resolve({ data: null as { role: string } | null }),
   ]);
-  // ward_business_footer column may not exist yet on databases that haven't
-  // run the corresponding migration — fetch it defensively so the rest of the
-  // page still renders.
-  const { data: footerRow } = await supabase
-    .from("app_settings")
-    .select("ward_business_footer")
-    .eq("id", 1)
-    .maybeSingle();
-  const wardBusinessFooter =
-    (footerRow as { ward_business_footer?: string | null } | null)?.ward_business_footer ??
-    null;
   if (!program) notFound();
-
-  // Bishopric-only affordances (Publish/Unpublish). Regular members and
-  // choristers see the toolbar without the publish controls.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const { data: viewerProfile } = user
-    ? await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle()
-    : { data: null };
+  const wardBusinessFooter =
+    (settings as { ward_business_footer?: string | null } | null)?.ward_business_footer ??
+    null;
   const isBishopric = viewerProfile?.role === "bishopric";
 
   const meetingDate = parseISO(program.meeting_date);
@@ -79,37 +80,25 @@ export default async function ViewProgramPage({
   const canPublish = daysUntilMeeting <= 6;
   const publishOpensDate = format(subDays(meetingDate, 6), "EEE, MMM d");
 
-  // Verse-note columns (hymns.verse_note + programs.*_hymn_verse_note) only
-  // exist after the hymn-alerts migration. Fetch them defensively so the
-  // page still works before the migration is applied.
-  const { data: verseFlagsRow } = await supabase
-    .from("programs")
-    .select(
-      "opening_hymn_verse_note, sacrament_hymn_verse_note, intermediate_hymn_verse_note, closing_hymn_verse_note",
-    )
-    .eq("id", id)
-    .maybeSingle();
-  const verseFlags = (verseFlagsRow ?? {}) as {
-    opening_hymn_verse_note?: boolean;
-    sacrament_hymn_verse_note?: boolean;
-    intermediate_hymn_verse_note?: boolean;
-    closing_hymn_verse_note?: boolean;
+  const verseFlags = {
+    opening_hymn_verse_note: (program as { opening_hymn_verse_note?: boolean }).opening_hymn_verse_note,
+    sacrament_hymn_verse_note: (program as { sacrament_hymn_verse_note?: boolean }).sacrament_hymn_verse_note,
+    intermediate_hymn_verse_note: (program as { intermediate_hymn_verse_note?: boolean }).intermediate_hymn_verse_note,
+    closing_hymn_verse_note: (program as { closing_hymn_verse_note?: boolean }).closing_hymn_verse_note,
   };
-  const hymnIds = [
-    program.opening_hymn_id,
-    program.sacrament_hymn_id,
-    program.intermediate_hymn_id,
-    program.closing_hymn_id,
-  ].filter((x): x is number => x != null);
+  // Hymn verse_note now travels on each hymn join above; the standalone
+  // hymns lookup is gone. Downstream withVerse() reads verse notes via a
+  // Map<hymnId, verse_note>, so rebuild that from the joined rows.
   const verseNoteById = new Map<number, string | null>();
-  if (hymnIds.length > 0) {
-    const { data: vn } = await supabase
-      .from("hymns")
-      .select("id, verse_note")
-      .in("id", hymnIds);
-    for (const h of (vn ?? []) as { id: number; verse_note: string | null }[]) {
-      verseNoteById.set(h.id, h.verse_note);
-    }
+  for (const [hid, raw] of [
+    [program.opening_hymn_id, program.opening_hymn],
+    [program.sacrament_hymn_id, program.sacrament_hymn],
+    [program.intermediate_hymn_id, program.intermediate_hymn],
+    [program.closing_hymn_id, program.closing_hymn],
+  ] as const) {
+    if (hid == null || !raw) continue;
+    const h = Array.isArray(raw) ? raw[0] : raw;
+    verseNoteById.set(hid as number, (h as { verse_note?: string | null }).verse_note ?? null);
   }
 
   // Only print events whose event_date is within 6 weeks of this meeting

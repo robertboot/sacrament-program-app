@@ -19,16 +19,16 @@ export default async function ProgramPage({ params }: { params: Promise<{ id: st
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: userRes } = await supabase.auth.getUser();
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", userRes.user!.id)
-    .single();
-
+  // getClaims verifies the JWT locally without a Supabase auth round-trip.
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
   const today = format(new Date(), "yyyy-MM-dd");
 
+  // Fold the profile lookup into the same Promise.all as everything else.
+  // Previously getUser() + the profile query ran serially before the big
+  // parallel batch even started, adding two full round-trips of latency.
   const [
+    { data: profile },
     { data: program },
     { data: assignments },
     { data: speakers },
@@ -39,6 +39,9 @@ export default async function ProgramPage({ params }: { params: Promise<{ id: st
     { data: futureRaw },
     { data: pastForLastSpoke },
   ] = await Promise.all([
+    userId
+      ? supabase.from("profiles").select("role").eq("id", userId).single()
+      : Promise.resolve({ data: null as { role: string } | null }),
     supabase.from("programs").select("*").eq("id", id).single(),
     supabase
       .from("speaking_assignments")
