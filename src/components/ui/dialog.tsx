@@ -29,6 +29,7 @@ let bodyLockPrev: {
   overflow: string
   userSelect: string
   webkitUserSelect: string
+  touchAction: string
 } | null = null
 
 function acquireBodyLock() {
@@ -47,6 +48,7 @@ function acquireBodyLock() {
     overflow: style.overflow,
     userSelect: style.userSelect,
     webkitUserSelect: style.webkitUserSelect ?? "",
+    touchAction: style.touchAction,
   }
   style.position = "fixed"
   style.top = `-${bodyLockScrollY}px`
@@ -56,6 +58,10 @@ function acquireBodyLock() {
   style.overflow = "hidden"
   style.userSelect = "none"
   style.webkitUserSelect = "none"
+  // Kill any lingering horizontal pan / side-swipe on the body while a
+  // dialog is open — iOS was letting overscroll on the body drift the
+  // whole viewport sideways.
+  style.touchAction = "none"
 }
 
 function releaseBodyLock() {
@@ -72,6 +78,7 @@ function releaseBodyLock() {
   style.overflow = bodyLockPrev.overflow
   style.userSelect = bodyLockPrev.userSelect
   style.webkitUserSelect = bodyLockPrev.webkitUserSelect
+  style.touchAction = bodyLockPrev.touchAction
   bodyLockPrev = null
   window.scrollTo(0, bodyLockScrollY)
 }
@@ -107,7 +114,9 @@ function DialogOverlay({
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        // touch-none stops touches on the backdrop from triggering iOS
+        // side-swipe navigation or horizontal pans on the page behind.
+        "fixed inset-0 isolate z-50 bg-black/10 touch-none duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
         className
       )}
       {...props}
@@ -135,7 +144,11 @@ function DialogContent({
           // close (X) at the top and the footer buttons at the bottom become
           // unreachable on phones. Cap the height and let the popup itself
           // scroll so nothing is ever unreachable.
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] max-h-[90svh] overflow-y-auto overscroll-contain -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          // touch-pan-y + overscroll-none lock scrolling to vertical only
+          // and kill iOS overscroll — a slight diagonal touch was letting
+          // iOS interpret the gesture as a horizontal pan (or back-swipe),
+          // so pulling down inside the dialog visibly slid it sideways.
+          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] max-h-[90svh] overflow-y-auto overscroll-none touch-pan-y -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className
         )}
         {...props}
