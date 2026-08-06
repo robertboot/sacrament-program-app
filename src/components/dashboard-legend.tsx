@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown, BookOpen } from "lucide-react";
+import { ChevronDown, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "rota.legend.collapsed";
@@ -33,7 +33,7 @@ export function DashboardLegend({ canEdit }: { canEdit: boolean }) {
         className="w-full flex items-center gap-3 px-4 py-3"
         aria-expanded={!collapsed}
       >
-        <BookOpen className="w-5 h-5 text-[var(--brand-gold)] shrink-0" />
+        <Info className="w-5 h-5 text-[var(--brand-gold)] shrink-0" />
         <span className="flex-1 text-left font-semibold text-foreground">
           Legend
         </span>
