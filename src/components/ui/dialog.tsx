@@ -104,7 +104,23 @@ function startDialogObserver() {
     else unlockBodyNow()
   }
 
-  const observer = new MutationObserver(evaluate)
+  // Coalesce mutation bursts to at most one evaluate per animation frame.
+  // The observer fires on every DOM insertion/removal anywhere in the body
+  // subtree (route changes, form re-renders, animations), and every one of
+  // those bursts previously ran a synchronous querySelector — enough on a
+  // busy page to starve iOS touch scrolling. rAF batching keeps the
+  // scroll-lock decision responsive without blocking the main thread.
+  let scheduled = false
+  const scheduleEvaluate = () => {
+    if (scheduled) return
+    scheduled = true
+    requestAnimationFrame(() => {
+      scheduled = false
+      evaluate()
+    })
+  }
+
+  const observer = new MutationObserver(scheduleEvaluate)
   observer.observe(document.body, {
     subtree: true,
     childList: true,
