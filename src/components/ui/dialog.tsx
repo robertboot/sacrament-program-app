@@ -7,6 +7,82 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
 
+/**
+ * True iOS-safe body scroll-lock. Base UI's built-in modal scroll-lock
+ * sets overflow:hidden on <html>, which iOS Safari happily ignores —
+ * touch drags on the page behind still scroll it, and tap targets
+ * behind the dialog stay selectable. The only reliable fix on iOS is
+ * to fix the body element in place while remembering the scroll
+ * position, then restore it on close.
+ *
+ * Uses ref-counting so nested dialogs (dialog inside a dialog) don't
+ * fight over the lock — only the outermost releases it.
+ */
+let bodyLockDepth = 0
+let bodyLockScrollY = 0
+let bodyLockPrev: {
+  position: string
+  top: string
+  left: string
+  right: string
+  width: string
+  overflow: string
+  userSelect: string
+  webkitUserSelect: string
+} | null = null
+
+function acquireBodyLock() {
+  if (typeof document === "undefined") return
+  bodyLockDepth += 1
+  if (bodyLockDepth > 1) return
+  const body = document.body
+  const style = body.style as CSSStyleDeclaration & { webkitUserSelect?: string }
+  bodyLockScrollY = window.scrollY || window.pageYOffset || 0
+  bodyLockPrev = {
+    position: style.position,
+    top: style.top,
+    left: style.left,
+    right: style.right,
+    width: style.width,
+    overflow: style.overflow,
+    userSelect: style.userSelect,
+    webkitUserSelect: style.webkitUserSelect ?? "",
+  }
+  style.position = "fixed"
+  style.top = `-${bodyLockScrollY}px`
+  style.left = "0"
+  style.right = "0"
+  style.width = "100%"
+  style.overflow = "hidden"
+  style.userSelect = "none"
+  style.webkitUserSelect = "none"
+}
+
+function releaseBodyLock() {
+  if (typeof document === "undefined") return
+  bodyLockDepth = Math.max(0, bodyLockDepth - 1)
+  if (bodyLockDepth > 0 || !bodyLockPrev) return
+  const body = document.body
+  const style = body.style as CSSStyleDeclaration & { webkitUserSelect?: string }
+  style.position = bodyLockPrev.position
+  style.top = bodyLockPrev.top
+  style.left = bodyLockPrev.left
+  style.right = bodyLockPrev.right
+  style.width = bodyLockPrev.width
+  style.overflow = bodyLockPrev.overflow
+  style.userSelect = bodyLockPrev.userSelect
+  style.webkitUserSelect = bodyLockPrev.webkitUserSelect
+  bodyLockPrev = null
+  window.scrollTo(0, bodyLockScrollY)
+}
+
+function useBodyScrollLock() {
+  React.useEffect(() => {
+    acquireBodyLock()
+    return () => releaseBodyLock()
+  }, [])
+}
+
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />
 }
@@ -47,6 +123,7 @@ function DialogContent({
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
 }) {
+  useBodyScrollLock()
   return (
     <DialogPortal>
       <DialogOverlay />
