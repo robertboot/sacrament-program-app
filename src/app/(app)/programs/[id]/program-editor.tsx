@@ -1214,42 +1214,44 @@ function AssignmentCard({
                   );
                   if (!sp?.phone) return null;
                   return (
-                    <Button
-                      size="sm"
-                      onClick={() =>
-                        start(async () => {
-                          const r = await sendAssignmentInvite(assignment.id);
-                          if (r.error) {
-                            toast.error(r.error);
-                            return;
-                          }
-                          if (r.smsUrl) window.location.href = r.smsUrl;
-                        })
-                      }
-                      disabled={pending}
-                    >
-                      <MessageSquare className="w-4 h-4" /> Send text invite
-                    </Button>
-                    {sp.email && (
+                    <>
                       <Button
                         size="sm"
-                        variant="outline"
                         onClick={() =>
                           start(async () => {
-                            const r = await buildEmailInvite(assignment.id);
+                            const r = await sendAssignmentInvite(assignment.id);
                             if (r.error) {
                               toast.error(r.error);
                               return;
                             }
-                            if (r.mailtoUrl) window.location.href = r.mailtoUrl;
+                            if (r.smsUrl) window.location.href = r.smsUrl;
                           })
                         }
                         disabled={pending}
-                        title="Email a longer invite that includes the printable-assignment instructions"
                       >
-                        <Mail className="w-4 h-4" /> Email invite
+                        <MessageSquare className="w-4 h-4" /> Send text invite
                       </Button>
-                    )}
+                      {sp.email && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            start(async () => {
+                              const r = await buildEmailInvite(assignment.id);
+                              if (r.error) {
+                                toast.error(r.error);
+                                return;
+                              }
+                              if (r.mailtoUrl) window.location.href = r.mailtoUrl;
+                            })
+                          }
+                          disabled={pending}
+                          title="Email a longer invite that includes the printable-assignment instructions"
+                        >
+                          <Mail className="w-4 h-4" /> Email invite
+                        </Button>
+                      )}
+                    </>
                   );
                 })()}
                 <Button
