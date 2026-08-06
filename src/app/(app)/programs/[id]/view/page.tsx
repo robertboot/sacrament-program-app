@@ -251,7 +251,7 @@ export default async function ViewProgramPage({
               className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
             >
               <Pencil className="w-4 h-4" />
-              Edit
+              {isBishopric ? "Edit" : "Edit music"}
             </Link>
             {program.status === "published" && program.share_token && (
               <Link

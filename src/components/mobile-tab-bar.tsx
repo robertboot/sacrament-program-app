@@ -8,7 +8,9 @@ import type { UserRole } from "@/lib/supabase/types";
 
 const ITEMS = [
   { href: "/home", label: "Home", icon: Home, bishopricOnly: false },
-  { href: "/", label: "Planner", icon: CalendarDays, bishopricOnly: false },
+  // Planner is bishopric-only — choristers reach the current Sunday's
+  // program from Home and don't need the full upcoming-Sundays list.
+  { href: "/", label: "Planner", icon: CalendarDays, bishopricOnly: true },
   { href: "/speakers", label: "Speakers", icon: Users, bishopricOnly: true },
   { href: "/topics", label: "Topics", icon: BookOpen, bishopricOnly: true },
   { href: "/events", label: "Events", icon: Megaphone, bishopricOnly: true },

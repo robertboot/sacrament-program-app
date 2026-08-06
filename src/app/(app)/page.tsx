@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
@@ -99,6 +100,9 @@ export default async function DashboardPage() {
       .returns<DashboardRow[]>(),
   ]);
   const isBishopric = profile?.role === "bishopric";
+  // Planner is bishopric-only; a chorister who reaches / directly
+  // (bookmark, deep link, typing the URL) lands on Home instead.
+  if (!isBishopric) redirect("/home");
 
   return (
     <div className="space-y-6 pb-24">
