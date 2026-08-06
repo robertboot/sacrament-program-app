@@ -34,6 +34,7 @@ export type NotificationType =
   | "speaker_confirmed"
   | "speaker_declined"
   | "speaker_silent"
+  | "speaker_reminder_due"
   | "slot_needs_approval"
   | "program_published";
 

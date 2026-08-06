@@ -481,6 +481,23 @@ To add a new event type: pick a new `type` string, call
 `notifyBishopric` or `notifyUsers` from the server-side handler,
 that's it. No enum migration needed (type is text).
 
+**Speaker SMS is native, not Twilio.** `sendAssignmentInvite` and
+`buildReminderInvite` both build the body + a `sms:` URL and return
+`{ smsUrl }`; the client redirects to it to open the leader's own
+Messages app pre-filled with recipient + body. The leader taps Send
+from their own phone number, so the speaker sees a familiar sender
+and any reply lands naturally in the leader's own message thread.
+The daily send-reminders cron no longer sends Twilio — it now fires
+a `speaker_reminder_due` notification per program with confirmed
+speakers, deep-linking leaders to the editor where each confirmed
+speaker has a "Send reminder" button. The Twilio outbound path
+(`sendSms` in `src/lib/sms.ts`) and the inbound webhook
+(`/api/sms/inbound`) still exist but are unreachable from any
+current flow — kept in place in case we ever want the Twilio path
+back. Speaker accept/decline/reason still works via the `/c/[token]`
+web page the invite links to; that flow is independent of SMS
+direction.
+
 ---
 
 ## 19. Perf toolkit (patterns that landed, keep applying them)

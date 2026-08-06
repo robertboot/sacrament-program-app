@@ -481,9 +481,19 @@ export async function deleteProgram(programId: string) {
 }
 
 /**
- * Send the speaker an SMS invite with a self-confirm link. Requires the
- * speaker to have a phone number on file and Twilio env vars to be set.
- * Moves the assignment to awaiting_confirmation on success.
+ * Prepare a native SMS invite: build the message body + `sms:` URL that
+ * the caller opens on the client to hand off to the phone's Messages
+ * app (iOS Messages / Android Messages). The leader taps Send from
+ * their OWN phone number, so the speaker recognizes who it's from
+ * and the reply lands naturally in the leader's own message thread.
+ *
+ * Also flips the assignment to awaiting_confirmation + records
+ * invited_at so the dashboard status and silent-48h cron are
+ * consistent with the Twilio-based flow that used to live here.
+ *
+ * We do NOT wait for actual send confirmation from Messages —
+ * there's no way to. If the leader opens Messages and cancels, they
+ * can Send Invite again; the status flip is idempotent.
  */
 export async function sendAssignmentInvite(assignmentId: string) {
   const supabase = await createClient();
@@ -530,12 +540,13 @@ export async function sendAssignmentInvite(assignmentId: string) {
       `Topic: ${topicText}`,
     ].join("\n"),
     `Please tap to respond: ${link}`,
-    `Or reply Y to accept, N to decline. If declining, feel free to share a reason.`,
   ].join("\n\n");
 
-  const { sendSms } = await import("@/lib/sms");
-  const result = await sendSms(speaker.phone, body);
-  if (!result.ok) return { error: result.error };
+  // Build the sms: URL. Both iOS and Android accept `?body=…`; iOS is
+  // extra picky about the phone-number segment tolerating spaces or
+  // parens, so strip everything except digits and a leading +.
+  const cleanPhone = speaker.phone.replace(/[^\d+]/g, "");
+  const smsUrl = `sms:${cleanPhone}?body=${encodeURIComponent(body)}`;
 
   const { error: ue } = await supabase
     .from("speaking_assignments")
@@ -545,5 +556,69 @@ export async function sendAssignmentInvite(assignmentId: string) {
 
   revalidatePath(`/programs/${a.program_id}`);
   revalidatePath("/");
-  return { error: null };
+  return { error: null, smsUrl };
+}
+
+/**
+ * Build the "friendly reminder, you're speaking in a few days" native
+ * SMS for a confirmed speaker. Same handoff pattern as
+ * sendAssignmentInvite — client redirects to `smsUrl` to open Messages.
+ * Never actually sends — the leader taps Send from their own phone.
+ *
+ * Marks the assignment as reminded_at so the "already reminded" state
+ * shows up in the UI and duplicate reminders aren't nagged for.
+ */
+export async function buildReminderInvite(assignmentId: string) {
+  const supabase = await createClient();
+
+  const { data: a, error } = await supabase
+    .from("speaking_assignments")
+    .select(
+      `id, slot, program_id,
+       speaker:speakers(full_name, phone),
+       topic:topics(title),
+       custom_topic_text,
+       program:programs(meeting_date)`,
+    )
+    .eq("id", assignmentId)
+    .single();
+  if (error || !a) return { error: error?.message ?? "Assignment not found." };
+
+  const speaker = Array.isArray(a.speaker) ? a.speaker[0] : a.speaker;
+  const topic = Array.isArray(a.topic) ? a.topic[0] : a.topic;
+  const program = Array.isArray(a.program) ? a.program[0] : a.program;
+  if (!speaker?.phone) return { error: "Speaker has no phone number on file." };
+
+  const slotLabel: Record<string, string> = {
+    first: "First speaker (about 5 min)",
+    second: "Second speaker (about 10–15 min)",
+    concluding: "Concluding speaker (about 15 min)",
+  };
+  const meetingDate = new Date(program!.meeting_date + "T00:00:00").toLocaleDateString(
+    "en-US",
+    { weekday: "long", month: "long", day: "numeric" },
+  );
+  const topicText = topic?.title ?? a.custom_topic_text ?? "(no topic yet)";
+  const firstName = speaker.full_name.split(/\s+/)[0] || speaker.full_name;
+
+  const body = [
+    `Hi ${firstName} — friendly reminder you're speaking in sacrament meeting soon.`,
+    [
+      `Date: ${meetingDate}`,
+      `Slot: ${slotLabel[a.slot] ?? a.slot}`,
+      `Topic: ${topicText}`,
+    ].join("\n"),
+    `Looking forward to your message. Reach out if you need anything!`,
+  ].join("\n\n");
+
+  const cleanPhone = speaker.phone.replace(/[^\d+]/g, "");
+  const smsUrl = `sms:${cleanPhone}?body=${encodeURIComponent(body)}`;
+
+  await supabase
+    .from("speaking_assignments")
+    .update({ reminded_at: new Date().toISOString() })
+    .eq("id", assignmentId);
+
+  revalidatePath(`/programs/${a.program_id}`);
+  return { error: null, smsUrl };
 }

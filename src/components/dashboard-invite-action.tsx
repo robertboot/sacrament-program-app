@@ -57,13 +57,19 @@ export function DashboardInviteAction({
           e.stopPropagation();
           start(async () => {
             const r = await sendAssignmentInvite(assignmentId);
-            if (r.error) toast.error(r.error);
-            else toast.success(`Invitation sent to ${speakerName}.`);
+            if (r.error) {
+              toast.error(r.error);
+              return;
+            }
+            // Hand off to the phone's native Messages app pre-filled
+            // with the invite body + confirm link. Leader taps Send from
+            // their own number — no Twilio in the loop.
+            if (r.smsUrl) window.location.href = r.smsUrl;
           });
         }}
       >
         <MessageSquare className="w-4 h-4" />
-        {pending ? "Sending…" : "Send invitation"}
+        {pending ? "Opening…" : "Send invitation"}
       </button>
     );
   }

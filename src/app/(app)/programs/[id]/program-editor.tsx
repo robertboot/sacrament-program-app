@@ -81,6 +81,7 @@ import {
   regenerateShareToken,
   resetAssignmentSlot,
   sendAssignmentInvite,
+  buildReminderInvite,
   setProgramStatus,
   updateAssignmentSpeakerTopic,
   updateAssignmentStatus,
@@ -1216,8 +1217,11 @@ function AssignmentCard({
                       onClick={() =>
                         start(async () => {
                           const r = await sendAssignmentInvite(assignment.id);
-                          if (r.error) toast.error(r.error);
-                          else toast.success(`Text sent to ${sp.full_name}.`);
+                          if (r.error) {
+                            toast.error(r.error);
+                            return;
+                          }
+                          if (r.smsUrl) window.location.href = r.smsUrl;
                         })
                       }
                       disabled={pending}
@@ -1257,8 +1261,31 @@ function AssignmentCard({
                 </Button>
               </>
             )}
-          {slotApproved &&
-            assignment.status === "confirmed" && (
+          {slotApproved && assignment.status === "confirmed" && (
+            <>
+              {(() => {
+                const sp = speakers.find((s) => s.id === assignment.speaker_id);
+                if (!sp?.phone) return null;
+                return (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      start(async () => {
+                        const r = await buildReminderInvite(assignment.id);
+                        if (r.error) {
+                          toast.error(r.error);
+                          return;
+                        }
+                        if (r.smsUrl) window.location.href = r.smsUrl;
+                      })
+                    }
+                    disabled={pending}
+                  >
+                    <MessageSquare className="w-4 h-4" /> Send reminder
+                  </Button>
+                );
+              })()}
               <Button
                 size="sm"
                 variant="outline"
@@ -1267,7 +1294,8 @@ function AssignmentCard({
               >
                 <XCircle className="w-4 h-4" /> Mark declined
               </Button>
-            )}
+            </>
+          )}
           {(locked ||
             !!assignment.custom_speaker_name ||
             !!assignment.speaker_id) && (
