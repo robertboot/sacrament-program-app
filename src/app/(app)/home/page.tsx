@@ -95,20 +95,21 @@ export default async function HomePage() {
             </p>
           </div>
         )}
-        {nextProgram ? (
-          <Link
-            href={`/programs/${nextProgram.id}/view`}
-            className="grid grid-cols-[auto_1fr_auto] items-center gap-3 w-full px-5 py-4 rounded-xl bg-card ring-1 ring-foreground/10 text-base font-semibold shadow-sm hover:bg-accent transition"
-          >
-            <Eye className="w-5 h-5 shrink-0 text-primary" />
-            <span className="text-left">This Sunday&rsquo;s conductor program</span>
-            <ChevronRight className="w-5 h-5 shrink-0 opacity-60" />
-          </Link>
-        ) : (
-          <div className="w-full px-5 py-4 rounded-xl bg-card ring-1 ring-foreground/10 text-sm text-muted-foreground">
-            No upcoming program yet.
-          </div>
-        )}
+        {isBishopric &&
+          (nextProgram ? (
+            <Link
+              href={`/programs/${nextProgram.id}/view`}
+              className="grid grid-cols-[auto_1fr_auto] items-center gap-3 w-full px-5 py-4 rounded-xl bg-card ring-1 ring-foreground/10 text-base font-semibold shadow-sm hover:bg-accent transition"
+            >
+              <Eye className="w-5 h-5 shrink-0 text-primary" />
+              <span className="text-left">This Sunday&rsquo;s conductor program</span>
+              <ChevronRight className="w-5 h-5 shrink-0 opacity-60" />
+            </Link>
+          ) : (
+            <div className="w-full px-5 py-4 rounded-xl bg-card ring-1 ring-foreground/10 text-sm text-muted-foreground">
+              No upcoming program yet.
+            </div>
+          ))}
         <InstallPrompt />
       </div>
 

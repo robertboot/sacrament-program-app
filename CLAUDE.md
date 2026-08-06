@@ -170,13 +170,17 @@ so it tolerates a not-yet-applied migration without 404ing.
   flex-height scroll on the inner list. (The base `DialogContent` now
   applies its own `max-h-[90svh]` etc., but the picker's arbitrary-value
   `[max-height:85svh]` still wins via tailwind-merge dedupe.)
-- **Chorister nav.** Planner is bishopric-only. A chorister lands on
-  `/home` and reaches the current Sunday from there via the "public
-  program" / "conductor program" buttons; the Conductor view's Edit
-  button (labeled "Edit music" for choristers) takes them into the
-  editor where the Hymns card is their working surface. `/` redirects
-  choristers to `/home` for URL / bookmark safety. Nav item gating
-  lives in `src/components/app-nav.tsx` and `mobile-tab-bar.tsx`.
+- **Chorister nav.** Planner is bishopric-only. On Home the chorister
+  sees a single primary button — "This Sunday's public program" — and
+  no "conductor program" button (that one is bishopric-only too, so
+  the chorister's Home is deliberately minimal). If they need to edit
+  music, the public bulletin's toolbar shows a "Conductor view" link
+  to signed-in visitors; from the Conductor view its "Edit music"
+  button (label swaps from "Edit" for choristers) opens the editor,
+  where the Hymns card is the chorister's working surface. `/`
+  redirects choristers to `/home` for URL / bookmark safety. Nav gating
+  lives in `src/components/app-nav.tsx`, `mobile-tab-bar.tsx`, and
+  `src/app/(app)/home/page.tsx`.
 - **Chorister role — Save must whitelist fields.** The DB has a
   `guard_chorister_program_update` trigger (see all-in-one.sql) that
   raises "Chorister may only edit hymn fields" if a chorister UPDATEs
