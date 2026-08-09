@@ -173,6 +173,12 @@ export type SpeakingAssignment = {
   asked_by: string | null;
   confirmed_at: string | null;
   declined_at: string | null;
+  /** Set the moment sendAssignmentInvite fires (native-SMS handoff). */
+  invited_at: string | null;
+  /** Set the moment buildReminderInvite fires. Used to render the
+   *  "Reminded X ago" chip on the Planner and editor so leaders don't
+   *  accidentally re-text the same speaker. */
+  reminded_at: string | null;
   /** Optional — only defined after the decline-reason migration is applied.
    *  Captured either on the /c/[token] web page or via a follow-up SMS. */
   decline_reason?: string | null;
