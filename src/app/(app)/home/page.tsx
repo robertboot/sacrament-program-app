@@ -37,7 +37,15 @@ export default async function HomePage() {
     supabase.from("profiles").select("role").eq("id", userId).single(),
     supabase
       .from("programs")
-      .select("id, meeting_date")
+      .select(
+        `id, meeting_date, meeting_type, status,
+         opening_hymn_id, sacrament_hymn_id, closing_hymn_id,
+         invocation, benediction, stake_business,
+         ward_business_releases, ward_business_sustainings,
+         ward_business_move_in_welcomes, ward_business_aaronic_sustainings,
+         ward_business_baptism_confirmation, ward_business_baby_blessing,
+         assignments:speaking_assignments(id, speaker_id, custom_speaker_name)`,
+      )
       .gte("meeting_date", today)
       .order("meeting_date", { ascending: true })
       .limit(1)
@@ -53,6 +61,67 @@ export default async function HomePage() {
   ]);
   const isBishopric = profile?.role === "bishopric";
   const publicAvailable = !!nextPublished;
+
+  // Build a small "still to enter" checklist for the featured Home
+  // button, so bishopric see at a glance what's still holding the
+  // program back from being publish-ready. Fast-Sunday and no-services
+  // meetings skip the speakers/hymns checks (no speakers or hymns are
+  // required in those cases).
+  type Missing = string[];
+  const missing: Missing = [];
+  if (isBishopric && nextProgram) {
+    const p = nextProgram as unknown as {
+      meeting_type: "regular" | "fast_sunday" | "no_services";
+      opening_hymn_id: number | null;
+      sacrament_hymn_id: number | null;
+      closing_hymn_id: number | null;
+      invocation: string | null;
+      benediction: string | null;
+      stake_business: string | null;
+      ward_business_releases: boolean;
+      ward_business_sustainings: boolean;
+      ward_business_move_in_welcomes: boolean;
+      ward_business_aaronic_sustainings: boolean;
+      ward_business_baptism_confirmation: boolean;
+      ward_business_baby_blessing: boolean;
+      assignments: {
+        speaker_id: string | null;
+        custom_speaker_name: string | null;
+      }[];
+    };
+    const isFast = p.meeting_type === "fast_sunday";
+    const isNoSvcs = p.meeting_type === "no_services";
+    if (!isNoSvcs) {
+      if (!isFast) {
+        const filled = (p.assignments ?? []).filter(
+          (a) => !!a.speaker_id || !!a.custom_speaker_name,
+        ).length;
+        if (filled < 3) missing.push("Speakers");
+      }
+      if (
+        !p.opening_hymn_id ||
+        !p.sacrament_hymn_id ||
+        !p.closing_hymn_id
+      ) {
+        missing.push("Hymn selections");
+      }
+      const invocationBlank =
+        !p.invocation?.trim() || /by invitation/i.test(p.invocation);
+      const benedictionBlank =
+        !p.benediction?.trim() || /by invitation/i.test(p.benediction);
+      if (invocationBlank) missing.push("Invocation");
+      if (benedictionBlank) missing.push("Benediction");
+      const anyBusiness =
+        p.ward_business_releases ||
+        p.ward_business_sustainings ||
+        p.ward_business_move_in_welcomes ||
+        p.ward_business_aaronic_sustainings ||
+        p.ward_business_baptism_confirmation ||
+        p.ward_business_baby_blessing ||
+        !!p.stake_business?.trim();
+      if (!anyBusiness) missing.push("Branch business");
+    }
+  }
 
   return (
     <div className="min-h-[calc(100vh-10rem)] flex flex-col items-center text-center px-4 pb-6 pt-2">
@@ -98,14 +167,31 @@ export default async function HomePage() {
         )}
         {isBishopric &&
           (nextProgram ? (
-            <Link
-              href={`/programs/${nextProgram.id}/view`}
-              className="grid grid-cols-[auto_1fr_auto] items-center gap-3 w-full px-5 py-4 rounded-xl bg-card ring-1 ring-foreground/10 text-base font-semibold shadow-sm hover:bg-accent transition"
-            >
-              <Eye className="w-5 h-5 shrink-0 text-primary" />
-              <span className="text-left">This Sunday&rsquo;s conductor program</span>
-              <ChevronRight className="w-5 h-5 shrink-0 opacity-60" />
-            </Link>
+            <>
+              <Link
+                href={`/programs/${nextProgram.id}/view`}
+                className="grid grid-cols-[auto_1fr_auto] items-center gap-3 w-full px-5 py-4 rounded-xl bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 ring-1 ring-emerald-300 dark:ring-emerald-900 text-emerald-950 dark:text-emerald-100 text-base font-semibold shadow-sm transition"
+              >
+                <Eye className="w-5 h-5 shrink-0 text-emerald-700 dark:text-emerald-300" />
+                <span className="text-left">This Sunday&rsquo;s conductor program</span>
+                <ChevronRight className="w-5 h-5 shrink-0 opacity-60" />
+              </Link>
+              {missing.length > 0 && (
+                <div className="rounded-md ring-1 ring-amber-200 dark:ring-amber-900 bg-amber-50/60 dark:bg-amber-950/30 px-3 py-2 text-left">
+                  <div className="text-[10px] uppercase tracking-widest font-bold text-amber-800 dark:text-amber-300">
+                    Still to enter before publishing
+                  </div>
+                  <ul className="mt-1 text-sm text-amber-900 dark:text-amber-100 space-y-0.5">
+                    {missing.map((m) => (
+                      <li key={m} className="flex items-start gap-2">
+                        <span className="mt-1 w-1 h-1 rounded-full bg-amber-500 shrink-0" />
+                        {m}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
           ) : (
             <div className="w-full px-5 py-4 rounded-xl bg-card ring-1 ring-foreground/10 text-sm text-muted-foreground">
               No upcoming program yet.
