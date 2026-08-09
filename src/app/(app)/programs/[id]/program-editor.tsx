@@ -833,10 +833,10 @@ export function ProgramEditor({
                 </>
               ) : (
                 <Link
-                  href={`/p/${program.share_token}`}
+                  href={`/programs/${program.id}/view`}
                   className={cn(buttonVariants({ variant: "outline" }))}
                 >
-                  <Eye className="w-4 h-4" /> View published version
+                  <Eye className="w-4 h-4" /> View
                 </Link>
               )}
             </>
