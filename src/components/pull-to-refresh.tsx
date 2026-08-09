@@ -10,15 +10,11 @@ import { RefreshCw } from "lucide-react";
  * refresh short of killing the app. This component reintroduces it
  * with a custom touch handler.
  *
- * Behavior:
- *   * only engages when the document is scrolled to the very top
- *   * requires a sustained downward drag past THRESHOLD_PX (about a
- *     third of the way down the screen at typical phone sizes)
- *   * shows a rotating spinner that grows as the user pulls, then
- *     locks solid + spins once the threshold is passed
- *   * on release past threshold, calls location.reload()
- *   * bails out silently if a dialog is open (touch-action:none on
- *     body would swallow the gesture anyway; belt-and-braces)
+ * Attached to `document` (not window) so iOS PWA reliably delivers the
+ * events regardless of which element the finger started on. Only
+ * engages when the document is at scrollY 0 and a downward drag
+ * accumulates past the threshold; ignored while any dialog is open
+ * (so the picker/edit dialogs' own scroll behavior isn't hijacked).
  */
 const THRESHOLD_PX = 90;
 const MAX_INDICATOR_PX = 120;
@@ -32,11 +28,20 @@ export function PullToRefresh() {
     function isDialogOpen() {
       return !!document.querySelector('[data-slot="dialog-content"][data-open]');
     }
+    function scrollTop() {
+      return (
+        window.scrollY ||
+        window.pageYOffset ||
+        document.documentElement.scrollTop ||
+        document.body.scrollTop ||
+        0
+      );
+    }
 
     function onTouchStart(e: TouchEvent) {
       if (refreshing) return;
-      if (window.scrollY > 0) return;
       if (isDialogOpen()) return;
+      if (scrollTop() > 0) return;
       const t = e.touches[0];
       if (!t) return;
       startY.current = t.clientY;
@@ -45,7 +50,7 @@ export function PullToRefresh() {
     function onTouchMove(e: TouchEvent) {
       if (refreshing) return;
       if (startY.current === null) return;
-      if (window.scrollY > 0) {
+      if (scrollTop() > 0) {
         startY.current = null;
         setPulled(0);
         return;
@@ -58,8 +63,7 @@ export function PullToRefresh() {
         return;
       }
       // Elastic resistance so the indicator eases toward MAX rather
-      // than tracking finger movement 1:1 — feels like a native
-      // rubber-band pull.
+      // than tracking finger movement 1:1.
       const eased = Math.min(MAX_INDICATOR_PX, dy * 0.55);
       setPulled(eased);
     }
@@ -70,24 +74,21 @@ export function PullToRefresh() {
       startY.current = null;
       if (past) {
         setRefreshing(true);
-        // A tick of visual feedback before the reload so the user
-        // sees the spinner engage.
         window.setTimeout(() => window.location.reload(), 120);
       } else {
         setPulled(0);
       }
     }
 
-    // Passive:true because we only observe; we never preventDefault.
-    window.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchmove", onTouchMove, { passive: true });
-    window.addEventListener("touchend", onTouchEnd, { passive: true });
-    window.addEventListener("touchcancel", onTouchEnd, { passive: true });
+    document.addEventListener("touchstart", onTouchStart, { passive: true });
+    document.addEventListener("touchmove", onTouchMove, { passive: true });
+    document.addEventListener("touchend", onTouchEnd, { passive: true });
+    document.addEventListener("touchcancel", onTouchEnd, { passive: true });
     return () => {
-      window.removeEventListener("touchstart", onTouchStart);
-      window.removeEventListener("touchmove", onTouchMove);
-      window.removeEventListener("touchend", onTouchEnd);
-      window.removeEventListener("touchcancel", onTouchEnd);
+      document.removeEventListener("touchstart", onTouchStart);
+      document.removeEventListener("touchmove", onTouchMove);
+      document.removeEventListener("touchend", onTouchEnd);
+      document.removeEventListener("touchcancel", onTouchEnd);
     };
   }, [pulled, refreshing]);
 
