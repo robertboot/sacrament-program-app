@@ -44,7 +44,7 @@ export default async function HomePage() {
          ward_business_releases, ward_business_sustainings,
          ward_business_move_in_welcomes, ward_business_aaronic_sustainings,
          ward_business_baptism_confirmation, ward_business_baby_blessing,
-         assignments:speaking_assignments(id, speaker_id, custom_speaker_name)`,
+         assignments:speaking_assignments(id, status, speaker_id, custom_speaker_name, reminded_at)`,
       )
       .gte("meeting_date", today)
       .order("meeting_date", { ascending: true })
@@ -85,8 +85,10 @@ export default async function HomePage() {
       ward_business_baptism_confirmation: boolean;
       ward_business_baby_blessing: boolean;
       assignments: {
+        status: "not_yet_asked" | "awaiting_confirmation" | "confirmed" | "declined";
         speaker_id: string | null;
         custom_speaker_name: string | null;
+        reminded_at: string | null;
       }[];
     };
     const isFast = p.meeting_type === "fast_sunday";
@@ -97,6 +99,18 @@ export default async function HomePage() {
           (a) => !!a.speaker_id || !!a.custom_speaker_name,
         ).length;
         if (filled < 3) missing.push("Speakers");
+        // Any confirmed speaker who hasn't been reminded yet counts as a
+        // still-to-do so the leader can see at a glance that Sunday's
+        // reminders aren't all out yet.
+        const unreminded = (p.assignments ?? []).filter(
+          (a) => a.status === "confirmed" && !a.reminded_at,
+        ).length;
+        if (unreminded > 0)
+          missing.push(
+            unreminded === 1
+              ? "Speaker reminder (1 remaining)"
+              : `Speaker reminders (${unreminded} remaining)`,
+          );
       }
       if (
         !p.opening_hymn_id ||
