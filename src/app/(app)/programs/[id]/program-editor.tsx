@@ -1300,6 +1300,20 @@ function AssignmentCard({
               {(() => {
                 const sp = speakers.find((s) => s.id === assignment.speaker_id);
                 if (!sp?.phone) return null;
+                if (assignment.reminded_at) {
+                  // Already reminded — show the date, hide the button so
+                  // a second reminder isn't offered from this surface.
+                  return (
+                    <span className="inline-flex items-center gap-1.5 text-xs italic text-emerald-700 dark:text-emerald-300">
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      Reminded{" "}
+                      {new Date(assignment.reminded_at).toLocaleDateString(
+                        "en-US",
+                        { month: "short", day: "numeric" },
+                      )}
+                    </span>
+                  );
+                }
                 return (
                   <Button
                     size="sm"
@@ -1315,14 +1329,8 @@ function AssignmentCard({
                       })
                     }
                     disabled={pending}
-                    title={
-                      assignment.reminded_at
-                        ? `Already reminded ${new Date(assignment.reminded_at).toLocaleDateString()}. Tap to send again.`
-                        : undefined
-                    }
                   >
-                    <MessageSquare className="w-4 h-4" />{" "}
-                    {assignment.reminded_at ? "Reminded — send again" : "Send reminder"}
+                    <MessageSquare className="w-4 h-4" /> Send reminder
                   </Button>
                 );
               })()}
