@@ -8,8 +8,8 @@ import {
   Users,
 } from "lucide-react";
 import { redirect } from "next/navigation";
-import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
+import { getEffectiveToday } from "@/lib/effective-today";
 import { BrandStack } from "@/components/brand-mark";
 import { InstallPrompt } from "@/components/install-prompt";
 import { APP_VERSION } from "@/lib/version";
@@ -28,7 +28,10 @@ export default async function HomePage() {
   // Conductor's-program button. The Public button points at /p/now for the
   // closest upcoming *published* program — if none is published yet, we
   // grey the button out so users don't land on a dead-end page.
-  const today = format(new Date(), "yyyy-MM-dd");
+  //
+  // "today" honors the Advance-to-next-Sunday override so both this
+  // page and the Planner roll together the moment a leader taps Advance.
+  const { today } = await getEffectiveToday();
   const [
     { data: profile },
     { data: nextProgram },

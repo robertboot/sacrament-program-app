@@ -72,3 +72,25 @@ export async function planNextSunday() {
   revalidatePath("/");
   return { error: null, id: created.id, meetingDate: dateStr };
 }
+
+/**
+ * Bishopric-only "Advance to next Sunday" — after sacrament meeting on
+ * Sunday afternoon, set app_settings.today_override to tomorrow so the
+ * Planner / Home stop treating today's meeting as "upcoming" and start
+ * showing next Sunday instead. Shared across all leaders (single row
+ * in app_settings). Auto-expires: once the real date catches up, the
+ * override becomes a no-op via max(current_date, today_override) in
+ * the read paths.
+ */
+export async function advancePlannerToTomorrow() {
+  const supabase = await createClient();
+  const tomorrow = format(addDays(new Date(), 1), "yyyy-MM-dd");
+  const { error } = await supabase
+    .from("app_settings")
+    .update({ today_override: tomorrow })
+    .eq("id", 1);
+  if (error) return { error: error.message };
+  revalidatePath("/");
+  revalidatePath("/home");
+  return { error: null };
+}

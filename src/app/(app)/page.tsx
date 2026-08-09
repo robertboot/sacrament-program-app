@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
+import { getEffectiveToday } from "@/lib/effective-today";
 import { Card, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -10,6 +11,7 @@ import { DashboardInviteAction } from "@/components/dashboard-invite-action";
 import { DashboardLegend } from "@/components/dashboard-legend";
 import { DashboardMonthGroup } from "@/components/dashboard-month-group";
 import { RecentUpdates, type RecentUpdate } from "@/components/recent-updates";
+import { AdvanceSundayButton } from "@/components/advance-sunday-button";
 import { NephisNote, NephisTip } from "@/components/nephis-notes";
 import { SpeakerHistoryButton } from "@/components/speaker-history-button";
 import { PlanNextButton } from "@/components/plan-next-button";
@@ -67,7 +69,7 @@ type DashboardRow = {
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const today = format(new Date(), "yyyy-MM-dd");
+  const { today } = await getEffectiveToday();
 
   // getClaims verifies the JWT locally (no network); getUser round-trips
   // to Supabase's auth server. We only need the user id here.
@@ -256,6 +258,11 @@ function DashboardRowCard({
     <div className="relative">
       <Card className="py-0 rounded-2xl shadow-sm ring-1 ring-foreground/10">
           <CardContent className="p-4 sm:p-5">
+            {featured && canEdit && (
+              <div className="mb-3 flex justify-end">
+                <AdvanceSundayButton meetingDate={row.meeting_date} />
+              </div>
+            )}
             <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
               {row.status === "published" ? (
                 <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 ring-1 ring-emerald-200 dark:ring-emerald-800 rounded-full px-2 py-0.5">
