@@ -763,6 +763,11 @@ export function ProgramEditor({
                     setDraft((p) => ({ ...p, invocation: e.target.value || null }))
                   }
                 />
+                <PrayerInviteButton
+                  name={draft.invocation ?? ""}
+                  role="invocation"
+                  meetingDate={program.meeting_date}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Benediction</Label>
@@ -771,6 +776,11 @@ export function ProgramEditor({
                   onChange={(e) =>
                     setDraft((p) => ({ ...p, benediction: e.target.value || null }))
                   }
+                />
+                <PrayerInviteButton
+                  name={draft.benediction ?? ""}
+                  role="benediction"
+                  meetingDate={program.meeting_date}
                 />
               </div>
             </div>
@@ -1565,5 +1575,51 @@ function WardBusinessRow({
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * Small "Text invite" affordance next to the Invocation / Benediction
+ * inputs. Prefills the leader's native Messages app with an invitation
+ * body — but no recipient (we don't store prayer-giver phone numbers).
+ * The leader picks the contact in Messages themselves. Nothing is
+ * written back to the database.
+ *
+ * Hidden until the input has a real name (not blank, not the default
+ * "By Invitation" placeholder).
+ */
+function PrayerInviteButton({
+  name,
+  role,
+  meetingDate,
+}: {
+  name: string;
+  role: "invocation" | "benediction";
+  meetingDate: string;
+}) {
+  const trimmed = name.trim();
+  if (!trimmed || /by invitation/i.test(trimmed)) return null;
+
+  const firstName = trimmed.split(/\s+/)[0] || trimmed;
+  const dateLabel = new Date(meetingDate + "T00:00:00").toLocaleDateString(
+    "en-US",
+    { weekday: "long", month: "long", day: "numeric" },
+  );
+  const body = [
+    `Hi ${firstName},`,
+    `Would you be willing to offer the ${role} in sacrament meeting on ${dateLabel}?`,
+    `Let me know — thanks!`,
+  ].join("\n\n");
+  // No recipient — leader picks the contact in Messages themselves.
+  const smsUrl = `sms:?body=${encodeURIComponent(body)}`;
+
+  return (
+    <a
+      href={smsUrl}
+      className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-800 dark:text-blue-200 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900 rounded-md px-2 py-1 border border-blue-200 dark:border-blue-900"
+    >
+      <MessageSquare className="w-3.5 h-3.5" />
+      Text {firstName}
+    </a>
   );
 }
