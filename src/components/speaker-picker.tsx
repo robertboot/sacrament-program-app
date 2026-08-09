@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { buttonVariants } from "@/components/ui/button";
-import { User, X, ChevronDown, AlertTriangle, Info } from "lucide-react";
+import { User, X, ChevronDown, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { weeksSinceLabel, rotationTier } from "@/lib/dates";
 import { sortSpeakers } from "@/lib/rotation";
@@ -140,12 +140,12 @@ export function SpeakerPicker({
                 Stake
               </span>
             )}
-            {selected && rotationTier(selected.last_spoke_date) === "stale" && (
-              <span className="inline-flex items-center gap-1 text-[10px] text-red-700 bg-red-50 dark:bg-red-950 dark:text-red-300 px-1.5 py-0.5 rounded">
-                <AlertTriangle className="w-3 h-3" />
-                {weeksSinceLabel(selected.last_spoke_date)}
-              </span>
-            )}
+            {/* Recently-spoke ("This week", "1 week ago") warning removed
+                from the collapsed picker on purpose — same info still shows
+                inside the picker dropdown row and on the Speakers page,
+                where it's actually useful for choosing. Displaying it here
+                just adds noise to Balance of Program for a speaker already
+                assigned. */}
           </span>
           {(!(selected || isCustom) || disabled) && (
             <ChevronDown className="w-4 h-4 opacity-50 shrink-0" />
