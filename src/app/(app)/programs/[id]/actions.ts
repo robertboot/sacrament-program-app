@@ -11,10 +11,13 @@ type ProgramFields = {
   welcome_text?: string | null;
   brief_reminders?: string | null;
   opening_hymn_id?: number | null;
+  opening_hymn_text?: string | null;
   sacrament_hymn_id?: number | null;
+  sacrament_hymn_text?: string | null;
   intermediate_hymn_id?: number | null;
   intermediate_hymn_text?: string | null;
   closing_hymn_id?: number | null;
+  closing_hymn_text?: string | null;
   invocation?: string | null;
   benediction?: string | null;
   chorister?: string | null;

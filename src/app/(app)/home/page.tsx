@@ -43,6 +43,7 @@ export default async function HomePage() {
       .select(
         `id, meeting_date, meeting_type, status,
          opening_hymn_id, sacrament_hymn_id, closing_hymn_id,
+         opening_hymn_text, sacrament_hymn_text, closing_hymn_text,
          invocation, benediction, stake_business,
          ward_business_releases, ward_business_sustainings,
          ward_business_move_in_welcomes, ward_business_aaronic_sustainings,
@@ -78,6 +79,9 @@ export default async function HomePage() {
       opening_hymn_id: number | null;
       sacrament_hymn_id: number | null;
       closing_hymn_id: number | null;
+      opening_hymn_text: string | null;
+      sacrament_hymn_text: string | null;
+      closing_hymn_text: string | null;
       invocation: string | null;
       benediction: string | null;
       stake_business: string | null;
@@ -115,11 +119,15 @@ export default async function HomePage() {
               : `Speaker reminders (${unreminded} remaining)`,
           );
       }
-      if (
-        !p.opening_hymn_id ||
-        !p.sacrament_hymn_id ||
-        !p.closing_hymn_id
-      ) {
+      // Each slot counts as filled if either the hymn-catalog id or the
+      // manual text is set. Matches the renderer's precedence.
+      const openingFilled =
+        !!p.opening_hymn_id || !!p.opening_hymn_text?.trim();
+      const sacramentFilled =
+        !!p.sacrament_hymn_id || !!p.sacrament_hymn_text?.trim();
+      const closingFilled =
+        !!p.closing_hymn_id || !!p.closing_hymn_text?.trim();
+      if (!openingFilled || !sacramentFilled || !closingFilled) {
         missing.push("Hymn selections");
       }
       const invocationBlank =

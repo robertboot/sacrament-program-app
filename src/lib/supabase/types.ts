@@ -126,6 +126,13 @@ export type Program = {
   intermediate_hymn_id: number | null;
   intermediate_hymn_text: string | null;
   closing_hymn_id: number | null;
+  /** Manual "Enter manually" text for slots that used to accept only a
+   *  hymn-catalog pick. Optional — only defined after the manual-hymn-
+   *  text migration is applied. Renderers prefer text if present, else
+   *  fall back to the *_hymn_id lookup. */
+  opening_hymn_text?: string | null;
+  sacrament_hymn_text?: string | null;
+  closing_hymn_text?: string | null;
   opening_hymn_verse_note: boolean;
   sacrament_hymn_verse_note: boolean;
   intermediate_hymn_verse_note: boolean;

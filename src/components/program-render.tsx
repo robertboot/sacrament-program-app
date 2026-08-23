@@ -20,6 +20,7 @@ export type ProgramRenderData = {
   welcomeText: string | null;
   briefReminders: string | null;
   openingHymn: { number: number; title: string } | null;
+  openingHymnText: string | null;
   invocation: string | null;
   wardBusiness: {
     releases: WardBusinessItem;
@@ -31,9 +32,11 @@ export type ProgramRenderData = {
   };
   stakeBusiness: string | null;
   sacramentHymn: { number: number; title: string } | null;
+  sacramentHymnText: string | null;
   intermediateHymn: { number: number; title: string } | null;
   intermediateHymnText: string | null;
   closingHymn: { number: number; title: string } | null;
+  closingHymnText: string | null;
   benediction: string | null;
   chorister: string | null;
   organist: string | null;
@@ -256,7 +259,7 @@ export function ProgramRender({
           icon={<Music2 />}
           iconClassName="text-emerald-500 print:text-black"
           label="Opening Hymn"
-          value={hymnLine(data.openingHymn)}
+          value={hymnLine(data.openingHymn, data.openingHymnText)}
         />
         <Row
           icon={<HeartHandshake />}
@@ -291,7 +294,7 @@ export function ProgramRender({
             icon={<Music2 />}
             iconClassName="text-emerald-500 print:text-black"
             label="Sacrament Hymn"
-            value={hymnLine(data.sacramentHymn)}
+            value={hymnLine(data.sacramentHymn, data.sacramentHymnText)}
           />
         ) : (
           <div className="flex items-center gap-4 py-2 print:py-1">
@@ -300,7 +303,7 @@ export function ProgramRender({
             </span>
             <p className="flex-1 text-sm leading-snug">
               We will now prepare for the sacrament by singing{" "}
-              <span className="font-medium">{hymnLine(data.sacramentHymn)}</span>, after which the
+              <span className="font-medium">{hymnLine(data.sacramentHymn, data.sacramentHymnText)}</span>, after which the
               sacrament will be passed to the congregation.
             </p>
           </div>
@@ -369,7 +372,7 @@ export function ProgramRender({
           icon={<Music2 />}
           iconClassName="text-emerald-500 print:text-black"
           label="Closing Hymn"
-          value={hymnLine(data.closingHymn)}
+          value={hymnLine(data.closingHymn, data.closingHymnText)}
         />
         <Row
           icon={<HeartHandshake />}
@@ -581,7 +584,11 @@ function WardBusinessSection({
   );
 }
 
-function hymnLine(h: { number: number; title: string } | null): string {
+function hymnLine(
+  h: { number: number; title: string } | null,
+  customText?: string | null,
+): string {
+  if (customText?.trim()) return customText.trim();
   if (!h) return "—";
   return `#${h.number} — ${h.title}`;
 }

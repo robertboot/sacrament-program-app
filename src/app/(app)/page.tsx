@@ -51,6 +51,9 @@ type DashboardRow = {
   intermediate_hymn: Hymn;
   intermediate_hymn_text: string | null;
   closing_hymn: Hymn;
+  opening_hymn_text?: string | null;
+  sacrament_hymn_text?: string | null;
+  closing_hymn_text?: string | null;
   assignments: {
     id: string;
     slot: AssignmentSlot;
@@ -89,7 +92,8 @@ export default async function DashboardPage() {
     supabase
       .from("programs")
       .select(
-        `id, meeting_date, status, share_token, planner_note, meeting_type, meeting_type_label, intermediate_hymn_text,
+        `id, meeting_date, status, share_token, planner_note, meeting_type, meeting_type_label,
+         opening_hymn_text, sacrament_hymn_text, intermediate_hymn_text, closing_hymn_text,
          opening_hymn_id, sacrament_hymn_id, intermediate_hymn_id, closing_hymn_id,
          conducting:profiles!programs_conducting_id_fkey(full_name),
          opening_hymn:hymns!programs_opening_hymn_id_fkey(number, title),
@@ -503,30 +507,28 @@ function FeaturedAlerts({ row }: { row: DashboardRow }) {
 }
 
 function DashboardHymns({ row }: { row: DashboardRow }) {
-  const intermediateValue =
-    row.intermediate_hymn
-      ? `#${row.intermediate_hymn.number} — ${row.intermediate_hymn.title}`
-      : row.intermediate_hymn_text?.trim() || null;
+  // Manual "Enter manually" text wins over the hymn-catalog lookup so
+  // custom entries (e.g. "Ward choir — Come Thou Fount") render on the
+  // dashboard exactly as they will on the printed program.
+  const lookup = (
+    h: Hymn,
+    text?: string | null,
+  ): string | null => {
+    if (text?.trim()) return text.trim();
+    if (h) return `#${h.number} — ${h.title}`;
+    return null;
+  };
   const slots: { label: string; value: string | null }[] = [
-    {
-      label: "Opening",
-      value: row.opening_hymn
-        ? `#${row.opening_hymn.number} — ${row.opening_hymn.title}`
-        : null,
-    },
+    { label: "Opening", value: lookup(row.opening_hymn, row.opening_hymn_text) },
     {
       label: "Sacrament",
-      value: row.sacrament_hymn
-        ? `#${row.sacrament_hymn.number} — ${row.sacrament_hymn.title}`
-        : null,
+      value: lookup(row.sacrament_hymn, row.sacrament_hymn_text),
     },
-    { label: "Intermediate", value: intermediateValue },
     {
-      label: "Closing",
-      value: row.closing_hymn
-        ? `#${row.closing_hymn.number} — ${row.closing_hymn.title}`
-        : null,
+      label: "Intermediate",
+      value: lookup(row.intermediate_hymn, row.intermediate_hymn_text),
     },
+    { label: "Closing", value: lookup(row.closing_hymn, row.closing_hymn_text) },
   ];
   return (
     <div className="mt-5 pt-4 border-t space-y-2">

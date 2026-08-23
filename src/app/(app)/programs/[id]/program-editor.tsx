@@ -137,10 +137,13 @@ export function ProgramEditor({
     brief_reminders: program.brief_reminders,
     planner_note: program.planner_note ?? null,
     opening_hymn_id: program.opening_hymn_id,
+    opening_hymn_text: program.opening_hymn_text ?? null,
     sacrament_hymn_id: program.sacrament_hymn_id,
+    sacrament_hymn_text: program.sacrament_hymn_text ?? null,
     intermediate_hymn_id: program.intermediate_hymn_id,
     intermediate_hymn_text: program.intermediate_hymn_text,
     closing_hymn_id: program.closing_hymn_id,
+    closing_hymn_text: program.closing_hymn_text ?? null,
     opening_hymn_verse_note: program.opening_hymn_verse_note ?? false,
     sacrament_hymn_verse_note: program.sacrament_hymn_verse_note ?? false,
     intermediate_hymn_verse_note: program.intermediate_hymn_verse_note ?? false,
@@ -184,7 +187,10 @@ export function ProgramEditor({
     "sacrament_hymn_verse_note",
     "intermediate_hymn_verse_note",
     "closing_hymn_verse_note",
+    "opening_hymn_text",
+    "sacrament_hymn_text",
     "intermediate_hymn_text",
+    "closing_hymn_text",
     "chorister",
     "organist",
   ]);
@@ -436,7 +442,14 @@ export function ProgramEditor({
             <HymnPicker
               hymns={hymns}
               value={draft.opening_hymn_id ?? null}
-              onChange={(id) => setDraft((p) => ({ ...p, opening_hymn_id: id }))}
+              customValue={draft.opening_hymn_text ?? null}
+              onChange={(next) =>
+                setDraft((p) => ({
+                  ...p,
+                  opening_hymn_id: next.hymn_id,
+                  opening_hymn_text: next.custom_hymn_text,
+                }))
+              }
             />
             <HymnVerseToggle
               hymns={hymns}
@@ -453,7 +466,14 @@ export function ProgramEditor({
             <HymnPicker
               hymns={hymns}
               value={draft.sacrament_hymn_id ?? null}
-              onChange={(id) => setDraft((p) => ({ ...p, sacrament_hymn_id: id }))}
+              customValue={draft.sacrament_hymn_text ?? null}
+              onChange={(next) =>
+                setDraft((p) => ({
+                  ...p,
+                  sacrament_hymn_id: next.hymn_id,
+                  sacrament_hymn_text: next.custom_hymn_text,
+                }))
+              }
               slot="sacrament"
             />
             <HymnVerseToggle
@@ -472,14 +492,15 @@ export function ProgramEditor({
               <HymnPicker
                 hymns={hymns}
                 value={draft.intermediate_hymn_id ?? null}
-                onChange={(id) =>
+                customValue={draft.intermediate_hymn_text ?? null}
+                onChange={(next) =>
                   setDraft((p) => ({
                     ...p,
-                    intermediate_hymn_id: id,
-                    intermediate_hymn_text: id ? null : p.intermediate_hymn_text,
+                    intermediate_hymn_id: next.hymn_id,
+                    intermediate_hymn_text: next.custom_hymn_text,
                   }))
                 }
-                placeholder="Pick a hymn, or use the text field below…"
+                placeholder="Pick a hymn, or Enter manually…"
               />
               <HymnVerseToggle
                 hymns={hymns}
@@ -490,17 +511,6 @@ export function ProgramEditor({
                   saveFields({ intermediate_hymn_verse_note: v });
                 }}
               />
-              <Input
-                disabled={!!draft.intermediate_hymn_id}
-                placeholder='e.g. "Primary children" or "Ward choir"'
-                value={draft.intermediate_hymn_text ?? ""}
-                onChange={(e) =>
-                  setDraft((p) => ({
-                    ...p,
-                    intermediate_hymn_text: e.target.value || null,
-                  }))
-                }
-              />
             </div>
           )}
           <div className="space-y-1.5">
@@ -508,7 +518,14 @@ export function ProgramEditor({
             <HymnPicker
               hymns={hymns}
               value={draft.closing_hymn_id ?? null}
-              onChange={(id) => setDraft((p) => ({ ...p, closing_hymn_id: id }))}
+              customValue={draft.closing_hymn_text ?? null}
+              onChange={(next) =>
+                setDraft((p) => ({
+                  ...p,
+                  closing_hymn_id: next.hymn_id,
+                  closing_hymn_text: next.custom_hymn_text,
+                }))
+              }
             />
             <HymnVerseToggle
               hymns={hymns}

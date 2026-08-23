@@ -66,6 +66,22 @@ export async function renderPublishedProgramByToken(token: string) {
   const { data, error } = await supabase.rpc("get_published_program", { p_token: token });
   if (error || !data) notFound();
 
+  // The RPC hasn't been extended to return the manual hymn text columns
+  // (opening/sacrament/closing) yet, so grab them via a small side query
+  // by the same share_token. Defensive — if the migration isn't applied
+  // yet or the query fails, we quietly fall back to nulls and hymn-id
+  // lookups render as before.
+  const { data: manualHymnRow } = await supabase
+    .from("programs")
+    .select("opening_hymn_text, sacrament_hymn_text, closing_hymn_text")
+    .eq("share_token", token)
+    .maybeSingle();
+  const manualHymnText = (manualHymnRow ?? {}) as {
+    opening_hymn_text?: string | null;
+    sacrament_hymn_text?: string | null;
+    closing_hymn_text?: string | null;
+  };
+
   // If a signed-in bishopric/chorister is viewing this public link, offer a
   // one-tap toggle back to the conductor view of the same program.
   const userClient = await createClient();
@@ -75,10 +91,18 @@ export async function renderPublishedProgramByToken(token: string) {
   const payload = data as Payload;
   const conductorHref = user ? `/programs/${payload.id}/view` : null;
 
-  return renderPayload(payload, conductorHref);
+  return renderPayload(payload, conductorHref, manualHymnText);
 }
 
-function renderPayload(p: Payload, conductorHref: string | null) {
+function renderPayload(
+  p: Payload,
+  conductorHref: string | null,
+  manualHymnText: {
+    opening_hymn_text?: string | null;
+    sacrament_hymn_text?: string | null;
+    closing_hymn_text?: string | null;
+  } = {},
+) {
   const renderData: ProgramRenderData = {
     branchName: p.settings?.branch_name ?? "Branch",
     unitType: p.settings?.unit_type ?? "branch",
@@ -91,6 +115,7 @@ function renderPayload(p: Payload, conductorHref: string | null) {
     welcomeText: p.welcome_text,
     briefReminders: p.brief_reminders,
     openingHymn: p.opening_hymn,
+    openingHymnText: manualHymnText.opening_hymn_text ?? null,
     invocation: p.invocation,
     wardBusiness: {
       releases: { active: !!p.ward_business_releases, names: p.releases },
@@ -114,9 +139,11 @@ function renderPayload(p: Payload, conductorHref: string | null) {
     },
     stakeBusiness: p.stake_business,
     sacramentHymn: p.sacrament_hymn,
+    sacramentHymnText: manualHymnText.sacrament_hymn_text ?? null,
     intermediateHymn: p.intermediate_hymn,
     intermediateHymnText: p.intermediate_hymn_text,
     closingHymn: p.closing_hymn,
+    closingHymnText: manualHymnText.closing_hymn_text ?? null,
     benediction: p.benediction,
     chorister: p.chorister,
     organist: p.organist,
