@@ -1,12 +1,41 @@
-import { AuthGate } from "./components/AuthGate";
+import { AuthGate, signOut } from "./components/AuthGate";
+import { useRoute } from "./lib/router";
+import { AddAnimal } from "./screens/AddAnimal";
+import { AnimalScreen } from "./screens/AnimalScreen";
+import { Board } from "./screens/Board";
+
+function Screen() {
+  const route = useRoute();
+  switch (route.name) {
+    case "animal":
+      return <AnimalScreen key={route.id} id={route.id} />;
+    case "add":
+      return <AddAnimal />;
+    case "export":
+      return <p className="text-soft py-4">Export is coming in the next step.</p>;
+    case "board":
+      return <Board />;
+  }
+}
 
 export default function App() {
   return (
     <AuthGate>
-      {/* Screens land in step 4: Board → Animal → Log sheet → Add animal */}
-      <div className="min-h-svh bg-paper px-4 py-6">
-        <h1 className="font-serif text-3xl text-ink">Barn Book</h1>
-        <p className="mt-2 text-soft">Signed in. The board is on its way.</p>
+      <div className="min-h-svh bg-paper">
+        <div className="mx-auto max-w-xl px-4 pb-16 pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <div className="flex items-baseline justify-between no-print">
+            <a href="#/" className="font-serif text-2xl text-ink">
+              Barn Book
+            </a>
+            <button
+              onClick={signOut}
+              className="min-h-11 px-2 text-sm text-soft underline underline-offset-2"
+            >
+              Sign out
+            </button>
+          </div>
+          <Screen />
+        </div>
       </div>
     </AuthGate>
   );
