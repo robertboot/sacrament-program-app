@@ -41,4 +41,8 @@ button {
   .no-print {
     display: none !important;
   }
+  html,
+  body {
+    background: #fff;
+  }
 }

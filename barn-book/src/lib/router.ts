@@ -4,13 +4,15 @@ export type Route =
   | { name: "board" }
   | { name: "animal"; id: string }
   | { name: "add" }
-  | { name: "export" };
+  | { name: "export" }
+  | { name: "print"; id: string };
 
 function parse(hash: string): Route {
   const parts = hash.replace(/^#\/?/, "").split("/").filter(Boolean);
   if (parts[0] === "animal" && parts[1]) return { name: "animal", id: parts[1] };
   if (parts[0] === "add") return { name: "add" };
   if (parts[0] === "export") return { name: "export" };
+  if (parts[0] === "print" && parts[1]) return { name: "print", id: parts[1] };
   return { name: "board" };
 }
 
@@ -24,6 +26,8 @@ export function routeHash(r: Route): string {
       return "#/add";
     case "export":
       return "#/export";
+    case "print":
+      return `#/print/${r.id}`;
   }
 }
 
