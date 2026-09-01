@@ -1,4 +1,5 @@
 import { AuthGate, signOut } from "./components/AuthGate";
+import { IS_DEMO } from "./lib/db";
 import { useRoute } from "./lib/router";
 import { AddAnimal } from "./screens/AddAnimal";
 import { AnimalScreen } from "./screens/AnimalScreen";
@@ -38,14 +39,21 @@ export default function App() {
               >
                 Export
               </a>
-              <button
-                onClick={signOut}
-                className="min-h-11 px-2 text-sm text-soft underline underline-offset-2"
-              >
-                Sign out
-              </button>
+              {!IS_DEMO && (
+                <button
+                  onClick={signOut}
+                  className="min-h-11 px-2 text-sm text-soft underline underline-offset-2"
+                >
+                  Sign out
+                </button>
+              )}
             </span>
           </div>
+          {IS_DEMO && (
+            <p className="no-print text-xs text-soft border border-line bg-card rounded-sm px-2 py-1 mt-1">
+              Demo — everything you enter stays on this device only.
+            </p>
+          )}
           <Screen />
         </div>
       </div>

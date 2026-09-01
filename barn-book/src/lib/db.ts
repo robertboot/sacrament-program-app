@@ -1,6 +1,10 @@
 import { supabase } from "./supabase";
 import { computeNextDue } from "./due";
 import type { Animal, Schedule, Species, TreatmentRecord } from "./types";
+import * as demo from "./demo-db";
+
+/** Demo build: no auth, localStorage-backed data (see demo-db.ts). */
+export const IS_DEMO = import.meta.env.VITE_DEMO === "1";
 
 function orThrow<T>({ data, error }: { data: T | null; error: { message: string } | null }): T {
   if (error) throw new Error(error.message);
@@ -8,17 +12,19 @@ function orThrow<T>({ data, error }: { data: T | null; error: { message: string 
   return data;
 }
 
-export async function listAnimals(includeArchived = false): Promise<Animal[]> {
+async function listAnimalsReal(includeArchived = false): Promise<Animal[]> {
   let q = supabase.from("animals").select("*").order("name");
   if (!includeArchived) q = q.eq("archived", false);
   return orThrow<Animal[]>(await q);
 }
+export const listAnimals = IS_DEMO ? demo.listAnimals : listAnimalsReal;
 
-export async function getAnimal(id: string): Promise<Animal> {
+async function getAnimalReal(id: string): Promise<Animal> {
   return orThrow<Animal>(
     await supabase.from("animals").select("*").eq("id", id).single()
   );
 }
+export const getAnimal = IS_DEMO ? demo.getAnimal : getAnimalReal;
 
 export interface NewAnimal {
   name: string;
@@ -28,7 +34,7 @@ export interface NewAnimal {
   notes?: string | null;
 }
 
-export async function createAnimal(
+async function createAnimalReal(
   input: NewAnimal,
   treatments: { treatment: string; intervalDays: number | null }[]
 ): Promise<Animal> {
@@ -56,16 +62,18 @@ export async function createAnimal(
   }
   return animal;
 }
+export const createAnimal = IS_DEMO ? demo.createAnimal : createAnimalReal;
 
-export async function updateAnimal(
+async function updateAnimalReal(
   id: string,
   patch: Partial<NewAnimal> & { archived?: boolean }
 ): Promise<void> {
   const { error } = await supabase.from("animals").update(patch).eq("id", id);
   if (error) throw new Error(error.message);
 }
+export const updateAnimal = IS_DEMO ? demo.updateAnimal : updateAnimalReal;
 
-export async function listSchedules(animalId: string): Promise<Schedule[]> {
+async function listSchedulesReal(animalId: string): Promise<Schedule[]> {
   return orThrow<Schedule[]>(
     await supabase
       .from("schedules")
@@ -75,14 +83,16 @@ export async function listSchedules(animalId: string): Promise<Schedule[]> {
       .order("treatment")
   );
 }
+export const listSchedules = IS_DEMO ? demo.listSchedules : listSchedulesReal;
 
-export async function listAllSchedules(): Promise<Schedule[]> {
+async function listAllSchedulesReal(): Promise<Schedule[]> {
   return orThrow<Schedule[]>(
     await supabase.from("schedules").select("*").eq("active", true)
   );
 }
+export const listAllSchedules = IS_DEMO ? demo.listAllSchedules : listAllSchedulesReal;
 
-export async function upsertSchedule(
+async function upsertScheduleReal(
   animalId: string,
   treatment: string,
   intervalDays: number | null
@@ -95,16 +105,20 @@ export async function upsertSchedule(
     );
   if (error) throw new Error(error.message);
 }
+export const upsertSchedule = IS_DEMO ? demo.upsertSchedule : upsertScheduleReal;
 
-export async function deactivateSchedule(id: string): Promise<void> {
+async function deactivateScheduleReal(id: string): Promise<void> {
   const { error } = await supabase
     .from("schedules")
     .update({ active: false })
     .eq("id", id);
   if (error) throw new Error(error.message);
 }
+export const deactivateSchedule = IS_DEMO
+  ? demo.deactivateSchedule
+  : deactivateScheduleReal;
 
-export async function listRecords(animalId: string): Promise<TreatmentRecord[]> {
+async function listRecordsReal(animalId: string): Promise<TreatmentRecord[]> {
   return orThrow<TreatmentRecord[]>(
     await supabase
       .from("records")
@@ -114,8 +128,9 @@ export async function listRecords(animalId: string): Promise<TreatmentRecord[]> 
       .order("created_at", { ascending: false })
   );
 }
+export const listRecords = IS_DEMO ? demo.listRecords : listRecordsReal;
 
-export async function listAllRecords(): Promise<TreatmentRecord[]> {
+async function listAllRecordsReal(): Promise<TreatmentRecord[]> {
   return orThrow<TreatmentRecord[]>(
     await supabase
       .from("records")
@@ -123,6 +138,7 @@ export async function listAllRecords(): Promise<TreatmentRecord[]> {
       .order("given_on", { ascending: false })
   );
 }
+export const listAllRecords = IS_DEMO ? demo.listAllRecords : listAllRecordsReal;
 
 export interface NewRecord {
   animal_id: string;
@@ -139,7 +155,7 @@ export interface NewRecord {
  * backdating recalculates correctly. Also keeps the schedule row in
  * step when the interval was changed in the log form.
  */
-export async function logDose(input: NewRecord): Promise<TreatmentRecord> {
+async function logDoseReal(input: NewRecord): Promise<TreatmentRecord> {
   const { interval_days, ...rest } = input;
   const record = orThrow<TreatmentRecord>(
     await supabase
@@ -151,8 +167,10 @@ export async function logDose(input: NewRecord): Promise<TreatmentRecord> {
   await upsertSchedule(input.animal_id, input.treatment, interval_days);
   return record;
 }
+export const logDose = IS_DEMO ? demo.logDose : logDoseReal;
 
-export async function deleteRecord(id: string): Promise<void> {
+async function deleteRecordReal(id: string): Promise<void> {
   const { error } = await supabase.from("records").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
+export const deleteRecord = IS_DEMO ? demo.deleteRecord : deleteRecordReal;

@@ -1,10 +1,16 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { IS_DEMO } from "../lib/db";
 import { supabase } from "../lib/supabase";
 
 type Phase = "loading" | "signed-out" | "sent" | "signed-in";
 
 export function AuthGate({ children }: { children: ReactNode }) {
+  if (IS_DEMO) return <>{children}</>;
+  return <AuthGateReal>{children}</AuthGateReal>;
+}
+
+function AuthGateReal({ children }: { children: ReactNode }) {
   const [phase, setPhase] = useState<Phase>("loading");
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -100,5 +106,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
 }
 
 export async function signOut() {
+  if (IS_DEMO) return;
   await supabase.auth.signOut();
 }
