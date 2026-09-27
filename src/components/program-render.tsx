@@ -278,12 +278,19 @@ export function ProgramRender({
             unitType={data.unitType}
             footer={data.wardBusinessFooter}
           />
-          {data.stakeBusiness && (
-            <section className="my-2 print:my-1 print-avoid-break">
-              <SectionHeading>Stake Business</SectionHeading>
+          <section className="my-2 print:my-1 print-avoid-break">
+            <SectionHeading>Stake Business</SectionHeading>
+            {data.stakeBusiness?.trim() ? (
               <div className="whitespace-pre-wrap text-sm">{data.stakeBusiness}</div>
-            </section>
-          )}
+            ) : (
+              // Mirror the ward/branch business fallback so an empty
+              // Stake Business section prints an explicit "no business"
+              // line instead of just a heading with nothing beneath it.
+              <div className="text-sm text-muted-foreground print:text-black italic">
+                There is no stake business this week.
+              </div>
+            )}
+          </section>
         </>
       )}
 
