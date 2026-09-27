@@ -198,9 +198,9 @@ export function ProgramRender({
         </div>
       </div>
 
-      {data.briefReminders && (
-        <section className="mb-1 print-avoid-break">
-          <SectionHeading>Brief Reminders</SectionHeading>
+      <section className="mb-1 print-avoid-break">
+        <SectionHeading>Brief Reminders</SectionHeading>
+        {data.briefReminders?.trim() ? (
           <div className="text-sm space-y-1">
             {data.briefReminders
               .split("\n")
@@ -215,8 +215,15 @@ export function ProgramRender({
                 </div>
               ))}
           </div>
-        </section>
-      )}
+        ) : (
+          // Mirror the ward / stake business fallback so the section is a
+          // fixed fixture of the program — a quiet week reads as
+          // intentional rather than accidentally missing.
+          <div className="text-sm text-muted-foreground print:text-black italic">
+            There are no reminders this week.
+          </div>
+        )}
+      </section>
 
       {data.briefReminderEvents.length > 0 && (
         <section className="mb-1 print-avoid-break">
