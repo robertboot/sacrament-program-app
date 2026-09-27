@@ -36,6 +36,7 @@ export default async function HomePage() {
     { data: profile },
     { data: nextProgram },
     { data: nextPublished },
+    { data: appSettings },
   ] = await Promise.all([
     supabase.from("profiles").select("role").eq("id", userId).single(),
     supabase
@@ -62,9 +63,17 @@ export default async function HomePage() {
       .order("meeting_date", { ascending: true })
       .limit(1)
       .maybeSingle(),
+    // Needed so the checklist label reads "Ward business" or "Branch
+    // business" to match how the unit self-identifies. Same fetch the
+    // renderer uses for section titles.
+    supabase.from("app_settings").select("unit_type").eq("id", 1).maybeSingle(),
   ]);
   const isBishopric = profile?.role === "bishopric";
   const publicAvailable = !!nextPublished;
+  const unitType =
+    ((appSettings as { unit_type?: "ward" | "branch" } | null)?.unit_type ??
+      "branch") as "ward" | "branch";
+  const unitLabel = unitType === "ward" ? "Ward" : "Branch";
 
   // Build a small "still to enter" checklist for the featured Home
   // button, so bishopric see at a glance what's still holding the
@@ -144,7 +153,7 @@ export default async function HomePage() {
         p.ward_business_baptism_confirmation ||
         p.ward_business_baby_blessing ||
         !!p.stake_business?.trim();
-      if (!anyBusiness) missing.push("Branch business");
+      if (!anyBusiness) missing.push(`${unitLabel} business`);
     }
   }
 
