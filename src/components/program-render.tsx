@@ -216,12 +216,13 @@ export function ProgramRender({
               ))}
           </div>
         ) : (
-          // Mirror the ward / stake business fallback so the section is a
-          // fixed fixture of the program — a quiet week reads as
-          // intentional rather than accidentally missing.
-          <div className="text-sm text-muted-foreground print:text-black italic">
+          // Match the ward / branch business fallback exactly — centered
+          // italic gray-700, prints solid black. Same class string as
+          // WardBusinessSection so the three "no X this week" lines
+          // read as a single visual family across the program.
+          <p className="italic text-sm text-center text-gray-700 print:text-black">
             There are no reminders this week.
-          </div>
+          </p>
         )}
       </section>
 
@@ -290,12 +291,12 @@ export function ProgramRender({
             {data.stakeBusiness?.trim() ? (
               <div className="whitespace-pre-wrap text-sm">{data.stakeBusiness}</div>
             ) : (
-              // Mirror the ward/branch business fallback so an empty
-              // Stake Business section prints an explicit "no business"
-              // line instead of just a heading with nothing beneath it.
-              <div className="text-sm text-muted-foreground print:text-black italic">
+              // Match the ward / branch business fallback exactly —
+              // centered italic gray-700 so the three "no X this week"
+              // lines read as a single visual family.
+              <p className="italic text-sm text-center text-gray-700 print:text-black">
                 There is no stake business this week.
-              </div>
+              </p>
             )}
           </section>
         </>
