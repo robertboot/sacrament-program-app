@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #e4e7de;
+  --color-card: #f2f3ee;
+  --color-ink: #1f2a24;
+  --color-soft: #5e6b60;
+  --color-line: #c7cdc0;
+  --color-brass: #a6763a;
+  --color-overdue: #9c3b26;
+  --color-soon: #b8862b;
+  --color-current: #3f6b52;
+
+  --font-serif: Georgia, "Times New Roman", serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+
+  --radius-sm: 4px;
+}
+
+html {
+  background: var(--color-paper);
+}
+
+body {
+  margin: 0;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* iOS zooms on focus when inputs are under 16px — keep them at 16px. */
+input,
+select,
+textarea,
+button {
+  font-size: 16px;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  html,
+  body {
+    background: #fff;
+  }
+}
