@@ -37,6 +37,7 @@ export default async function HomePage() {
     { data: nextProgram },
     { data: nextPublished },
     { data: appSettings },
+    { data: nextBooking },
   ] = await Promise.all([
     supabase.from("profiles").select("role").eq("id", userId).single(),
     supabase
@@ -67,6 +68,18 @@ export default async function HomePage() {
     // business" to match how the unit self-identifies. Same fetch the
     // renderer uses for section titles.
     supabase.from("app_settings").select("unit_type").eq("id", 1).maybeSingle(),
+    // Next member-booked meeting (this Sunday or the coming Wednesday)
+    // so the admin sees it on Home without opening the Calendar tab.
+    // Defensive: if the meeting_bookings table doesn't exist yet (pre-
+    // migration), swallow and show nothing.
+    supabase
+      .from("meeting_bookings")
+      .select("meeting_type, start_at, member_name")
+      .eq("status", "confirmed")
+      .gte("start_at", new Date().toISOString())
+      .order("start_at", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
   ]);
   const isBishopric = profile?.role === "bishopric";
   const publicAvailable = !!nextPublished;
@@ -243,6 +256,47 @@ export default async function HomePage() {
         )}
         <InstallPrompt />
       </div>
+
+      {isBishopric && nextBooking && (
+        <Link
+          href="/calendar"
+          className="mt-5 w-full max-w-md inline-flex items-start gap-3 rounded-xl bg-sky-50 dark:bg-sky-950/40 ring-1 ring-sky-200 dark:ring-sky-900 px-4 py-3 text-left shadow-sm hover:bg-sky-100 dark:hover:bg-sky-900/60 transition"
+        >
+          <CalendarDays className="w-5 h-5 shrink-0 text-sky-700 dark:text-sky-300 mt-0.5" />
+          <div className="min-w-0 flex-1">
+            <div className="text-[10px] uppercase tracking-widest font-bold text-sky-800 dark:text-sky-300">
+              Next scheduled meeting
+            </div>
+            <div className="text-sm font-semibold text-sky-950 dark:text-sky-100 mt-0.5">
+              {(() => {
+                const nb = nextBooking as {
+                  meeting_type: "interview_30" | "interview_60" | "tithing_declaration";
+                  start_at: string;
+                  member_name: string;
+                };
+                const d = new Date(nb.start_at);
+                const dateLabel = d.toLocaleDateString("en-US", {
+                  weekday: "short",
+                  month: "short",
+                  day: "numeric",
+                });
+                const timeLabel = d.toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                });
+                const typeLabel =
+                  nb.meeting_type === "tithing_declaration"
+                    ? "Tithing declaration"
+                    : nb.meeting_type === "interview_60"
+                      ? "Interview (60 min)"
+                      : "Interview (30 min)";
+                return `${dateLabel} at ${timeLabel} — ${nb.member_name} · ${typeLabel}`;
+              })()}
+            </div>
+          </div>
+          <ChevronRight className="w-5 h-5 shrink-0 text-sky-700/70 dark:text-sky-300/70 mt-0.5" />
+        </Link>
+      )}
 
       {isBishopric && (
         <div className="grid grid-cols-3 gap-3 w-full max-w-md mt-5">

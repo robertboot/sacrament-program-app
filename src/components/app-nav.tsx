@@ -26,6 +26,7 @@ const ITEMS = [
   { href: "/speakers", label: "Speakers", icon: Users, bishopricOnly: true },
   { href: "/topics", label: "Topics", icon: BookOpen, bishopricOnly: true },
   { href: "/events", label: "Events", icon: Megaphone, bishopricOnly: true },
+  { href: "/calendar", label: "Calendar", icon: CalendarDays, bishopricOnly: true },
   { href: "/settings", label: "Settings", icon: Settings, bishopricOnly: true },
 ];
 

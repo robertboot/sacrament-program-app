@@ -36,7 +36,38 @@ export type NotificationType =
   | "speaker_silent"
   | "speaker_reminder_due"
   | "slot_needs_approval"
-  | "program_published";
+  | "program_published"
+  | "meeting_booked";
+
+export type MeetingType = "interview_30" | "interview_60" | "tithing_declaration";
+
+export type MeetingBooking = {
+  id: string;
+  meeting_type: MeetingType;
+  start_at: string;  // ISO
+  end_at: string;    // ISO
+  member_name: string;
+  member_email: string | null;
+  status: "confirmed" | "cancelled";
+  created_at: string;
+};
+
+export type MeetingBlockRecurrenceKind = "weekly" | "monthly_nth";
+
+export type MeetingBlock = {
+  id: string;
+  label: string;
+  /** Set only for one-off blocks. */
+  start_at: string | null;
+  end_at: string | null;
+  /** Null for one-off; otherwise 'weekly' or 'monthly_nth'. */
+  recurrence_kind: MeetingBlockRecurrenceKind | null;
+  recurrence_day_of_week: number | null;  // 0 = Sunday
+  recurrence_nth: number | null;          // 1-5 for monthly_nth
+  recurrence_time: string | null;         // 'HH:MM' local
+  recurrence_duration_minutes: number | null;
+  created_at: string;
+};
 
 export type Notification = {
   id: string;
