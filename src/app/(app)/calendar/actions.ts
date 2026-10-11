@@ -124,6 +124,7 @@ export async function createPublicBooking(
     duration_minutes: number;
     member_name: string;
     member_email?: string;
+    member_phone?: string;
   },
 ) {
   const { createServiceClient } = await import("@/lib/supabase/server");
@@ -177,6 +178,7 @@ export async function createPublicBooking(
       end_at: end.toISOString(),
       member_name: input.member_name.trim(),
       member_email: input.member_email?.trim() || null,
+      member_phone: input.member_phone?.trim() || null,
       status: "confirmed",
     })
     .select("id")

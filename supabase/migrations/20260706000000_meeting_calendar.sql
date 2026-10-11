@@ -20,6 +20,7 @@ create table if not exists meeting_bookings (
   end_at timestamptz not null,
   member_name text not null,
   member_email text,
+  member_phone text,
   status text not null default 'confirmed',   -- 'confirmed' | 'cancelled'
   created_at timestamptz not null default now()
 );

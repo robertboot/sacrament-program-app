@@ -46,6 +46,7 @@ export function BookForm({
   const [time, setTime] = useState<string>("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
 
   const availableTypes: BookableMeetingType[] = useMemo(() => {
     const base: BookableMeetingType[] = ["interview_30", "interview_60"];
@@ -82,6 +83,7 @@ export function BookForm({
         duration_minutes: duration,
         member_name: name,
         member_email: email || undefined,
+        member_phone: phone || undefined,
       });
       if (r.error) {
         toast.error(r.error);
@@ -215,6 +217,21 @@ export function BookForm({
           onChange={(e) => setName(e.target.value)}
           placeholder="First Last"
         />
+      </div>
+
+      <div className="space-y-1.5">
+        <Label>Phone (optional)</Label>
+        <Input
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="(555) 123-4567"
+        />
+        <p className="text-[11px] text-muted-foreground">
+          Shared only with the bishopric so they can text you a reminder.
+        </p>
       </div>
 
       <div className="space-y-1.5">

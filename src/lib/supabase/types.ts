@@ -51,6 +51,7 @@ export type MeetingBooking = {
   end_at: string;    // ISO
   member_name: string;
   member_email: string | null;
+  member_phone: string | null;
   status: "confirmed" | "cancelled";
   created_at: string;
 };

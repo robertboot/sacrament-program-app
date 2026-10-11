@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Copy, RefreshCw, Trash2, Plus, Calendar as CalendarIcon } from "lucide-react";
+import { Copy, MessageSquare, RefreshCw, Trash2, Plus, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -189,9 +189,19 @@ export function CalendarClient({
                       hour: "numeric",
                       minute: "2-digit",
                     })}
+                    {b.member_phone ? ` · ${b.member_phone}` : ""}
                     {b.member_email ? ` · ${b.member_email}` : ""}
                   </div>
                 </div>
+                {b.member_phone && (
+                  <a
+                    href={buildReminderSmsUrl(b)}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-blue-800 dark:text-blue-200 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900 rounded-md px-2 py-1 border border-blue-200 dark:border-blue-900"
+                    title="Open Messages pre-filled with a reminder for this meeting"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" /> Text
+                  </a>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"
@@ -307,6 +317,32 @@ function formatTime(hhmm: string): string {
   const d = new Date();
   d.setHours(h, m, 0, 0);
   return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
+/**
+ * Build an `sms:` URL that opens the leader's native Messages app with
+ * the member's phone pre-filled and a friendly reminder body ready to
+ * send. Mirrors the speaker-reminder pattern (CLAUDE.md §18): no
+ * Twilio, the leader taps Send from their own number.
+ */
+function buildReminderSmsUrl(b: MeetingBooking): string {
+  const d = new Date(b.start_at);
+  const dateLabel = d.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+  const timeLabel = d.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  const firstName = b.member_name.trim().split(/\s+/)[0] || b.member_name;
+  const body = [
+    `Hi ${firstName}, just a friendly reminder about your ${MEETING_TYPE_LABELS[b.meeting_type].toLowerCase()} on ${dateLabel} at ${timeLabel}.`,
+    `See you then!`,
+  ].join("\n\n");
+  const cleanPhone = (b.member_phone ?? "").replace(/[^\d+]/g, "");
+  return `sms:${cleanPhone}?body=${encodeURIComponent(body)}`;
 }
 
 function AddBlockDialog({
