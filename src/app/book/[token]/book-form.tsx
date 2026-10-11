@@ -122,9 +122,9 @@ export function BookForm({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="space-y-1.5">
-        <Label>Meeting type</Label>
+        <Label className="text-base">Meeting type</Label>
         <Select
           value={type}
           onValueChange={(v) => {
@@ -132,8 +132,8 @@ export function BookForm({
             setTime("");
           }}
         >
-          <SelectTrigger>
-            <SelectValue />
+          <SelectTrigger className="h-12 text-base">
+            <SelectValue>{MEETING_TYPE_LABELS[type]}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {availableTypes.map((t) => (
@@ -146,7 +146,7 @@ export function BookForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label>Date</Label>
+        <Label className="text-base">Date</Label>
         <Select
           value={date}
           onValueChange={(v) => {
@@ -154,35 +154,29 @@ export function BookForm({
             setTime("");
           }}
         >
-          <SelectTrigger>
-            <SelectValue placeholder="Pick a date" />
+          <SelectTrigger className="h-12 text-base">
+            <SelectValue placeholder="Pick a date">
+              {date ? formatDateLabel(date) : null}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            {availableDates.map((d) => {
-              const [y, mo, da] = d.split("-").map(Number);
-              const label = new Date(y, mo - 1, da).toLocaleDateString("en-US", {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-              });
-              return (
-                <SelectItem key={d} value={d}>
-                  {label}
-                </SelectItem>
-              );
-            })}
+            {availableDates.map((d) => (
+              <SelectItem key={d} value={d}>
+                {formatDateLabel(d)}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
 
       <div className="space-y-1.5">
-        <Label>Time</Label>
+        <Label className="text-base">Time</Label>
         {slots.length === 0 ? (
           <p className="text-sm text-muted-foreground py-2">
             No times available on that date. Please pick another.
           </p>
         ) : (
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-3 gap-2">
             {slots.map((t) => {
               const [h, m] = t.split(":").map(Number);
               const d = new Date();
@@ -196,7 +190,7 @@ export function BookForm({
                   key={t}
                   type="button"
                   onClick={() => setTime(t)}
-                  className={`rounded-md border px-2 py-1.5 text-sm ${
+                  className={`rounded-md border px-2 py-2.5 text-base ${
                     time === t
                       ? "bg-primary text-primary-foreground border-primary"
                       : "hover:bg-accent"
@@ -211,8 +205,9 @@ export function BookForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label>Your name</Label>
+        <Label className="text-base">Your name</Label>
         <Input
+          className="h-12 text-base"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="First Last"
@@ -220,8 +215,9 @@ export function BookForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label>Phone (optional)</Label>
+        <Label className="text-base">Phone (optional)</Label>
         <Input
+          className="h-12 text-base"
           type="tel"
           inputMode="tel"
           autoComplete="tel"
@@ -229,14 +225,15 @@ export function BookForm({
           onChange={(e) => setPhone(e.target.value)}
           placeholder="(555) 123-4567"
         />
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           Shared only with the bishopric so they can text you a reminder.
         </p>
       </div>
 
       <div className="space-y-1.5">
-        <Label>Email (optional)</Label>
+        <Label className="text-base">Email (optional)</Label>
         <Input
+          className="h-12 text-base"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -253,4 +250,15 @@ export function BookForm({
       </Button>
     </div>
   );
+}
+
+/** yyyy-MM-dd → "Sun, Oct 18" — used both in the trigger label and the
+ *  dropdown items so the collapsed Select mirrors what the member picked. */
+function formatDateLabel(iso: string): string {
+  const [y, mo, da] = iso.split("-").map(Number);
+  return new Date(y, mo - 1, da).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
 }
