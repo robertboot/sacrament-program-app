@@ -39,11 +39,14 @@ export type NotificationType =
   | "program_published"
   | "meeting_booked";
 
-export type MeetingType = "interview_30" | "interview_60" | "tithing_declaration";
+export type BookableMeetingType =
+  | "interview_30"
+  | "interview_60"
+  | "tithing_declaration";
 
 export type MeetingBooking = {
   id: string;
-  meeting_type: MeetingType;
+  meeting_type: BookableMeetingType;
   start_at: string;  // ISO
   end_at: string;    // ISO
   member_name: string;

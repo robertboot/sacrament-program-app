@@ -1,4 +1,4 @@
-import type { MeetingBlock, MeetingType } from "@/lib/supabase/types";
+import type { MeetingBlock, BookableMeetingType } from "@/lib/supabase/types";
 
 /**
  * Member-facing booking windows. Hard-coded for v1 — if the ward wants
@@ -21,13 +21,13 @@ export const BUFFER_MINUTES = 5;
 /** How many weeks forward the public page offers. */
 export const BOOKING_HORIZON_WEEKS = 8;
 
-export const MEETING_TYPE_LABELS: Record<MeetingType, string> = {
+export const MEETING_TYPE_LABELS: Record<BookableMeetingType, string> = {
   interview_30: "Interview (30 min)",
   interview_60: "Interview (60 min)",
   tithing_declaration: "Tithing declaration (15 min)",
 };
 
-export const MEETING_TYPE_DURATION_MIN: Record<MeetingType, number> = {
+export const MEETING_TYPE_DURATION_MIN: Record<BookableMeetingType, number> = {
   interview_30: 30,
   interview_60: 60,
   tithing_declaration: 15,

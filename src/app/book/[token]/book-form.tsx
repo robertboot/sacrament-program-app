@@ -18,7 +18,7 @@ import {
   MEETING_TYPE_DURATION_MIN,
   MEETING_TYPE_LABELS,
 } from "@/lib/meeting-slots";
-import type { MeetingBlock, MeetingType } from "@/lib/supabase/types";
+import type { MeetingBlock, BookableMeetingType } from "@/lib/supabase/types";
 import { createPublicBooking } from "@/app/(app)/calendar/actions";
 
 export function BookForm({
@@ -41,14 +41,14 @@ export function BookForm({
     label: string;
   } | null>(null);
 
-  const [type, setType] = useState<MeetingType>("interview_30");
+  const [type, setType] = useState<BookableMeetingType>("interview_30");
   const [date, setDate] = useState<string>(availableDates[0] ?? "");
   const [time, setTime] = useState<string>("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
 
-  const availableTypes: MeetingType[] = useMemo(() => {
-    const base: MeetingType[] = ["interview_30", "interview_60"];
+  const availableTypes: BookableMeetingType[] = useMemo(() => {
+    const base: BookableMeetingType[] = ["interview_30", "interview_60"];
     return tithingAllowed ? ["tithing_declaration", ...base] : base;
   }, [tithingAllowed]);
 
@@ -126,7 +126,7 @@ export function BookForm({
         <Select
           value={type}
           onValueChange={(v) => {
-            setType(v as MeetingType);
+            setType(v as BookableMeetingType);
             setTime("");
           }}
         >
@@ -148,7 +148,7 @@ export function BookForm({
         <Select
           value={date}
           onValueChange={(v) => {
-            setDate(v);
+            setDate(v ?? "");
             setTime("");
           }}
         >

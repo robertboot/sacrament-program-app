@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { notifyBishopric } from "@/lib/notifications";
-import type { MeetingType } from "@/lib/supabase/types";
+import type { BookableMeetingType } from "@/lib/supabase/types";
 import type { CreateMeetingBlockInput } from "./types";
 
 export async function toggleTithingDeclarations(enabled: boolean) {
@@ -119,7 +119,7 @@ export async function cancelBooking(id: string) {
 export async function createPublicBooking(
   token: string,
   input: {
-    meeting_type: MeetingType;
+    meeting_type: BookableMeetingType;
     start_at: string;
     duration_minutes: number;
     member_name: string;
