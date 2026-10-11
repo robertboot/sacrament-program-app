@@ -71,3 +71,21 @@ alter table app_settings
 update app_settings
   set booking_token = encode(gen_random_bytes(16), 'hex')
   where id = 1 and booking_token is null;
+
+-- RLS: bishopric has full admin access. Public booking inserts happen
+-- via the service client (createServiceClient) which bypasses RLS
+-- entirely, so no anon/public policy is needed — the token in
+-- app_settings.booking_token stays the gate for member bookings.
+alter table meeting_bookings enable row level security;
+alter table meeting_blocks enable row level security;
+
+drop policy if exists "meeting_bookings bishopric all" on meeting_bookings;
+drop policy if exists "meeting_blocks bishopric all" on meeting_blocks;
+
+create policy "meeting_bookings bishopric all" on meeting_bookings
+  for all to authenticated
+  using (is_bishopric()) with check (is_bishopric());
+
+create policy "meeting_blocks bishopric all" on meeting_blocks
+  for all to authenticated
+  using (is_bishopric()) with check (is_bishopric());
