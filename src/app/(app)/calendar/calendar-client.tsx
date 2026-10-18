@@ -138,6 +138,77 @@ export function CalendarClient({
         </CollapsibleCard>
       )}
 
+      {view === "list" && (
+        <CollapsibleCard
+          title={`Upcoming meetings (${upcomingBookings.length})`}
+          defaultOpen
+          contentClassName="p-0"
+        >
+          {upcomingBookings.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No bookings yet.
+            </p>
+          ) : (
+            <ul className="divide-y">
+              {upcomingBookings.map((b) => (
+                <li
+                  key={b.id}
+                  className="px-3 py-2 flex items-start gap-3 justify-between"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm">
+                      <span className="font-medium">{b.member_name}</span>
+                      <span className="text-muted-foreground">
+                        {" "}
+                        · {MEETING_TYPE_LABELS[b.meeting_type]}
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(b.start_at).toLocaleString("en-US", {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                      {b.member_phone ? ` · ${b.member_phone}` : ""}
+                      {b.member_email ? ` · ${b.member_email}` : ""}
+                    </div>
+                  </div>
+                  {b.member_phone && (
+                    <a
+                      href={buildReminderSmsUrl(b)}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-blue-800 dark:text-blue-200 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900 rounded-md px-2 py-1 border border-blue-200 dark:border-blue-900"
+                      title="Open Messages pre-filled with a reminder for this meeting"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" /> Text
+                    </a>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      start(async () => {
+                        if (!confirm(`Cancel ${b.member_name}'s meeting?`)) return;
+                        const r = await cancelBooking(b.id);
+                        if (r.error) toast.error(r.error);
+                        else {
+                          toast.success("Cancelled.");
+                          router.refresh();
+                        }
+                      })
+                    }
+                    disabled={pending}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CollapsibleCard>
+      )}
+
       <CollapsibleCard title="Scheduling link" defaultOpen contentClassName="space-y-3">
         <label className="flex items-start gap-2 text-sm cursor-pointer select-none">
           <Checkbox
@@ -177,7 +248,7 @@ export function CalendarClient({
             <div className="font-medium">Tithing declarations open</div>
             <p className="text-xs text-muted-foreground">
               Turn on in September; turn off at the end of November. When
-              on, &ldquo;Tithing declaration (15 min)&rdquo; appears as a
+              on, &ldquo;Tithing declaration (30 min)&rdquo; appears as a
               bookable type.
             </p>
           </div>
@@ -215,77 +286,6 @@ export function CalendarClient({
           </p>
         </div>
       </CollapsibleCard>
-
-      {view === "list" && (
-        <CollapsibleCard
-          title={`Upcoming meetings (${upcomingBookings.length})`}
-          defaultOpen
-        contentClassName="p-0"
-      >
-        {upcomingBookings.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            No bookings yet.
-          </p>
-        ) : (
-          <ul className="divide-y">
-            {upcomingBookings.map((b) => (
-              <li
-                key={b.id}
-                className="px-3 py-2 flex items-start gap-3 justify-between"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm">
-                    <span className="font-medium">{b.member_name}</span>
-                    <span className="text-muted-foreground">
-                      {" "}
-                      · {MEETING_TYPE_LABELS[b.meeting_type]}
-                    </span>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(b.start_at).toLocaleString("en-US", {
-                      weekday: "short",
-                      month: "short",
-                      day: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
-                    {b.member_phone ? ` · ${b.member_phone}` : ""}
-                    {b.member_email ? ` · ${b.member_email}` : ""}
-                  </div>
-                </div>
-                {b.member_phone && (
-                  <a
-                    href={buildReminderSmsUrl(b)}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-blue-800 dark:text-blue-200 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900 rounded-md px-2 py-1 border border-blue-200 dark:border-blue-900"
-                    title="Open Messages pre-filled with a reminder for this meeting"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5" /> Text
-                  </a>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    start(async () => {
-                      if (!confirm(`Cancel ${b.member_name}'s meeting?`)) return;
-                      const r = await cancelBooking(b.id);
-                      if (r.error) toast.error(r.error);
-                      else {
-                        toast.success("Cancelled.");
-                        router.refresh();
-                      }
-                    })
-                  }
-                  disabled={pending}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-        </CollapsibleCard>
-      )}
 
       <CollapsibleCard
         title={`Meeting blocks (${blocks.length})`}
