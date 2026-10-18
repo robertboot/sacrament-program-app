@@ -24,13 +24,13 @@ export const BOOKING_HORIZON_WEEKS = 8;
 export const MEETING_TYPE_LABELS: Record<BookableMeetingType, string> = {
   interview_30: "Interview (30 min)",
   interview_60: "Interview (60 min)",
-  tithing_declaration: "Tithing declaration (15 min)",
+  tithing_declaration: "Tithing declaration (30 min)",
 };
 
 export const MEETING_TYPE_DURATION_MIN: Record<BookableMeetingType, number> = {
   interview_30: 30,
   interview_60: 60,
-  tithing_declaration: 15,
+  tithing_declaration: 30,
 };
 
 /** Tithing declarations are seasonal (Sep 1 → Nov 30). */
