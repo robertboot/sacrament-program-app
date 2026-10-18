@@ -39,6 +39,9 @@ export function BookForm({
     date: string;
     time: string;
     label: string;
+    /** Full ISO of start_at — used to build the Add-to-Calendar links. */
+    startIso: string;
+    durationMin: number;
   } | null>(null);
 
   const [type, setType] = useState<BookableMeetingType>("interview_30");
@@ -100,21 +103,61 @@ export function BookForm({
           minute: "2-digit",
         }),
         label: MEETING_TYPE_LABELS[type],
+        startIso: startAt.toISOString(),
+        durationMin: duration,
       });
     });
   }
 
   if (confirmed) {
+    const title = `Meeting with the bishopric — ${confirmed.label}`;
+    const icsHref = `/ics?title=${encodeURIComponent(title)}&start=${encodeURIComponent(confirmed.startIso)}&duration_min=${confirmed.durationMin}`;
+    // Google Calendar's template URL wants compact UTC: 20261115T184500Z/20261115T191500Z
+    const gcalFmt = (iso: string) =>
+      iso.replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+    const gcalStart = gcalFmt(confirmed.startIso);
+    const gcalEnd = gcalFmt(
+      new Date(
+        new Date(confirmed.startIso).getTime() + confirmed.durationMin * 60_000,
+      ).toISOString(),
+    );
+    const gcalHref = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${gcalStart}/${gcalEnd}`;
     return (
-      <div className="rounded-md border border-emerald-300 bg-emerald-50 dark:bg-emerald-950 dark:border-emerald-900 p-4 text-center space-y-2">
-        <Check className="w-6 h-6 text-emerald-600 dark:text-emerald-300 mx-auto" />
-        <div className="text-base font-semibold">You&rsquo;re booked.</div>
-        <div className="text-sm">
-          {confirmed.label}
-          <br />
-          {confirmed.date} at {confirmed.time}
+      <div className="space-y-4">
+        <div className="rounded-md border border-emerald-300 bg-emerald-50 dark:bg-emerald-950 dark:border-emerald-900 p-4 text-center space-y-2">
+          <Check className="w-6 h-6 text-emerald-600 dark:text-emerald-300 mx-auto" />
+          <div className="text-base font-semibold">You&rsquo;re booked.</div>
+          <div className="text-sm">
+            {confirmed.label}
+            <br />
+            {confirmed.date} at {confirmed.time}
+          </div>
         </div>
-        <p className="text-xs text-muted-foreground pt-2">
+
+        <div className="rounded-md border p-3 space-y-2">
+          <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-center">
+            Add to your calendar
+          </div>
+          <div className="flex flex-wrap justify-center gap-2 text-sm">
+            <a
+              href={icsHref}
+              download
+              className="inline-flex items-center gap-1 rounded-md border px-3 py-2 hover:bg-accent"
+            >
+              Apple / Outlook (.ics)
+            </a>
+            <a
+              href={gcalHref}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 rounded-md border px-3 py-2 hover:bg-accent"
+            >
+              Google Calendar
+            </a>
+          </div>
+        </div>
+
+        <p className="text-xs text-muted-foreground text-center">
           We&rsquo;ll see you then. You can close this page.
         </p>
       </div>
