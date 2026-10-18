@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Copy, MessageSquare, RefreshCw, Trash2, Plus, Calendar as CalendarIcon, LayoutGrid, List } from "lucide-react";
@@ -60,15 +60,18 @@ export function CalendarClient({
   const [pending, start] = useTransition();
   const [showAdd, setShowAdd] = useState(false);
   // Persist the view choice per device so leaders don't re-pick it on
-  // every visit. localStorage is best-effort; wrapped in try/catch.
-  const [view, setView] = useState<"list" | "calendar">(() => {
-    if (typeof window === "undefined") return "list";
+  // every visit. Start with "list" on both server and client's first
+  // render to avoid a hydration mismatch; useEffect then syncs to the
+  // stored value after mount.
+  const [view, setView] = useState<"list" | "calendar">("list");
+  useEffect(() => {
     try {
-      return (localStorage.getItem("rota:calendar-view") as "list" | "calendar") || "list";
+      const stored = localStorage.getItem("rota:calendar-view");
+      if (stored === "calendar" || stored === "list") setView(stored);
     } catch {
-      return "list";
+      // ignore — localStorage can throw in private mode / certain embedding contexts
     }
-  });
+  }, []);
   function setViewAndPersist(v: "list" | "calendar") {
     setView(v);
     try {
