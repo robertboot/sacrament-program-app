@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Copy, MessageSquare, RefreshCw, Trash2, Plus, Calendar as CalendarIcon } from "lucide-react";
+import { Copy, MessageSquare, RefreshCw, Trash2, Plus, Calendar as CalendarIcon, LayoutGrid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,7 +30,8 @@ import {
   toggleCalendarEnabled,
   toggleTithingDeclarations,
 } from "./actions";
-import type { MeetingBlock, MeetingBooking } from "@/lib/supabase/types";
+import type { MeetingBlock, MeetingBooking, SacramentEvent } from "@/lib/supabase/types";
+import { CalendarMonthView } from "./calendar-month-view";
 
 const DOW_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const NTH_NAMES = ["first", "second", "third", "fourth", "fifth"];
@@ -46,16 +47,36 @@ export function CalendarClient({
   bookingToken,
   upcomingBookings,
   blocks,
+  events,
 }: {
   calendarEnabled: boolean;
   tithingEnabled: boolean;
   bookingToken: string | null;
   upcomingBookings: MeetingBooking[];
   blocks: MeetingBlock[];
+  events: SacramentEvent[];
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [showAdd, setShowAdd] = useState(false);
+  // Persist the view choice per device so leaders don't re-pick it on
+  // every visit. localStorage is best-effort; wrapped in try/catch.
+  const [view, setView] = useState<"list" | "calendar">(() => {
+    if (typeof window === "undefined") return "list";
+    try {
+      return (localStorage.getItem("rota:calendar-view") as "list" | "calendar") || "list";
+    } catch {
+      return "list";
+    }
+  });
+  function setViewAndPersist(v: "list" | "calendar") {
+    setView(v);
+    try {
+      localStorage.setItem("rota:calendar-view", v);
+    } catch {
+      // ignore
+    }
+  }
 
   const bookingUrl = useMemo(() => {
     if (!bookingToken) return null;
@@ -78,6 +99,41 @@ export function CalendarClient({
           see every upcoming meeting at a glance.
         </p>
       </div>
+
+      {/* List / Calendar view toggle. localStorage-persisted via
+          setViewAndPersist. The month-view card renders bookings +
+          blocks + events together; the list view is the existing admin
+          surface (toggles, bookings list, blocks CRUD). */}
+      <div className="inline-flex rounded-md ring-1 ring-border p-0.5 bg-muted/50">
+        <button
+          type="button"
+          onClick={() => setViewAndPersist("list")}
+          className={`inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded ${
+            view === "list" ? "bg-background shadow-sm" : "text-muted-foreground"
+          }`}
+        >
+          <List className="w-4 h-4" /> List
+        </button>
+        <button
+          type="button"
+          onClick={() => setViewAndPersist("calendar")}
+          className={`inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded ${
+            view === "calendar" ? "bg-background shadow-sm" : "text-muted-foreground"
+          }`}
+        >
+          <LayoutGrid className="w-4 h-4" /> Calendar
+        </button>
+      </div>
+
+      {view === "calendar" && (
+        <CollapsibleCard title="This month" defaultOpen contentClassName="space-y-2">
+          <CalendarMonthView
+            bookings={upcomingBookings}
+            blocks={blocks}
+            events={events}
+          />
+        </CollapsibleCard>
+      )}
 
       <CollapsibleCard title="Scheduling link" defaultOpen contentClassName="space-y-3">
         <label className="flex items-start gap-2 text-sm cursor-pointer select-none">
@@ -157,9 +213,10 @@ export function CalendarClient({
         </div>
       </CollapsibleCard>
 
-      <CollapsibleCard
-        title={`Upcoming meetings (${upcomingBookings.length})`}
-        defaultOpen
+      {view === "list" && (
+        <CollapsibleCard
+          title={`Upcoming meetings (${upcomingBookings.length})`}
+          defaultOpen
         contentClassName="p-0"
       >
         {upcomingBookings.length === 0 ? (
@@ -224,7 +281,8 @@ export function CalendarClient({
             ))}
           </ul>
         )}
-      </CollapsibleCard>
+        </CollapsibleCard>
+      )}
 
       <CollapsibleCard
         title={`Meeting blocks (${blocks.length})`}
