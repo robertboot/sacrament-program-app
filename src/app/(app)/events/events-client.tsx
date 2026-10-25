@@ -349,6 +349,10 @@ function EventDialog({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+            <p className="text-[11px] text-muted-foreground">
+              Paste a link (https://…) and it becomes clickable on the
+              bulletin. For a nicer label, use <code>[Sign up](https://…)</code>.
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="event-date">Event date (optional)</Label>

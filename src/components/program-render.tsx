@@ -211,7 +211,7 @@ export function ProgramRender({
                   <span className="text-[var(--brand-gold)] print:text-black select-none" aria-hidden="true">
                     •
                   </span>
-                  <div className="flex-1">{line}</div>
+                  <div className="flex-1 break-words">{renderWithLinks(line)}</div>
                 </div>
               ))}
           </div>
@@ -243,7 +243,9 @@ export function ProgramRender({
                     </span>
                   )}
                   {e.description && (
-                    <div className="text-gray-700 print:text-black text-xs">{e.description}</div>
+                    <div className="text-gray-700 print:text-black text-xs break-words">
+                      {renderWithLinks(e.description)}
+                    </div>
                   )}
                 </div>
                 {e.event_date && (
@@ -436,6 +438,76 @@ function Row({
       </div>
     </div>
   );
+}
+
+/**
+ * Convert plain text containing URLs or `[label](url)` markdown links into
+ * React nodes with clickable `<a>` tags. Used in Brief Reminders and
+ * Upcoming-Events descriptions so leaders can paste a sign-up link straight
+ * into the program and have it work in both the web view and print.
+ *
+ * Accepts:
+ *   • Markdown-style  [Click here](https://example.com)
+ *   • Bare URLs       https://example.com, www.example.com
+ *
+ * Trailing punctuation (. , ! ? ) ]) is peeled back off bare URLs so a
+ * sentence-ending period doesn't get swallowed into the href.
+ */
+function renderWithLinks(text: string): ReactNode {
+  if (!text) return text;
+  const out: ReactNode[] = [];
+  const mdRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+  let lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = mdRegex.exec(text)) !== null) {
+    pushAutoLinked(out, text.slice(lastIndex, m.index));
+    out.push(
+      <a
+        key={`md-${m.index}`}
+        href={m[2]}
+        target="_blank"
+        rel="noreferrer"
+        className="underline text-[var(--brand-gold)] print:text-black hover:opacity-80"
+      >
+        {m[1]}
+      </a>,
+    );
+    lastIndex = m.index + m[0].length;
+  }
+  pushAutoLinked(out, text.slice(lastIndex));
+  return out.length === 1 ? out[0] : <>{out}</>;
+}
+
+function pushAutoLinked(out: ReactNode[], chunk: string): void {
+  if (!chunk) return;
+  const urlRegex = /\b(https?:\/\/\S+|www\.\S+)/g;
+  let lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = urlRegex.exec(chunk)) !== null) {
+    let url = m[1];
+    let trailing = "";
+    while (/[.,!?)\]]$/.test(url)) {
+      trailing = url.slice(-1) + trailing;
+      url = url.slice(0, -1);
+    }
+    if (!url) continue;
+    if (m.index > lastIndex) out.push(chunk.slice(lastIndex, m.index));
+    const href = url.startsWith("www.") ? `https://${url}` : url;
+    out.push(
+      <a
+        key={`u-${out.length}`}
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        className="underline text-[var(--brand-gold)] print:text-black hover:opacity-80"
+      >
+        {url}
+      </a>,
+    );
+    if (trailing) out.push(trailing);
+    lastIndex = m.index + m[0].length;
+  }
+  if (lastIndex < chunk.length) out.push(chunk.slice(lastIndex));
 }
 
 /**

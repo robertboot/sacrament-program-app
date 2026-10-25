@@ -412,6 +412,10 @@ export function ProgramEditor({
               }
               placeholder="Reminders to read at the pulpit (optional)…"
             />
+            <p className="text-[11px] text-muted-foreground">
+              Paste a link (https://…) and it becomes clickable on the
+              bulletin. For a nicer label, use <code>[Sign up](https://…)</code>.
+            </p>
           </div>
           {isBishopric && (
             <div className="space-y-1.5">
