@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { CalendarDays, Users, BookOpen, Megaphone, Settings, Home } from "lucide-react";
+import { CalendarDays, Users, BookOpen, Megaphone, Settings, Home, ClipboardList } from "lucide-react";
 import type { UserRole } from "@/lib/supabase/types";
 
 const ITEMS = [
@@ -15,6 +15,7 @@ const ITEMS = [
   { href: "/topics", label: "Topics", icon: BookOpen, bishopricOnly: true },
   { href: "/events", label: "Events", icon: Megaphone, bishopricOnly: true },
   { href: "/calendar", label: "Calendar", icon: CalendarDays, bishopricOnly: true },
+  { href: "/councils", label: "Councils", icon: ClipboardList, bishopricOnly: true },
   { href: "/settings", label: "Settings", icon: Settings, bishopricOnly: true },
 ];
 

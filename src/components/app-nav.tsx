@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CalendarDays, Users, BookOpen, Megaphone, Settings, LogOut, Home } from "lucide-react";
+import { CalendarDays, Users, BookOpen, Megaphone, Settings, LogOut, Home, ClipboardList } from "lucide-react";
 import { BrandWordmark } from "@/components/brand-mark";
 import { NotificationBell } from "@/components/notification-bell";
 import type { UserRole } from "@/lib/supabase/types";
@@ -27,6 +27,7 @@ const ITEMS = [
   { href: "/topics", label: "Topics", icon: BookOpen, bishopricOnly: true },
   { href: "/events", label: "Events", icon: Megaphone, bishopricOnly: true },
   { href: "/calendar", label: "Calendar", icon: CalendarDays, bishopricOnly: true },
+  { href: "/councils", label: "Councils", icon: ClipboardList, bishopricOnly: true },
   { href: "/settings", label: "Settings", icon: Settings, bishopricOnly: true },
 ];
 

@@ -56,6 +56,36 @@ export type MeetingBooking = {
   created_at: string;
 };
 
+export type CouncilKind = "branch_council" | "byc";
+export type CouncilStatus = "draft" | "finalized";
+
+export type CouncilMeeting = {
+  id: string;
+  kind: CouncilKind;
+  meeting_date: string;  // 'YYYY-MM-DD'
+  opening_hymn_id: number | null;
+  opening_hymn_text: string | null;
+  theme: string | null;
+  activity_date: string | null;  // 'YYYY-MM-DD'
+  activity_ideas: string | null;
+  looking_ahead_text: string | null;
+  follow_up_text: string;
+  post_meeting_notes: string | null;
+  status: CouncilStatus;
+  share_token: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CouncilAgendaItem = {
+  id: string;
+  meeting_id: string;
+  position: number;
+  title: string;
+  sub_note: string | null;
+  created_at: string;
+};
+
 export type MeetingBlockRecurrenceKind = "weekly" | "monthly_nth";
 
 export type MeetingBlock = {
