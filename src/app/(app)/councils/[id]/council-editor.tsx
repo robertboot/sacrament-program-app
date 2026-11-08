@@ -547,11 +547,25 @@ export function CouncilEditor({
         </CollapsibleCard>
       </div>
 
-      <div className="no-print rounded-md ring-1 ring-border bg-card overflow-hidden">
-        <div className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b">
-          Preview
+      <div className="no-print rounded-md ring-1 ring-border bg-card">
+        <div className="px-4 py-2 flex items-center gap-2 border-b">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Preview
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto"
+            onClick={() => window.print()}
+          >
+            <Printer className="w-3.5 h-3.5" /> Print
+          </Button>
         </div>
-        <div className="p-2 bg-[#f8fafc]">
+        {/* overflow-x-auto is the safety net for the BYC booklet, which
+            is 11in wide. council-print-styles shrinks it with zoom on
+            narrow viewports, but this keeps nothing clipped when a
+            viewer's zoom disagrees. */}
+        <div className="p-2 bg-[#f8fafc] overflow-x-auto">
           <CouncilRender {...renderData} />
         </div>
       </div>

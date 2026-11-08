@@ -86,13 +86,27 @@ export function CouncilPrintStyles({ kind }: { kind: CouncilKind }) {
       @media screen {
         .council-byc {
           background: #f1f3f6;
-          padding: 1.5rem;
+          padding: 1rem;
+          /* Scale down the 11in-wide booklet so it fits a phone / editor
+             panel without clipping. zoom is honored by all current major
+             browsers (Firefox since 126) and, unlike transform:scale,
+             collapses the layout box. */
+          zoom: 1;
         }
         .byc-page {
           background: white;
           margin: 0 auto 1rem auto;
           box-shadow: 0 2px 10px rgba(0,0,0,0.08);
         }
+      }
+      @media screen and (max-width: 1280px) {
+        .council-byc { zoom: 0.6; }
+      }
+      @media screen and (max-width: 900px) {
+        .council-byc { zoom: 0.45; }
+      }
+      @media screen and (max-width: 640px) {
+        .council-byc { zoom: 0.33; }
       }
     `}</style>
   );
