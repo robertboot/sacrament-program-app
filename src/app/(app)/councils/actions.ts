@@ -3,6 +3,8 @@
 import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { monthAfter, monthName, planningMonthFor } from "@/lib/fsy-lessons";
+import { getFsyLesson } from "@/lib/fsy-lessons-server";
 import type { CouncilKind, CouncilMeeting } from "@/lib/supabase/types";
 
 /**
@@ -50,14 +52,92 @@ export async function createCouncilMeeting(input: {
 }) {
   const sb = await createClient();
   const meeting_date = input.meeting_date ?? nextDefaultDate(input.kind);
+
+  // Base row — BC only populates meeting_date + kind; BYC also auto-fills
+  // theme/scripture/pages/ideas and the 3rd-Wednesday activity_date, plus
+  // a Looking-Ahead line pointing at next month's FSY chapter. All of
+  // these remain editable in the editor; failed FSY fetches still create
+  // the agenda, they just leave the theme fields null for the render to
+  // show a "(verify)" placeholder.
+  const row: Record<string, unknown> = { kind: input.kind, meeting_date };
+
+  if (input.kind === "byc") {
+    const anchor = new Date(meeting_date + "T00:00:00");
+    const planning = planningMonthFor(anchor);
+    const fsy = await getFsyLesson(planning.year, planning.month);
+    const ideas = [fsy?.idea_a, fsy?.idea_b].filter(Boolean).join(" · ");
+    row.activity_date = isoDate(planning.thirdWednesday);
+    row.theme = fsy?.chapter_title ?? null;
+    row.theme_scripture = fsy?.scripture ?? null;
+    row.theme_pages = fsy?.pages ?? null;
+    row.activity_ideas = ideas || null;
+
+    const next = monthAfter(planning.year, planning.month);
+    const nextFsy = await getFsyLesson(next.year, next.month);
+    if (nextFsy?.chapter_title) {
+      row.looking_ahead_text = `${monthName(next.month)} theme — "${nextFsy.chapter_title}"\nActivity Wed, ${formatShort(next.thirdWednesday)} — plan at the next BYC`;
+    }
+  }
+
   const { data, error } = await sb
     .from("council_meetings")
-    .insert({ kind: input.kind, meeting_date })
+    .insert(row)
     .select("id")
     .single();
   if (error) return { error: error.message, id: null };
   revalidatePath("/councils");
   return { error: null, id: data?.id as string };
+}
+
+function formatShort(d: Date): string {
+  return d.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+/**
+ * Re-fetch the FSY lesson for this BYC's planning month and overwrite
+ * theme/scripture/pages/ideas, the 3rd-Wednesday activity_date, and the
+ * Looking-Ahead line. Called from the editor's "Refresh theme" button.
+ * Safe to call on a BC — becomes a no-op and returns a friendly error.
+ */
+export async function refreshBycTheme(meetingId: string) {
+  const sb = await createClient();
+  const { data: m } = await sb
+    .from("council_meetings")
+    .select("id, kind, meeting_date")
+    .eq("id", meetingId)
+    .maybeSingle();
+  if (!m) return { error: "Meeting not found." };
+  const meeting = m as { id: string; kind: CouncilKind; meeting_date: string };
+  if (meeting.kind !== "byc") {
+    return { error: "Only BYC agendas pull from the FSY lesson pages." };
+  }
+  const planning = planningMonthFor(new Date(meeting.meeting_date + "T00:00:00"));
+  const fsy = await getFsyLesson(planning.year, planning.month);
+  const ideas = [fsy?.idea_a, fsy?.idea_b].filter(Boolean).join(" · ");
+  const next = monthAfter(planning.year, planning.month);
+  const nextFsy = await getFsyLesson(next.year, next.month);
+  const lookingAhead = nextFsy?.chapter_title
+    ? `${monthName(next.month)} theme — "${nextFsy.chapter_title}"\nActivity Wed, ${formatShort(next.thirdWednesday)} — plan at the next BYC`
+    : null;
+  const { error } = await sb
+    .from("council_meetings")
+    .update({
+      activity_date: isoDate(planning.thirdWednesday),
+      theme: fsy?.chapter_title ?? null,
+      theme_scripture: fsy?.scripture ?? null,
+      theme_pages: fsy?.pages ?? null,
+      activity_ideas: ideas || null,
+      looking_ahead_text: lookingAhead,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", meetingId);
+  if (error) return { error: error.message };
+  revalidatePath(`/councils/${meetingId}`);
+  return { error: null, hit: !!fsy };
 }
 
 export async function updateCouncilMeeting(

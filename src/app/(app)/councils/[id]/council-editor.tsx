@@ -11,6 +11,7 @@ import {
   History,
   Plus,
   Printer,
+  RefreshCw,
   Save,
   Share2,
   Trash2,
@@ -28,6 +29,7 @@ import {
   copyItemsFromLastMeeting,
   deleteAgendaItem,
   deleteCouncilMeeting,
+  refreshBycTheme,
   regenerateCouncilShareToken,
   reorderAgendaItems,
   updateAgendaItem,
@@ -44,6 +46,7 @@ type Draft = {
   opening_hymn_id: number | null;
   opening_hymn_text: string | null;
   theme: string;
+  theme_pages: string;
   activity_date: string;
   activity_ideas: string;
   looking_ahead_text: string;
@@ -70,6 +73,7 @@ export function CouncilEditor({
     opening_hymn_id: meeting.opening_hymn_id,
     opening_hymn_text: meeting.opening_hymn_text,
     theme: meeting.theme ?? "",
+    theme_pages: meeting.theme_pages ?? "",
     activity_date: meeting.activity_date ?? "",
     activity_ideas: meeting.activity_ideas ?? "",
     looking_ahead_text: meeting.looking_ahead_text ?? "",
@@ -96,6 +100,7 @@ export function CouncilEditor({
         opening_hymn_id: draft.opening_hymn_id,
         opening_hymn_text: draft.opening_hymn_text,
         theme: draft.theme.trim() || null,
+        theme_pages: draft.theme_pages.trim() || null,
         activity_date: draft.activity_date || null,
         activity_ideas: draft.activity_ideas.trim() || null,
         looking_ahead_text: draft.looking_ahead_text.trim() || null,
@@ -114,6 +119,7 @@ export function CouncilEditor({
     draft.opening_hymn_id,
     draft.opening_hymn_text,
     draft.theme,
+    draft.theme_pages,
     draft.activity_date,
     draft.activity_ideas,
     draft.looking_ahead_text,
@@ -199,6 +205,19 @@ export function CouncilEditor({
     });
   }
 
+  function refreshTheme() {
+    start(async () => {
+      const r = await refreshBycTheme(meeting.id);
+      if (r.error) {
+        toast.error(r.error);
+        return;
+      }
+      if (r.hit) toast.success("Theme refreshed from the Church site.");
+      else toast.message("No fresh data from the Church site — kept what we had.");
+      router.refresh();
+    });
+  }
+
   function copyShareLink() {
     const url = `${window.location.origin}/council/${meeting.share_token}`;
     navigator.clipboard?.writeText(url);
@@ -240,6 +259,7 @@ export function CouncilEditor({
         opening_hymn_id: draft.opening_hymn_id,
         opening_hymn_text: draft.opening_hymn_text,
         theme: draft.theme || null,
+        theme_pages: draft.theme_pages || null,
         activity_date: draft.activity_date || null,
         activity_ideas: draft.activity_ideas || null,
         looking_ahead_text: draft.looking_ahead_text || null,
@@ -302,6 +322,11 @@ export function CouncilEditor({
         <Button variant="outline" onClick={copyFromLast}>
           <History className="w-4 h-4" /> Pull items from last meeting
         </Button>
+        {!isBc && (
+          <Button variant="outline" onClick={refreshTheme} disabled={pending}>
+            <RefreshCw className="w-4 h-4" /> Refresh theme from FSY
+          </Button>
+        )}
         <Button variant="ghost" onClick={regenerateShareLink} disabled={pending}>
           <CopyIcon className="w-4 h-4" /> Regenerate link
         </Button>
@@ -342,6 +367,12 @@ export function CouncilEditor({
 
           {!isBc && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5 sm:col-span-2 rounded-md ring-1 ring-border bg-muted/30 px-3 py-2 text-xs">
+                <strong>Auto-filled from the FSY lesson pages for the
+                planning month.</strong> &ldquo;Refresh theme from FSY&rdquo;
+                re-pulls from the Church site and recomputes the 3rd-Wednesday
+                activity date. Edit any field below to override.
+              </div>
               <div className="space-y-1.5">
                 <Label htmlFor="theme">FSY chapter / theme</Label>
                 <Input
@@ -352,6 +383,15 @@ export function CouncilEditor({
                 />
               </div>
               <div className="space-y-1.5">
+                <Label htmlFor="theme-pages">FSY guide pages</Label>
+                <Input
+                  id="theme-pages"
+                  value={draft.theme_pages}
+                  onChange={(e) => patch({ theme_pages: e.target.value })}
+                  placeholder="e.g. 50&ndash;56"
+                />
+              </div>
+              <div className="space-y-1.5">
                 <Label htmlFor="activity-date">Combined activity date</Label>
                 <Input
                   id="activity-date"
@@ -359,8 +399,11 @@ export function CouncilEditor({
                   value={draft.activity_date}
                   onChange={(e) => patch({ activity_date: e.target.value })}
                 />
+                <p className="text-[11px] text-muted-foreground">
+                  3rd Wednesday of the planning month.
+                </p>
               </div>
-              <div className="space-y-1.5 sm:col-span-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="ideas">Magazine activity ideas</Label>
                 <Input
                   id="ideas"
@@ -368,19 +411,19 @@ export function CouncilEditor({
                   onChange={(e) => patch({ activity_ideas: e.target.value })}
                   placeholder="e.g. Three Truths and a Lie · Freed by Truth"
                 />
-                <p className="text-[11px] text-muted-foreground">
-                  Prints under the combined-activity planning line. Youth
-                  pick which to run with at the meeting.
-                </p>
               </div>
               <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="looking-ahead">Looking Ahead (optional, one line)</Label>
-                <Input
+                <Label htmlFor="looking-ahead">Looking Ahead (optional)</Label>
+                <Textarea
                   id="looking-ahead"
+                  rows={2}
                   value={draft.looking_ahead_text}
                   onChange={(e) => patch({ looking_ahead_text: e.target.value })}
-                  placeholder="e.g. December theme — &ldquo;Peace in Christ&rdquo; — plan at the next BYC"
+                  placeholder="e.g. December theme — &ldquo;Peace in Christ&rdquo; / Activity Wed, Dec 16 — plan at the next BYC"
                 />
+                <p className="text-[11px] text-muted-foreground">
+                  Also auto-filled from next month&rsquo;s FSY lesson.
+                </p>
               </div>
             </div>
           )}
@@ -404,7 +447,12 @@ export function CouncilEditor({
 
       <div className="no-print">
         <CollapsibleCard
-          title={isBc ? `Branch Items (${items.length})` : `${monthLabel(draft.meeting_date)} Planning (${items.length})`}
+          title={isBc ? `Branch Items (${items.length})` : `Extra items (${items.length})`}
+          description={
+            isBc
+              ? undefined
+              : "The 5 standard BYC items (theme, activity, spiritual message, assignments, upcoming events) are auto-generated. Add anything else here."
+          }
           defaultOpen
           contentClassName="space-y-2"
         >
@@ -415,7 +463,7 @@ export function CouncilEditor({
           </div>
           {items.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-2">
-              No items yet.
+              {isBc ? "No items yet." : "No extra items — the standard 5 are enough."}
             </p>
           ) : (
             <ol className="space-y-2">
@@ -516,8 +564,3 @@ export function CouncilEditor({
   );
 }
 
-function monthLabel(iso: string): string {
-  if (!iso) return "Month";
-  const [y, mo, da] = iso.split("-").map(Number);
-  return new Date(y, mo - 1, da).toLocaleDateString("en-US", { month: "long" });
-}

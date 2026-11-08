@@ -66,6 +66,8 @@ export type CouncilMeeting = {
   opening_hymn_id: number | null;
   opening_hymn_text: string | null;
   theme: string | null;
+  theme_scripture: string | null;
+  theme_pages: string | null;
   activity_date: string | null;  // 'YYYY-MM-DD'
   activity_ideas: string | null;
   looking_ahead_text: string | null;
@@ -75,6 +77,17 @@ export type CouncilMeeting = {
   share_token: string;
   created_at: string;
   updated_at: string;
+};
+
+export type FsyLesson = {
+  year: number;
+  month: number;
+  chapter_title: string | null;
+  scripture: string | null;
+  pages: string | null;
+  idea_a: string | null;
+  idea_b: string | null;
+  fetched_at: string;
 };
 
 export type CouncilAgendaItem = {

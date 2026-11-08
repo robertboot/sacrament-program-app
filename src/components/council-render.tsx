@@ -1,3 +1,4 @@
+import { YEAR_THEMES } from "@/lib/fsy-lessons";
 import type {
   CouncilAgendaItem,
   CouncilMeeting,
@@ -201,27 +202,39 @@ function BycBooklet({ branchName, meeting, items }: CouncilRenderData) {
           </Section>
 
           <Section title={`${monthLabel} Planning`} compact>
-            {items.length === 0 ? (
-              <p className="text-[#666] italic">No items yet.</p>
-            ) : (
-              <ol className="space-y-1.5">
-                {items.map((it, i) => (
-                  <li key={it.id} className="flex gap-2.5">
-                    <span className="text-black w-4 shrink-0 text-right pr-0.5">
-                      {i + 1}.
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium">{it.title || "—"}</div>
-                      {it.sub_note && (
-                        <div className="text-[8pt] text-[#666] mt-0.5 whitespace-pre-wrap">
-                          {it.sub_note}
-                        </div>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            )}
+            <ol className="space-y-1.5">
+              {bycStandardItems({ monthLabel, meeting }).map((it, i) => (
+                <li key={`std-${i}`} className="flex gap-2.5">
+                  <span className="text-black w-4 shrink-0 text-right pr-0.5">
+                    {i + 1}.
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium">{it.title}</div>
+                    {it.sub_note && (
+                      <div className="text-[8pt] text-[#666] mt-0.5 whitespace-pre-wrap">
+                        {it.sub_note}
+                      </div>
+                    )}
+                  </div>
+                </li>
+              ))}
+              {/* User-added extras numbered after the standard 5. */}
+              {items.map((it, i) => (
+                <li key={it.id} className="flex gap-2.5">
+                  <span className="text-black w-4 shrink-0 text-right pr-0.5">
+                    {bycStandardItems({ monthLabel, meeting }).length + i + 1}.
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium">{it.title || "—"}</div>
+                    {it.sub_note && (
+                      <div className="text-[8pt] text-[#666] mt-0.5 whitespace-pre-wrap">
+                        {it.sub_note}
+                      </div>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
           </Section>
 
           {meeting.looking_ahead_text?.trim() && (
@@ -369,6 +382,61 @@ function formatShort(iso: string): string {
     month: "short",
     day: "numeric",
   });
+}
+
+/**
+ * The five standard BYC agenda items, computed from the meeting record
+ * (theme, theme_pages, activity_date, activity_ideas) and the current
+ * year theme. Rendered before any user-added extras so a freshly-created
+ * BYC prints a complete agenda without typing anything.
+ *
+ * Fields that failed to auto-populate render as "(verify)" markers so
+ * the leader sees exactly what to fill in rather than a mysterious blank.
+ */
+function bycStandardItems({
+  monthLabel,
+  meeting,
+}: {
+  monthLabel: string;
+  meeting: CouncilMeeting;
+}): Array<{ title: string; sub_note: string | null }> {
+  const year = Number(meeting.meeting_date.slice(0, 4));
+  const yearTheme = YEAR_THEMES[year];
+  const chapter = meeting.theme?.trim() || "(verify)";
+  const pages = meeting.theme_pages?.trim();
+  const themeLine =
+    `${monthLabel} theme — “${chapter}” (FSY guide${pages ? `, pp. ${pages}` : ""})`;
+  const yearNote = yearTheme
+    ? `Year theme: “${yearTheme.title}” — ${yearTheme.scripture}. Review the ${monthLabel} FSY magazine`
+    : `Review the ${monthLabel} FSY magazine`;
+
+  const activityShort = meeting.activity_date
+    ? formatShort(meeting.activity_date)
+    : "(verify)";
+  const ideas = meeting.activity_ideas?.trim();
+
+  return [
+    { title: themeLine, sub_note: yearNote },
+    {
+      title: `${monthLabel} combined activity — ${activityShort}`,
+      sub_note: ideas
+        ? `Magazine ideas: ${ideas}. Youth pick and lead`
+        : "Youth pick and lead",
+    },
+    {
+      title: "Spiritual message",
+      sub_note: "Tie the activity to the gospel subject; assign a youth to share",
+    },
+    {
+      title: "Assignments",
+      sub_note:
+        "Who leads, who gives the message, who coordinates with adult leaders",
+    },
+    {
+      title: "Upcoming events",
+      sub_note: null,
+    },
+  ];
 }
 
 function stripTrailingUnit(name: string): string {
