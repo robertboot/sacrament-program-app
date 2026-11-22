@@ -19,8 +19,8 @@ const MEETING_TYPE_LABELS: Record<MeetingBooking["meeting_type"], string> = {
 };
 
 type DayItem =
-  | { kind: "booking"; booking: MeetingBooking; label: string; time: string }
-  | { kind: "block"; label: string; time: string }
+  | { kind: "booking"; booking: MeetingBooking; label: string; time: string; startMs: number }
+  | { kind: "block"; label: string; time: string; startMs: number }
   | { kind: "event"; event: SacramentEvent; label: string };
 
 /**
@@ -297,6 +297,7 @@ function buildItemsMap(
       booking: b,
       label: `${b.member_name} — ${MEETING_TYPE_LABELS[b.meeting_type]}`,
       time: formatTzTime(d),
+      startMs: d.getTime(),
     });
   }
 
@@ -319,17 +320,20 @@ function buildItemsMap(
         kind: "block",
         label: b.label,
         time: `${formatTzTime(start)} – ${formatTzTime(end)}`,
+        startMs: r.startMs,
       });
     }
   }
 
-  // Sort each day's items by time string (bookings/blocks have one;
-  // events sort to the top).
+  // Sort each day's items by real start time (events sort to the top —
+  // they're date-only). Sorting the formatted "12:05 PM" string would
+  // put "12:05 PM" before "9:00 AM" lexically ("1" < "9"), which is
+  // exactly the bug the owner flagged.
   for (const [k, arr] of out) {
     arr.sort((a, b) => {
-      const at = "time" in a && a.time ? a.time : "";
-      const bt = "time" in b && b.time ? b.time : "";
-      return at.localeCompare(bt);
+      const at = "startMs" in a ? a.startMs : -Infinity;
+      const bt = "startMs" in b ? b.startMs : -Infinity;
+      return at - bt;
     });
     out.set(k, arr);
   }
