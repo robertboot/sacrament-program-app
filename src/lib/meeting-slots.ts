@@ -11,12 +11,13 @@ export const BOOKING_WINDOWS: Array<{
   start: string;  // "HH:MM" local
   end: string;    // exclusive
 }> = [
-  { dayOfWeek: 0, start: "12:15", end: "14:00" },  // Sunday after sacrament
+  { dayOfWeek: 0, start: "12:05", end: "14:00" },  // Sunday after sacrament
   { dayOfWeek: 3, start: "19:30", end: "20:00" },  // Wednesday evening
 ];
 
-/** Minutes of empty space enforced between every meeting / block. */
-export const BUFFER_MINUTES = 5;
+/** Minutes of empty space enforced between every meeting / block. 0 =
+ *  meetings can start the moment the previous one ends. */
+export const BUFFER_MINUTES = 0;
 
 /** How many weeks forward the public page offers. */
 export const BOOKING_HORIZON_WEEKS = 8;

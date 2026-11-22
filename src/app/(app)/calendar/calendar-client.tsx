@@ -40,6 +40,7 @@ import {
   formatTzTime,
   wallClockInBranchTzToUtcIso,
 } from "@/lib/branch-timezone";
+import { availableSlotsForDate } from "@/lib/meeting-slots";
 import { CalendarMonthView } from "./calendar-month-view";
 
 const DOW_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -365,6 +366,8 @@ export function CalendarClient({
 
       <EditBookingDialog
         booking={editingBooking}
+        blocks={blocks}
+        allBookings={upcomingBookings}
         onClose={() => setEditingBooking(null)}
         onSaved={() => {
           setEditingBooking(null);
@@ -394,6 +397,12 @@ function formatTime(hhmm: string): string {
   const d = new Date();
   d.setHours(h, m, 0, 0);
   return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
+/** Share one 12h formatter between the slot grid and the "current slot
+ *  isn't available" warning so they stay consistent. */
+function formatSlotLabel(hhmm: string): string {
+  return formatTime(hhmm);
 }
 
 /**
@@ -598,10 +607,14 @@ function AddBlockDialog({
  */
 function EditBookingDialog({
   booking,
+  blocks,
+  allBookings,
   onClose,
   onSaved,
 }: {
   booking: MeetingBooking | null;
+  blocks: MeetingBlock[];
+  allBookings: MeetingBooking[];
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -613,6 +626,28 @@ function EditBookingDialog({
   const [attendees, setAttendees] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+
+  // Available slots for the current (date, type), excluding the booking
+  // being edited so its own slot doesn't conflict with itself.
+  const slots = useMemo(() => {
+    if (!date || !booking) return [];
+    const [y, mo, d] = date.split("-").map(Number);
+    const target = new Date(y, mo - 1, d);
+    const dayStart = target.getTime();
+    const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+    const bookingsThatDay = allBookings.filter((b) => {
+      if (b.id === booking.id) return false;
+      if (b.status !== "confirmed") return false;
+      const t = new Date(b.start_at).getTime();
+      return t >= dayStart && t < dayEnd;
+    });
+    return availableSlotsForDate(
+      target,
+      MEETING_TYPE_DURATION_MIN[type],
+      blocks,
+      bookingsThatDay,
+    );
+  }, [date, type, booking, blocks, allBookings]);
 
   // Reset form every time a different booking is opened for edit.
   const [trackedId, setTrackedId] = useState<string | null>(null);
@@ -702,25 +737,56 @@ function EditBookingDialog({
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-date">Date</Label>
-              <Input
-                id="edit-date"
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-time">Start time</Label>
-              <Input
-                id="edit-time"
-                type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-              />
-            </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-date">Date</Label>
+            <Input
+              id="edit-date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Start time</Label>
+            {slots.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-2">
+                No available slots on that date. Pick a Sunday or Wednesday,
+                or free up a blocked range first.
+              </p>
+            ) : (
+              <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                {slots.map((t) => {
+                  const [h, mi] = t.split(":").map(Number);
+                  const probe = new Date();
+                  probe.setHours(h, mi, 0, 0);
+                  const label = probe.toLocaleTimeString("en-US", {
+                    hour: "numeric",
+                    minute: "2-digit",
+                  });
+                  const selected = time === t;
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setTime(t)}
+                      className={`rounded-md border px-2 py-1.5 text-sm ${
+                        selected
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "hover:bg-accent"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {time && !slots.includes(time) && slots.length > 0 && (
+              <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                Current slot ({formatSlotLabel(time)}) isn&rsquo;t in the
+                available list — pick a new one above.
+              </p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="edit-name">Member name</Label>
