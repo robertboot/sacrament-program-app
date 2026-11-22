@@ -627,6 +627,26 @@ function EditBookingDialog({
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
 
+  // SMS URL that proposes the new (date, time) to the member. Null when
+  // there's no phone on file or when the admin hasn't actually moved the
+  // slot yet — the button is hidden in both cases.
+  const proposalSmsUrl = useMemo(() => {
+    if (!booking) return null;
+    const phone = (booking.member_phone ?? "").trim();
+    if (!phone) return null;
+    if (!date || !time) return null;
+    const originalIso = booking.start_at;
+    const proposedIso = wallClockInBranchTzToUtcIso(date, time);
+    if (originalIso === proposedIso) return null;
+    const firstName =
+      booking.member_name.trim().split(/\s+/)[0] || booking.member_name;
+    const oldLabel = formatTzDateTimeShort(originalIso);
+    const newLabel = formatTzDateTimeShort(proposedIso);
+    const body = `Hi ${firstName}, can I move your ${MEETING_TYPE_LABELS[type].toLowerCase()} which was scheduled for ${oldLabel}, to ${newLabel}?`;
+    const cleanPhone = phone.replace(/[^\d+]/g, "");
+    return `sms:${cleanPhone}?body=${encodeURIComponent(body)}`;
+  }, [booking, date, time, type]);
+
   // Available slots for the current (date, type), excluding the booking
   // being edited so its own slot doesn't conflict with itself.
   const slots = useMemo(() => {
@@ -833,6 +853,15 @@ function EditBookingDialog({
             <Button variant="ghost" onClick={onClose} disabled={pending}>
               Cancel
             </Button>
+            {proposalSmsUrl && (
+              <a
+                href={proposalSmsUrl}
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md border bg-background hover:bg-accent text-sm"
+                title="Open Messages pre-filled with a reschedule proposal — doesn't save the change"
+              >
+                <MessageSquare className="w-4 h-4" /> Propose by text
+              </a>
+            )}
             <Button onClick={submit} disabled={pending}>
               Save
             </Button>
