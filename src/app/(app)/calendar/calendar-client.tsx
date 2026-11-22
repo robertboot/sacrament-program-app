@@ -31,6 +31,7 @@ import {
   toggleTithingDeclarations,
 } from "./actions";
 import type { MeetingBlock, MeetingBooking, SacramentEvent } from "@/lib/supabase/types";
+import { BRANCH_TIMEZONE, formatTzDateTimeShort, formatTzTime } from "@/lib/branch-timezone";
 import { CalendarMonthView } from "./calendar-month-view";
 
 const DOW_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -165,13 +166,7 @@ export function CalendarClient({
                       </span>
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {new Date(b.start_at).toLocaleString("en-US", {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })}
+                      {formatTzDateTimeShort(b.start_at)}
                       {b.member_phone ? ` · ${b.member_phone}` : ""}
                       {b.member_email ? ` · ${b.member_email}` : ""}
                     </div>
@@ -352,18 +347,7 @@ export function CalendarClient({
 function describeBlock(b: MeetingBlock): string {
   if (b.recurrence_kind === null) {
     if (!b.start_at || !b.end_at) return "—";
-    const start = new Date(b.start_at);
-    const end = new Date(b.end_at);
-    return `${start.toLocaleString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    })} – ${end.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-    })}`;
+    return `${formatTzDateTimeShort(b.start_at)} – ${formatTzTime(b.end_at)}`;
   }
   const dow = DOW_NAMES[b.recurrence_day_of_week ?? 0];
   const time = formatTime(b.recurrence_time ?? "00:00");
@@ -393,11 +377,9 @@ function buildReminderSmsUrl(b: MeetingBooking): string {
     weekday: "long",
     month: "long",
     day: "numeric",
+    timeZone: BRANCH_TIMEZONE,
   });
-  const timeLabel = d.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  const timeLabel = formatTzTime(b.start_at);
   const firstName = b.member_name.trim().split(/\s+/)[0] || b.member_name;
   const body = [
     `Hi ${firstName}, just a friendly reminder about your ${MEETING_TYPE_LABELS[b.meeting_type].toLowerCase()} on ${dateLabel} at ${timeLabel}.`,

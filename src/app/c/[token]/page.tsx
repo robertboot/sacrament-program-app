@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase/server";
+import { BRANCH_TIMEZONE } from "@/lib/branch-timezone";
 import { ConfirmForm } from "./confirm-form";
 import { DeclineReasonAddon } from "./decline-reason-addon";
 
@@ -155,6 +156,7 @@ function RespondedState({
         day: "numeric",
         hour: "numeric",
         minute: "2-digit",
+        timeZone: BRANCH_TIMEZONE,
       })
     : null;
   return (

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { expandBlockForDate } from "@/lib/meeting-slots";
+import { formatTzTime } from "@/lib/branch-timezone";
 import type {
   MeetingBlock,
   MeetingBooking,
@@ -291,7 +292,7 @@ function buildItemsMap(
       kind: "booking",
       booking: b,
       label: `${b.member_name} — ${MEETING_TYPE_LABELS[b.meeting_type]}`,
-      time: d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+      time: formatTzTime(d),
     });
   }
 
@@ -313,7 +314,7 @@ function buildItemsMap(
       push(isoKey(day), {
         kind: "block",
         label: b.label,
-        time: `${start.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })} – ${end.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`,
+        time: `${formatTzTime(start)} – ${formatTzTime(end)}`,
       });
     }
   }

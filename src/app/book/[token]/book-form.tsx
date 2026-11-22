@@ -19,6 +19,7 @@ import {
   MEETING_TYPE_LABELS,
 } from "@/lib/meeting-slots";
 import type { MeetingBlock, BookableMeetingType } from "@/lib/supabase/types";
+import { BRANCH_TIMEZONE } from "@/lib/branch-timezone";
 import { createPublicBooking } from "@/app/(app)/calendar/actions";
 
 export function BookForm({
@@ -99,10 +100,12 @@ export function BookForm({
           weekday: "long",
           month: "long",
           day: "numeric",
+          timeZone: BRANCH_TIMEZONE,
         }),
         time: startAt.toLocaleTimeString("en-US", {
           hour: "numeric",
           minute: "2-digit",
+          timeZone: BRANCH_TIMEZONE,
         }),
         label: MEETING_TYPE_LABELS[type],
         startIso: startAt.toISOString(),

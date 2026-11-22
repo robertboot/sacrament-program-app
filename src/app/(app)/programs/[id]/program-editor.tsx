@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { BRANCH_TIMEZONE } from "@/lib/branch-timezone";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -1330,7 +1331,7 @@ function AssignmentCard({
                       Reminded{" "}
                       {new Date(assignment.reminded_at).toLocaleDateString(
                         "en-US",
-                        { month: "short", day: "numeric" },
+                        { month: "short", day: "numeric", timeZone: BRANCH_TIMEZONE },
                       )}
                     </span>
                   );
@@ -1392,13 +1393,13 @@ function AssignmentCard({
       <Separator />
       <div className="text-[10px] text-muted-foreground flex flex-wrap gap-3">
         {assignment.asked_at && (
-          <span>Asked {new Date(assignment.asked_at).toLocaleDateString()}</span>
+          <span>Asked {new Date(assignment.asked_at).toLocaleDateString("en-US", { timeZone: BRANCH_TIMEZONE })}</span>
         )}
         {assignment.confirmed_at && (
-          <span>Confirmed {new Date(assignment.confirmed_at).toLocaleDateString()}</span>
+          <span>Confirmed {new Date(assignment.confirmed_at).toLocaleDateString("en-US", { timeZone: BRANCH_TIMEZONE })}</span>
         )}
         {assignment.declined_at && (
-          <span>Declined {new Date(assignment.declined_at).toLocaleDateString()}</span>
+          <span>Declined {new Date(assignment.declined_at).toLocaleDateString("en-US", { timeZone: BRANCH_TIMEZONE })}</span>
         )}
       </div>
       {assignment.status === "declined" && assignment.decline_reason && (
