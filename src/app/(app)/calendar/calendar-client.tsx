@@ -47,8 +47,7 @@ const NTH_NAMES = ["first", "second", "third", "fourth", "fifth"];
 const MEETING_TYPE_LABELS: Record<MeetingBooking["meeting_type"], string> = {
   interview_30: "Interview (30 min)",
   interview_60: "Interview (60 min)",
-  tithing_declaration: "Tithing declaration (30 min)",
-  tithing_declaration_15: "Tithing declaration (15 min)",
+  tithing_declaration: "Tithing declaration (15 min)",
 };
 
 export function CalendarClient({

@@ -191,8 +191,7 @@ export async function createPublicBooking(
     return { error: "This scheduling link is no longer valid." };
   }
   if (
-    (input.meeting_type === "tithing_declaration" ||
-      input.meeting_type === "tithing_declaration_15") &&
+    input.meeting_type === "tithing_declaration" &&
     !s.tithing_declarations_enabled
   ) {
     return { error: "Tithing declarations are not open right now." };
