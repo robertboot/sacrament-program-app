@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Copy, MessageSquare, Pencil, RefreshCw, Trash2, Plus, Calendar as CalendarIcon, LayoutGrid, List } from "lucide-react";
+import { Ban, Copy, MessageSquare, Pencil, RefreshCw, Trash2, Plus, Calendar as CalendarIcon, LayoutGrid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,7 +33,11 @@ import {
   updateBooking,
 } from "./actions";
 import type { BookableMeetingType, MeetingBlock, MeetingBooking, SacramentEvent } from "@/lib/supabase/types";
-import { MEETING_TYPE_DURATION_MIN } from "@/lib/meeting-slots";
+import {
+  BOOKING_HORIZON_WEEKS,
+  expandBlockForDate,
+  MEETING_TYPE_DURATION_MIN,
+} from "@/lib/meeting-slots";
 import {
   BRANCH_TIMEZONE,
   formatTzDateTimeShort,
@@ -98,6 +102,15 @@ export function CalendarClient({
     return `${window.location.origin}/book/${bookingToken}`;
   }, [bookingToken]);
 
+  // Combined upcoming feed: member bookings + expanded block occurrences
+  // on each day across the horizon. Blocks render as a muted "Blocked"
+  // row so the leader sees why a slot is unavailable in context, without
+  // having to cross-reference the Meeting blocks card below.
+  const upcomingItems = useMemo(
+    () => buildUpcomingItems(upcomingBookings, blocks),
+    [upcomingBookings, blocks],
+  );
+
   function copyLink() {
     if (!bookingUrl) return;
     navigator.clipboard?.writeText(bookingUrl);
@@ -151,84 +164,102 @@ export function CalendarClient({
 
       {view === "list" && (
         <CollapsibleCard
-          title={`Upcoming meetings (${upcomingBookings.length})`}
+          title={`Upcoming meetings (${upcomingItems.length})`}
           defaultOpen
           contentClassName="p-0"
         >
-          {upcomingBookings.length === 0 ? (
+          {upcomingItems.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
               No bookings yet.
             </p>
           ) : (
             <div>
-              {groupBookingsByBranchDay(upcomingBookings).map(([key, dayBookings]) => (
+              {groupItemsByBranchDay(upcomingItems).map(([key, dayItems]) => (
                 <div key={key}>
                   <div className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground bg-muted/50 border-y">
                     {formatDateHeader(key)}
                   </div>
                   <ul className="divide-y">
-                    {dayBookings.map((b) => (
-                      <li
-                        key={b.id}
-                        className="px-3 py-2 flex items-start gap-3 justify-between"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="text-sm">
-                            <span className="font-medium">{b.member_name}</span>
-                            <span className="text-muted-foreground">
-                              {" "}
-                              · {MEETING_TYPE_LABELS[b.meeting_type]}
-                            </span>
-                          </div>
-                          {b.additional_attendees && (
-                            <div className="text-xs text-muted-foreground">
-                              + {b.additional_attendees}
+                    {dayItems.map((item) =>
+                      item.kind === "booking" ? (
+                        <li
+                          key={item.id}
+                          className="px-3 py-2 flex items-start gap-3 justify-between"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm">
+                              <span className="font-medium">{item.booking.member_name}</span>
+                              <span className="text-muted-foreground">
+                                {" "}
+                                · {MEETING_TYPE_LABELS[item.booking.meeting_type]}
+                              </span>
                             </div>
-                          )}
-                          <div className="text-xs text-muted-foreground">
-                            {formatTzTime(b.start_at)}
-                            {b.member_phone ? ` · ${b.member_phone}` : ""}
-                            {b.member_email ? ` · ${b.member_email}` : ""}
+                            {item.booking.additional_attendees && (
+                              <div className="text-xs text-muted-foreground">
+                                + {item.booking.additional_attendees}
+                              </div>
+                            )}
+                            <div className="text-xs text-muted-foreground">
+                              {formatTzTime(item.booking.start_at)}
+                              {item.booking.member_phone ? ` · ${item.booking.member_phone}` : ""}
+                              {item.booking.member_email ? ` · ${item.booking.member_email}` : ""}
+                            </div>
                           </div>
-                        </div>
-                        {b.member_phone && (
-                          <a
-                            href={buildReminderSmsUrl(b)}
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-blue-800 dark:text-blue-200 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900 rounded-md px-2 py-1 border border-blue-200 dark:border-blue-900"
-                            title="Open Messages pre-filled with a reminder for this meeting"
+                          {item.booking.member_phone && (
+                            <a
+                              href={buildReminderSmsUrl(item.booking)}
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-blue-800 dark:text-blue-200 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900 rounded-md px-2 py-1 border border-blue-200 dark:border-blue-900"
+                              title="Open Messages pre-filled with a reminder for this meeting"
+                            >
+                              <MessageSquare className="w-3.5 h-3.5" /> Text
+                            </a>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingBooking(item.booking)}
+                            disabled={pending}
+                            aria-label="Edit booking"
                           >
-                            <MessageSquare className="w-3.5 h-3.5" /> Text
-                          </a>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditingBooking(b)}
-                          disabled={pending}
-                          aria-label="Edit booking"
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              start(async () => {
+                                if (!confirm(`Cancel ${item.booking.member_name}'s meeting?`)) return;
+                                const r = await cancelBooking(item.booking.id);
+                                if (r.error) toast.error(r.error);
+                                else {
+                                  toast.success("Cancelled.");
+                                  router.refresh();
+                                }
+                              })
+                            }
+                            disabled={pending}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </li>
+                      ) : (
+                        <li
+                          key={item.id}
+                          className="px-3 py-2 flex items-start gap-3 bg-zinc-100/60 dark:bg-zinc-800/40"
                         >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            start(async () => {
-                              if (!confirm(`Cancel ${b.member_name}'s meeting?`)) return;
-                              const r = await cancelBooking(b.id);
-                              if (r.error) toast.error(r.error);
-                              else {
-                                toast.success("Cancelled.");
-                                router.refresh();
-                              }
-                            })
-                          }
-                          disabled={pending}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </li>
-                    ))}
+                          <Ban className="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" aria-hidden />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm">
+                              <span className="font-medium">{item.label}</span>
+                              <span className="text-muted-foreground"> · Blocked</span>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {formatTzTime(new Date(item.startMs))} – {formatTzTime(new Date(item.endMs))}
+                            </div>
+                          </div>
+                        </li>
+                      ),
+                    )}
                   </ul>
                 </div>
               ))}
@@ -415,24 +446,74 @@ function formatSlotLabel(hhmm: string): string {
 }
 
 /**
- * Bucket bookings by the branch-TZ calendar day of their start_at. Keys
- * are "YYYY-MM-DD" in Central Time. Order is preserved from the input,
- * which comes pre-sorted ascending by start_at from the server query.
+ * One row in the combined Upcoming list — either a member booking or a
+ * single expanded occurrence of an admin-managed meeting_blocks row.
  */
-function groupBookingsByBranchDay(
+type UpcomingItem =
+  | { kind: "booking"; id: string; startMs: number; booking: MeetingBooking }
+  | { kind: "block"; id: string; startMs: number; endMs: number; label: string };
+
+/**
+ * Merge member bookings with every block occurrence that fires between
+ * today and the end of the booking horizon. Sorted ascending by start.
+ * Past occurrences are filtered out so the list matches the server-side
+ * cutoff on bookings (`start_at >= now`).
+ */
+function buildUpcomingItems(
   bookings: MeetingBooking[],
-): Array<[string, MeetingBooking[]]> {
-  const map = new Map<string, MeetingBooking[]>();
+  blocks: MeetingBlock[],
+): UpcomingItem[] {
+  const items: UpcomingItem[] = bookings.map((b) => ({
+    kind: "booking",
+    id: b.id,
+    startMs: new Date(b.start_at).getTime(),
+    booking: b,
+  }));
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const nowMs = Date.now();
+  const horizonDays = BOOKING_HORIZON_WEEKS * 7;
+  for (let i = 0; i < horizonDays; i++) {
+    const day = new Date(
+      todayStart.getFullYear(),
+      todayStart.getMonth(),
+      todayStart.getDate() + i,
+    );
+    for (const b of blocks) {
+      const r = expandBlockForDate(b, day);
+      if (!r) continue;
+      if (r.startMs < nowMs) continue;
+      items.push({
+        kind: "block",
+        id: `${b.id}-${r.startMs}`,
+        startMs: r.startMs,
+        endMs: r.endMs,
+        label: b.label,
+      });
+    }
+  }
+  items.sort((a, b) => a.startMs - b.startMs);
+  return items;
+}
+
+/**
+ * Bucket mixed Upcoming items by the branch-TZ calendar day of their
+ * start. Keys are "YYYY-MM-DD" in Central Time.
+ */
+function groupItemsByBranchDay(
+  items: UpcomingItem[],
+): Array<[string, UpcomingItem[]]> {
+  const map = new Map<string, UpcomingItem[]>();
   const fmt = new Intl.DateTimeFormat("en-CA", {
     timeZone: BRANCH_TIMEZONE,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   });
-  for (const b of bookings) {
-    const key = fmt.format(new Date(b.start_at));
+  for (const it of items) {
+    const key = fmt.format(new Date(it.startMs));
     if (!map.has(key)) map.set(key, []);
-    map.get(key)!.push(b);
+    map.get(key)!.push(it);
   }
   return Array.from(map.entries());
 }
