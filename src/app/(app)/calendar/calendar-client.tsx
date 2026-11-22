@@ -160,70 +160,79 @@ export function CalendarClient({
               No bookings yet.
             </p>
           ) : (
-            <ul className="divide-y">
-              {upcomingBookings.map((b) => (
-                <li
-                  key={b.id}
-                  className="px-3 py-2 flex items-start gap-3 justify-between"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm">
-                      <span className="font-medium">{b.member_name}</span>
-                      <span className="text-muted-foreground">
-                        {" "}
-                        · {MEETING_TYPE_LABELS[b.meeting_type]}
-                      </span>
-                    </div>
-                    {b.additional_attendees && (
-                      <div className="text-xs text-muted-foreground">
-                        + {b.additional_attendees}
-                      </div>
-                    )}
-                    <div className="text-xs text-muted-foreground">
-                      {formatTzDateTimeShort(b.start_at)}
-                      {b.member_phone ? ` · ${b.member_phone}` : ""}
-                      {b.member_email ? ` · ${b.member_email}` : ""}
-                    </div>
+            <div>
+              {groupBookingsByBranchDay(upcomingBookings).map(([key, dayBookings]) => (
+                <div key={key}>
+                  <div className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground bg-muted/50 border-y">
+                    {formatDateHeader(key)}
                   </div>
-                  {b.member_phone && (
-                    <a
-                      href={buildReminderSmsUrl(b)}
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-blue-800 dark:text-blue-200 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900 rounded-md px-2 py-1 border border-blue-200 dark:border-blue-900"
-                      title="Open Messages pre-filled with a reminder for this meeting"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" /> Text
-                    </a>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setEditingBooking(b)}
-                    disabled={pending}
-                    aria-label="Edit booking"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      start(async () => {
-                        if (!confirm(`Cancel ${b.member_name}'s meeting?`)) return;
-                        const r = await cancelBooking(b.id);
-                        if (r.error) toast.error(r.error);
-                        else {
-                          toast.success("Cancelled.");
-                          router.refresh();
-                        }
-                      })
-                    }
-                    disabled={pending}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </li>
+                  <ul className="divide-y">
+                    {dayBookings.map((b) => (
+                      <li
+                        key={b.id}
+                        className="px-3 py-2 flex items-start gap-3 justify-between"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm">
+                            <span className="font-medium">{b.member_name}</span>
+                            <span className="text-muted-foreground">
+                              {" "}
+                              · {MEETING_TYPE_LABELS[b.meeting_type]}
+                            </span>
+                          </div>
+                          {b.additional_attendees && (
+                            <div className="text-xs text-muted-foreground">
+                              + {b.additional_attendees}
+                            </div>
+                          )}
+                          <div className="text-xs text-muted-foreground">
+                            {formatTzTime(b.start_at)}
+                            {b.member_phone ? ` · ${b.member_phone}` : ""}
+                            {b.member_email ? ` · ${b.member_email}` : ""}
+                          </div>
+                        </div>
+                        {b.member_phone && (
+                          <a
+                            href={buildReminderSmsUrl(b)}
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-blue-800 dark:text-blue-200 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900 rounded-md px-2 py-1 border border-blue-200 dark:border-blue-900"
+                            title="Open Messages pre-filled with a reminder for this meeting"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" /> Text
+                          </a>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingBooking(b)}
+                          disabled={pending}
+                          aria-label="Edit booking"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            start(async () => {
+                              if (!confirm(`Cancel ${b.member_name}'s meeting?`)) return;
+                              const r = await cancelBooking(b.id);
+                              if (r.error) toast.error(r.error);
+                              else {
+                                toast.success("Cancelled.");
+                                router.refresh();
+                              }
+                            })
+                          }
+                          disabled={pending}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </CollapsibleCard>
       )}
@@ -403,6 +412,39 @@ function formatTime(hhmm: string): string {
  *  isn't available" warning so they stay consistent. */
 function formatSlotLabel(hhmm: string): string {
   return formatTime(hhmm);
+}
+
+/**
+ * Bucket bookings by the branch-TZ calendar day of their start_at. Keys
+ * are "YYYY-MM-DD" in Central Time. Order is preserved from the input,
+ * which comes pre-sorted ascending by start_at from the server query.
+ */
+function groupBookingsByBranchDay(
+  bookings: MeetingBooking[],
+): Array<[string, MeetingBooking[]]> {
+  const map = new Map<string, MeetingBooking[]>();
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: BRANCH_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  for (const b of bookings) {
+    const key = fmt.format(new Date(b.start_at));
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(b);
+  }
+  return Array.from(map.entries());
+}
+
+/** "Sunday, November 22" — the date-group header on the Upcoming list. */
+function formatDateHeader(key: string): string {
+  const [y, mo, d] = key.split("-").map(Number);
+  return new Date(y, mo - 1, d).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 /**
