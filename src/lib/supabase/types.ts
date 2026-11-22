@@ -53,6 +53,8 @@ export type MeetingBooking = {
   member_name: string;
   member_email: string | null;
   member_phone: string | null;
+  /** Optional freeform list of other people coming (spouse, child, etc.). */
+  additional_attendees: string | null;
   status: "confirmed" | "cancelled";
   created_at: string;
 };

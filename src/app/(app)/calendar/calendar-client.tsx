@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Copy, MessageSquare, RefreshCw, Trash2, Plus, Calendar as CalendarIcon, LayoutGrid, List } from "lucide-react";
+import { Copy, MessageSquare, Pencil, RefreshCw, Trash2, Plus, Calendar as CalendarIcon, LayoutGrid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CollapsibleCard } from "@/components/collapsible-card";
 import {
@@ -29,8 +30,10 @@ import {
   regenerateBookingToken,
   toggleCalendarEnabled,
   toggleTithingDeclarations,
+  updateBooking,
 } from "./actions";
-import type { MeetingBlock, MeetingBooking, SacramentEvent } from "@/lib/supabase/types";
+import type { BookableMeetingType, MeetingBlock, MeetingBooking, SacramentEvent } from "@/lib/supabase/types";
+import { MEETING_TYPE_DURATION_MIN } from "@/lib/meeting-slots";
 import { BRANCH_TIMEZONE, formatTzDateTimeShort, formatTzTime } from "@/lib/branch-timezone";
 import { CalendarMonthView } from "./calendar-month-view";
 
@@ -61,6 +64,7 @@ export function CalendarClient({
   const router = useRouter();
   const [pending, start] = useTransition();
   const [showAdd, setShowAdd] = useState(false);
+  const [editingBooking, setEditingBooking] = useState<MeetingBooking | null>(null);
   // Persist the view choice per device so leaders don't re-pick it on
   // every visit. Start with "list" on both server and client's first
   // render to avoid a hydration mismatch; useEffect then syncs to the
@@ -165,6 +169,11 @@ export function CalendarClient({
                         · {MEETING_TYPE_LABELS[b.meeting_type]}
                       </span>
                     </div>
+                    {b.additional_attendees && (
+                      <div className="text-xs text-muted-foreground">
+                        + {b.additional_attendees}
+                      </div>
+                    )}
                     <div className="text-xs text-muted-foreground">
                       {formatTzDateTimeShort(b.start_at)}
                       {b.member_phone ? ` · ${b.member_phone}` : ""}
@@ -180,6 +189,15 @@ export function CalendarClient({
                       <MessageSquare className="w-3.5 h-3.5" /> Text
                     </a>
                   )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditingBooking(b)}
+                    disabled={pending}
+                    aria-label="Edit booking"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -339,6 +357,15 @@ export function CalendarClient({
         open={showAdd}
         onClose={() => setShowAdd(false)}
         onCreated={() => router.refresh()}
+      />
+
+      <EditBookingDialog
+        booking={editingBooking}
+        onClose={() => setEditingBooking(null)}
+        onSaved={() => {
+          setEditingBooking(null);
+          router.refresh();
+        }}
       />
     </div>
   );
@@ -549,6 +576,206 @@ function AddBlockDialog({
             <Button onClick={submit} disabled={pending}>
               <CalendarIcon className="w-4 h-4" />
               Add block
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * Admin-only edit for an existing booking. Pre-fills every field off
+ * the booking, splits start_at into date + time inputs (branch TZ) so
+ * the leader sees the same wall clock a member would, and on save
+ * rebuilds an ISO start from those inputs. Deliberately skips conflict
+ * detection — the admin is overriding whatever the automatic
+ * slot-generator would have done.
+ */
+function EditBookingDialog({
+  booking,
+  onClose,
+  onSaved,
+}: {
+  booking: MeetingBooking | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [pending, start] = useTransition();
+  const [type, setType] = useState<BookableMeetingType>("interview_30");
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [name, setName] = useState("");
+  const [attendees, setAttendees] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+
+  // Reset form every time a different booking is opened for edit.
+  const [trackedId, setTrackedId] = useState<string | null>(null);
+  if (booking && booking.id !== trackedId) {
+    setTrackedId(booking.id);
+    setType(booking.meeting_type);
+    const d = new Date(booking.start_at);
+    // Extract branch-TZ date / time components so the inputs line up
+    // with the clock the member actually booked against.
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: BRANCH_TIMEZONE,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    })
+      .formatToParts(d)
+      .reduce<Record<string, string>>((acc, p) => {
+        if (p.type !== "literal") acc[p.type] = p.value;
+        return acc;
+      }, {});
+    setDate(`${parts.year}-${parts.month}-${parts.day}`);
+    // Normalize 24h "24" (midnight) to "00" — Intl can emit either.
+    const hh = parts.hour === "24" ? "00" : parts.hour;
+    setTime(`${hh}:${parts.minute}`);
+    setName(booking.member_name);
+    setAttendees(booking.additional_attendees ?? "");
+    setPhone(booking.member_phone ?? "");
+    setEmail(booking.member_email ?? "");
+  }
+
+  function submit() {
+    if (!booking) return;
+    if (!name.trim()) {
+      toast.error("Member name is required.");
+      return;
+    }
+    if (!date || !time) {
+      toast.error("Pick a date and time.");
+      return;
+    }
+    start(async () => {
+      // Build an ISO start from the branch-TZ wall clock. We can't rely
+      // on `new Date("YYYY-MM-DDTHH:MM")` here because that parses as
+      // the runtime's local tz (UTC on Vercel). Instead, interpret the
+      // picked clock as Central and convert to UTC by probing the
+      // offset for that date.
+      const localDate = new Date(`${date}T${time}:00`);
+      const utcProbe = new Date(
+        localDate.toLocaleString("en-US", { timeZone: "UTC" }),
+      );
+      const centralProbe = new Date(
+        localDate.toLocaleString("en-US", { timeZone: BRANCH_TIMEZONE }),
+      );
+      const offsetMinutes = (utcProbe.getTime() - centralProbe.getTime()) / 60_000;
+      const startIso = new Date(
+        localDate.getTime() + offsetMinutes * 60_000,
+      ).toISOString();
+      const r = await updateBooking(booking.id, {
+        meeting_type: type,
+        start_at: startIso,
+        duration_minutes: MEETING_TYPE_DURATION_MIN[type],
+        member_name: name,
+        additional_attendees: attendees || null,
+        member_phone: phone || null,
+        member_email: email || null,
+      });
+      if (r.error) {
+        toast.error(r.error);
+        return;
+      }
+      toast.success("Saved.");
+      onSaved();
+    });
+  }
+
+  return (
+    <Dialog open={!!booking} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit meeting</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label>Meeting type</Label>
+            <Select value={type} onValueChange={(v) => setType(v as BookableMeetingType)}>
+              <SelectTrigger>
+                <SelectValue>{MEETING_TYPE_LABELS[type]}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(MEETING_TYPE_LABELS) as BookableMeetingType[]).map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {MEETING_TYPE_LABELS[t]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-date">Date</Label>
+              <Input
+                id="edit-date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-time">Start time</Label>
+              <Input
+                id="edit-time"
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-name">Member name</Label>
+            <Input
+              id="edit-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-attendees">Additional attendees</Label>
+            <Textarea
+              id="edit-attendees"
+              rows={2}
+              value={attendees}
+              onChange={(e) => setAttendees(e.target.value)}
+              placeholder="e.g. spouse, children, companion"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Shown on the booking list under the member&rsquo;s name.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-phone">Phone</Label>
+              <Input
+                id="edit-phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-email">Email</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="ghost" onClick={onClose} disabled={pending}>
+              Cancel
+            </Button>
+            <Button onClick={submit} disabled={pending}>
+              Save
             </Button>
           </div>
         </div>

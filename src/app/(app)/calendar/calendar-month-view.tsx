@@ -223,6 +223,11 @@ export function CalendarMonthView({
                   {"time" in item && item.time && (
                     <div className="text-xs text-muted-foreground">{item.time}</div>
                   )}
+                  {item.kind === "booking" && item.booking.additional_attendees && (
+                    <div className="text-xs text-muted-foreground">
+                      + {item.booking.additional_attendees}
+                    </div>
+                  )}
                   {item.kind === "event" && item.event.description && (
                     <div className="text-xs text-muted-foreground italic">
                       {item.event.description}

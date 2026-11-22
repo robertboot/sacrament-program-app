@@ -112,6 +112,49 @@ export async function cancelBooking(id: string) {
 }
 
 /**
+ * Edit an existing booking's details: time slot, attendees, contact.
+ * Admin-only override — we deliberately do NOT re-check for conflicting
+ * blocks or other bookings, because the bishopric is sometimes moving
+ * a slot ON TOP of a block they know they'll cover themselves. Anything
+ * the leader wants to type is accepted.
+ */
+export async function updateBooking(
+  id: string,
+  input: {
+    meeting_type: BookableMeetingType;
+    start_at: string;
+    duration_minutes: number;
+    member_name: string;
+    member_phone: string | null;
+    member_email: string | null;
+    additional_attendees: string | null;
+  },
+) {
+  const sb = await createClient();
+  const name = input.member_name.trim();
+  if (!name) return { error: "Member name is required." };
+  const start = new Date(input.start_at);
+  if (isNaN(start.getTime())) return { error: "Bad start time." };
+  const end = new Date(start.getTime() + input.duration_minutes * 60_000);
+  const { error } = await sb
+    .from("meeting_bookings")
+    .update({
+      meeting_type: input.meeting_type,
+      start_at: start.toISOString(),
+      end_at: end.toISOString(),
+      member_name: name,
+      member_phone: input.member_phone?.trim() || null,
+      member_email: input.member_email?.trim() || null,
+      additional_attendees: input.additional_attendees?.trim() || null,
+    })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/calendar");
+  revalidatePath("/");
+  return { error: null };
+}
+
+/**
  * Public booking entry point — used by the no-login /book/[token] page.
  * Validates the token, re-checks that the chosen slot is still free
  * (someone else could've grabbed it between page load and submit), and
