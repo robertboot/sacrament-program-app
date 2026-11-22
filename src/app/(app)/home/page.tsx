@@ -13,6 +13,8 @@ import { getEffectiveToday } from "@/lib/effective-today";
 import { BrandStack } from "@/components/brand-mark";
 import { InstallPrompt } from "@/components/install-prompt";
 import { APP_VERSION } from "@/lib/version";
+import { MEETING_TYPE_LABELS } from "@/lib/meeting-slots";
+import type { BookableMeetingType } from "@/lib/supabase/types";
 
 export const metadata = { title: "Home — Rota" };
 
@@ -270,7 +272,7 @@ export default async function HomePage() {
             <div className="text-sm font-semibold text-sky-950 dark:text-sky-100 mt-0.5">
               {(() => {
                 const nb = nextBooking as {
-                  meeting_type: "interview_30" | "interview_60" | "tithing_declaration";
+                  meeting_type: BookableMeetingType;
                   start_at: string;
                   member_name: string;
                 };
@@ -284,12 +286,7 @@ export default async function HomePage() {
                   hour: "numeric",
                   minute: "2-digit",
                 });
-                const typeLabel =
-                  nb.meeting_type === "tithing_declaration"
-                    ? "Tithing declaration"
-                    : nb.meeting_type === "interview_60"
-                      ? "Interview (60 min)"
-                      : "Interview (30 min)";
+                const typeLabel = MEETING_TYPE_LABELS[nb.meeting_type];
                 return `${dateLabel} at ${timeLabel} — ${nb.member_name} · ${typeLabel}`;
               })()}
             </div>

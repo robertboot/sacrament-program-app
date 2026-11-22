@@ -53,7 +53,9 @@ export function BookForm({
 
   const availableTypes: BookableMeetingType[] = useMemo(() => {
     const base: BookableMeetingType[] = ["interview_30", "interview_60"];
-    return tithingAllowed ? ["tithing_declaration", ...base] : base;
+    return tithingAllowed
+      ? ["tithing_declaration", "tithing_declaration_15", ...base]
+      : base;
   }, [tithingAllowed]);
 
   const duration = MEETING_TYPE_DURATION_MIN[type];

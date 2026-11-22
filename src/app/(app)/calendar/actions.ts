@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { notifyBishopric } from "@/lib/notifications";
+import { MEETING_TYPE_LABELS } from "@/lib/meeting-slots";
 import type { BookableMeetingType } from "@/lib/supabase/types";
 import type { CreateMeetingBlockInput } from "./types";
 
@@ -146,7 +147,8 @@ export async function createPublicBooking(
     return { error: "This scheduling link is no longer valid." };
   }
   if (
-    input.meeting_type === "tithing_declaration" &&
+    (input.meeting_type === "tithing_declaration" ||
+      input.meeting_type === "tithing_declaration_15") &&
     !s.tithing_declarations_enabled
   ) {
     return { error: "Tithing declarations are not open right now." };
@@ -197,12 +199,7 @@ export async function createPublicBooking(
   await notifyBishopric({
     type: "meeting_booked",
     title: `${input.member_name.trim()} booked a meeting — ${label}, ${time}`,
-    body:
-      input.meeting_type === "tithing_declaration"
-        ? "Tithing declaration (15 min)"
-        : input.meeting_type === "interview_60"
-          ? "Interview (60 min)"
-          : "Interview (30 min)",
+    body: MEETING_TYPE_LABELS[input.meeting_type],
     actionUrl: "/calendar",
   });
 

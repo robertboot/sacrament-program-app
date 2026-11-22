@@ -42,7 +42,8 @@ export type NotificationType =
 export type BookableMeetingType =
   | "interview_30"
   | "interview_60"
-  | "tithing_declaration";
+  | "tithing_declaration"       // 30 min, the common slot
+  | "tithing_declaration_15";   // 15 min, quick slot for members who already know their answer
 
 export type MeetingBooking = {
   id: string;
