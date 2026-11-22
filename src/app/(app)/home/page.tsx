@@ -14,6 +14,7 @@ import { BrandStack } from "@/components/brand-mark";
 import { InstallPrompt } from "@/components/install-prompt";
 import { APP_VERSION } from "@/lib/version";
 import { MEETING_TYPE_LABELS } from "@/lib/meeting-slots";
+import { BRANCH_TIMEZONE } from "@/lib/branch-timezone";
 import type { BookableMeetingType } from "@/lib/supabase/types";
 
 export const metadata = { title: "Home — Rota" };
@@ -277,14 +278,19 @@ export default async function HomePage() {
                   member_name: string;
                 };
                 const d = new Date(nb.start_at);
+                // Server-rendered, so pin to the branch's timezone;
+                // Vercel's Node runtime defaults to UTC otherwise, which
+                // would show a 12:15 PM CST meeting as 6:15 PM.
                 const dateLabel = d.toLocaleDateString("en-US", {
                   weekday: "short",
                   month: "short",
                   day: "numeric",
+                  timeZone: BRANCH_TIMEZONE,
                 });
                 const timeLabel = d.toLocaleTimeString("en-US", {
                   hour: "numeric",
                   minute: "2-digit",
+                  timeZone: BRANCH_TIMEZONE,
                 });
                 const typeLabel = MEETING_TYPE_LABELS[nb.meeting_type];
                 return `${dateLabel} at ${timeLabel} — ${nb.member_name} · ${typeLabel}`;

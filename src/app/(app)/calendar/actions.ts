@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { notifyBishopric } from "@/lib/notifications";
 import { MEETING_TYPE_LABELS } from "@/lib/meeting-slots";
+import { BRANCH_TIMEZONE } from "@/lib/branch-timezone";
 import type { BookableMeetingType } from "@/lib/supabase/types";
 import type { CreateMeetingBlockInput } from "./types";
 
@@ -187,14 +188,18 @@ export async function createPublicBooking(
     .single();
   if (error) return { error: error.message };
 
+  // Formatted on the server for the bell-notification title, so pin
+  // to the branch timezone — Vercel's Node runtime defaults to UTC.
   const label = start.toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",
+    timeZone: BRANCH_TIMEZONE,
   });
   const time = start.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
+    timeZone: BRANCH_TIMEZONE,
   });
   await notifyBishopric({
     type: "meeting_booked",
