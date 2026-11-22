@@ -127,6 +127,33 @@ export function CalendarClient({
         </p>
       </div>
 
+      {/* Compact pill with the one active link + status + Copy, right at
+          the top of the page so the leader doesn't have to scroll past
+          every booking to find the URL to share. Full Scheduling-link
+          card (open/close toggles, regenerate) stays below. */}
+      <div className="flex items-center gap-2 rounded-md ring-1 ring-border bg-card px-3 py-2">
+        <span
+          className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 ${
+            calendarEnabled
+              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"
+              : "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+          }`}
+        >
+          {calendarEnabled ? "Open" : "Closed"}
+        </span>
+        <div className="font-mono text-xs truncate flex-1 min-w-0 text-muted-foreground">
+          {bookingUrl ?? "(no link yet — regenerate below)"}
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={copyLink}
+          disabled={!bookingUrl}
+        >
+          <Copy className="w-3.5 h-3.5" /> Copy
+        </Button>
+      </div>
+
       {/* List / Calendar view toggle. localStorage-persisted via
           setViewAndPersist. The month-view card renders bookings +
           blocks + events together; the list view is the existing admin
