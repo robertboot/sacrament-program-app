@@ -268,52 +268,25 @@ export function CalendarClient({
         </CollapsibleCard>
       )}
 
-      <CollapsibleCard title="Scheduling link" defaultOpen contentClassName="space-y-3">
-        <label className="flex items-start gap-2 text-sm cursor-pointer select-none">
-          <Checkbox
-            checked={calendarEnabled}
-            onCheckedChange={(v) =>
-              start(async () => {
-                const r = await toggleCalendarEnabled(v === true);
-                if (r.error) toast.error(r.error);
-                else router.refresh();
-              })
-            }
-            disabled={pending}
-            className="mt-0.5"
-          />
-          <div className="space-y-0.5">
-            <div className="font-medium">Scheduling is open to members</div>
-            <p className="text-xs text-muted-foreground">
-              When on, the link below works and members can book slots.
-              When off, the link returns &ldquo;scheduling closed.&rdquo;
-            </p>
+      <CollapsibleCard title="Scheduling link" defaultOpen contentClassName="space-y-4">
+        {/* The active link lives at the top so it's the first thing the
+            leader sees. Just one link per branch, always; "open/closed"
+            and "tithing on/off" are modes applied to it, not separate
+            links. Regenerate is tucked below as a small, destructive
+            action — it invalidates the current URL and mints a new one. */}
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <Label>Active scheduling link</Label>
+            <span
+              className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                calendarEnabled
+                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"
+                  : "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+              }`}
+            >
+              {calendarEnabled ? "Open" : "Closed"}
+            </span>
           </div>
-        </label>
-        <label className="flex items-start gap-2 text-sm cursor-pointer select-none">
-          <Checkbox
-            checked={tithingEnabled}
-            onCheckedChange={(v) =>
-              start(async () => {
-                const r = await toggleTithingDeclarations(v === true);
-                if (r.error) toast.error(r.error);
-                else router.refresh();
-              })
-            }
-            disabled={pending}
-            className="mt-0.5"
-          />
-          <div className="space-y-0.5">
-            <div className="font-medium">Tithing declarations open</div>
-            <p className="text-xs text-muted-foreground">
-              Turn on in September; turn off at the end of November. When
-              on, &ldquo;Tithing declaration (30 min)&rdquo; appears as a
-              bookable type.
-            </p>
-          </div>
-        </label>
-        <div className="pt-2 border-t space-y-2">
-          <Label>Public booking link</Label>
           <div className="flex gap-2 flex-wrap">
             <Input
               readOnly
@@ -323,26 +296,84 @@ export function CalendarClient({
             <Button variant="outline" onClick={copyLink} disabled={!bookingUrl}>
               <Copy className="w-4 h-4" /> Copy
             </Button>
-            <Button
-              variant="ghost"
-              onClick={() =>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            One active link per branch. Share it anywhere — texts, bulletin,
+            QR code — and it stays the same until you regenerate.
+          </p>
+        </div>
+
+        <div className="space-y-2 pt-2 border-t">
+          <label className="flex items-start gap-2 text-sm cursor-pointer select-none">
+            <Checkbox
+              checked={calendarEnabled}
+              onCheckedChange={(v) =>
                 start(async () => {
-                  const r = await regenerateBookingToken();
+                  const r = await toggleCalendarEnabled(v === true);
                   if (r.error) toast.error(r.error);
-                  else {
-                    toast.success("New link — the old one is now invalid.");
-                    router.refresh();
-                  }
+                  else router.refresh();
                 })
               }
               disabled={pending}
-            >
-              <RefreshCw className="w-4 h-4" /> Regenerate
-            </Button>
-          </div>
-          <p className="text-[11px] text-muted-foreground">
-            Regenerating invalidates the old link immediately.
-          </p>
+              className="mt-0.5"
+            />
+            <div className="space-y-0.5">
+              <div className="font-medium">Link is open to members</div>
+              <p className="text-xs text-muted-foreground">
+                When off, the link returns &ldquo;scheduling closed.&rdquo;
+                No change to the URL itself.
+              </p>
+            </div>
+          </label>
+          <label className="flex items-start gap-2 text-sm cursor-pointer select-none">
+            <Checkbox
+              checked={tithingEnabled}
+              onCheckedChange={(v) =>
+                start(async () => {
+                  const r = await toggleTithingDeclarations(v === true);
+                  if (r.error) toast.error(r.error);
+                  else router.refresh();
+                })
+              }
+              disabled={pending || !calendarEnabled}
+              className="mt-0.5"
+            />
+            <div className="space-y-0.5">
+              <div className="font-medium">Include tithing declaration slots</div>
+              <p className="text-xs text-muted-foreground">
+                Turn on in September; turn off at the end of November. Adds
+                &ldquo;Tithing declaration (15 min)&rdquo; as a bookable
+                type. Interview slots stay on either way.
+              </p>
+            </div>
+          </label>
+        </div>
+
+        <div className="pt-2 border-t">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              start(async () => {
+                if (
+                  !confirm(
+                    "Regenerate the link? The current URL stops working immediately and anyone with it will need the new one.",
+                  )
+                )
+                  return;
+                const r = await regenerateBookingToken();
+                if (r.error) toast.error(r.error);
+                else {
+                  toast.success("New link — the old one is now invalid.");
+                  router.refresh();
+                }
+              })
+            }
+            disabled={pending}
+            className="text-muted-foreground"
+          >
+            <RefreshCw className="w-3.5 h-3.5" /> Regenerate link
+          </Button>
         </div>
       </CollapsibleCard>
 
