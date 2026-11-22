@@ -55,3 +55,60 @@ export function formatTzTime(iso: string | Date): string {
 export function formatTzDateTimeShort(iso: string | Date): string {
   return `${formatTzDateShort(iso)} at ${formatTzTime(iso)}`;
 }
+
+/**
+ * Given a `YYYY-MM-DD` date and `HH:MM` wall clock the admin picked in
+ * the branch timezone, return the UTC ISO instant that represents that
+ * moment. Correct across DST transitions. Use this in place of
+ * `new Date(\`${d}T${t}:00\`).toISOString()`, which only works when the
+ * viewer's browser is itself in Central Time.
+ *
+ * How: construct a tentative UTC instant from the wall clock fields,
+ * look up how many minutes Central Time is OFF UTC at that instant, and
+ * shift the tentative instant by that offset. Handles CST (-6h) and
+ * CDT (-5h) automatically because the offset is computed at runtime
+ * for the exact date.
+ */
+export function wallClockInBranchTzToUtcIso(
+  ymd: string,
+  hhmm: string,
+): string {
+  const [y, mo, d] = ymd.split("-").map(Number);
+  const [h, mi] = hhmm.split(":").map(Number);
+  // Tentative UTC: pretend the picked wall clock is already in UTC.
+  const tentativeMs = Date.UTC(y, mo - 1, d, h, mi);
+  const offsetMin = branchTzOffsetMinutesAt(new Date(tentativeMs));
+  // Central offset is negative (behind UTC); real UTC = tentative - offset
+  // e.g. tentative Nov 22 12:15Z, offset = -360, real = Nov 22 18:15Z
+  return new Date(tentativeMs - offsetMin * 60_000).toISOString();
+}
+
+/**
+ * How many minutes BRANCH_TIMEZONE is offset from UTC at the given
+ * instant. Negative for Central Time (CST = -360, CDT = -300).
+ */
+function branchTzOffsetMinutesAt(instant: Date): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: BRANCH_TIMEZONE,
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(instant);
+  const map: Record<string, string> = {};
+  for (const p of parts) if (p.type !== "literal") map[p.type] = p.value;
+  // Intl may report hour "24" at midnight; normalize.
+  const hr = parseInt(map.hour, 10) % 24;
+  const centralAsUtcMs = Date.UTC(
+    parseInt(map.year, 10),
+    parseInt(map.month, 10) - 1,
+    parseInt(map.day, 10),
+    hr,
+    parseInt(map.minute, 10),
+    parseInt(map.second, 10),
+  );
+  return (centralAsUtcMs - instant.getTime()) / 60_000;
+}

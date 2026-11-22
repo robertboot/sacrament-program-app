@@ -34,7 +34,12 @@ import {
 } from "./actions";
 import type { BookableMeetingType, MeetingBlock, MeetingBooking, SacramentEvent } from "@/lib/supabase/types";
 import { MEETING_TYPE_DURATION_MIN } from "@/lib/meeting-slots";
-import { BRANCH_TIMEZONE, formatTzDateTimeShort, formatTzTime } from "@/lib/branch-timezone";
+import {
+  BRANCH_TIMEZONE,
+  formatTzDateTimeShort,
+  formatTzTime,
+  wallClockInBranchTzToUtcIso,
+} from "@/lib/branch-timezone";
 import { CalendarMonthView } from "./calendar-month-view";
 
 const DOW_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -653,22 +658,11 @@ function EditBookingDialog({
       return;
     }
     start(async () => {
-      // Build an ISO start from the branch-TZ wall clock. We can't rely
-      // on `new Date("YYYY-MM-DDTHH:MM")` here because that parses as
-      // the runtime's local tz (UTC on Vercel). Instead, interpret the
-      // picked clock as Central and convert to UTC by probing the
-      // offset for that date.
-      const localDate = new Date(`${date}T${time}:00`);
-      const utcProbe = new Date(
-        localDate.toLocaleString("en-US", { timeZone: "UTC" }),
-      );
-      const centralProbe = new Date(
-        localDate.toLocaleString("en-US", { timeZone: BRANCH_TIMEZONE }),
-      );
-      const offsetMinutes = (utcProbe.getTime() - centralProbe.getTime()) / 60_000;
-      const startIso = new Date(
-        localDate.getTime() + offsetMinutes * 60_000,
-      ).toISOString();
+      // The admin picks a wall clock they see in the dialog, which is
+      // branch-TZ. Convert that wall clock → the real UTC instant to
+      // store. Using the shared helper so this stays DST-correct and
+      // doesn't depend on which TZ the admin's browser happens to be in.
+      const startIso = wallClockInBranchTzToUtcIso(date, time);
       const r = await updateBooking(booking.id, {
         meeting_type: type,
         start_at: startIso,
